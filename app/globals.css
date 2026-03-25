@@ -479,6 +479,56 @@ a {
   font-size: 14px;
 }
 
+.gallery-hero-image-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.gallery-hero-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 480px) {
+  .gallery-hero-image-wrap {
+    margin-left: -16px;
+    margin-right: -16px;
+    width: calc(100% + 32px);
+    border-radius: 0;
+  }
+}
+
+.gallery-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.gallery-before-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s;
+}
+
+.gallery-before-btn.active {
+  background: rgba(0, 0, 0, 0.75);
+}
+
 .landing-video-title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -555,6 +605,47 @@ a {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.landing-footer-socials {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.landing-footer-social {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(17, 17, 17, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.landing-footer-social:hover {
+  transform: translateY(-1px);
+  border-color: rgba(17, 17, 17, 0.42);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.landing-footer-social svg {
+  width: 14px;
+  height: 14px;
+}
+
+.landing-footer-social svg rect,
+.landing-footer-social svg circle {
+  fill: none;
+  stroke: rgba(17, 17, 17, 0.9);
+  stroke-width: 1.5;
+}
+
+.landing-footer-social svg path {
+  fill: rgba(17, 17, 17, 0.9);
 }
 
 .landing-footer-links {
@@ -904,26 +995,105 @@ a {
   align-items: stretch;
 }
 
-.account-password-wrap {
+.account-password-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.account-password-input-wrap {
   position: relative;
+  min-width: 0;
 }
 
 .account-password-input {
-  padding-right: 46px;
+  padding-right: 44px;
 }
 
-.account-password-toggle {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
+.account-password-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.account-vision-button {
   border: 0;
   background: transparent;
+  color: #6b7280;
   padding: 0;
-  font-size: 18px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
+
+.account-vision-button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.account-vision-button svg path,
+.account-vision-button svg circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.account-vision-button-inline {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+}
+
+.account-primary-button {
+  min-height: 44px;
+  width: 92px;
+  border: 1px solid #111111;
+  border-radius: 999px;
+  background: #111111;
+  color: #ffffff;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.account-primary-button:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.account-inline-row .admin-save-button {
+  width: 92px;
+  justify-self: end;
+}
+
+.account-state-button {
+  border-color: #9ca3af;
+  background: #9ca3af;
+  color: #ffffff;
+}
+
+.account-state-button.account-action-button-active {
+  border-color: #dc2626;
+  background: #dc2626;
+}
+
+.account-state-button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 
 .account-helper-text {
   margin: 0;
@@ -940,6 +1110,15 @@ a {
   padding: 0 14px;
   background: rgba(255, 255, 255, 0.72);
   font-size: 14px;
+}
+
+.account-username-static {
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .account-phone-display {
