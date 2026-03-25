@@ -1502,12 +1502,4 @@ a {
   .landing-reviews {
     grid-template-columns: 1fr;
   }
-
-  .landing-footer {
-    flex-direction: column;
-  }
-
-  .landing-footer-links {
-    align-items: flex-start;
-  }
 }
