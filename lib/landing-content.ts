@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -31,9 +32,11 @@ export type LandingContent = {
     beforeLabel: string;
     beforeText: string;
     beforeImage: string;
+    beforeImageFull: string;
     afterLabel: string;
     afterText: string;
     afterImage: string;
+    afterImageFull: string;
   };
   reviews: {
     sectionTitle: string;
@@ -65,9 +68,11 @@ export const defaultLandingContent: LandingContent = {
     beforeLabel: "Before",
     beforeText: "정보가 분산되고 메시지가 흐려져 핵심이 바로 들어오지 않는 상태",
     beforeImage: "/images/before.jpg",
+    beforeImageFull: "/images/before.jpg",
     afterLabel: "After",
     afterText: "여백, 시선 흐름, 명확한 CTA로 한 번에 이해되는 iOS 스타일 랜딩 구조",
     afterImage: "/images/after.jpg",
+    afterImageFull: "/images/after.jpg",
   },
   reviews: {
     sectionTitle: "사용자 리뷰",
@@ -175,24 +180,33 @@ function parseDataUrl(dataUrl: string) {
 
 async function uploadLandingImage(pathPrefix: "before" | "after", imageValue: string) {
   if (!isDataUrl(imageValue)) {
-    return imageValue;
+    return { thumb: imageValue, full: imageValue };
   }
 
   const supabase = createSupabaseAdminClient();
-  const { buffer, contentType, extension } = parseDataUrl(imageValue);
-  const filePath = `landing/${pathPrefix}-${Date.now()}.${extension}`;
+  const { buffer } = parseDataUrl(imageValue);
+  const timestamp = Date.now();
 
-  const { error } = await supabase.storage.from(LANDING_STORAGE_BUCKET).upload(filePath, buffer, {
-    contentType,
-    upsert: true,
-  });
+  const [thumbBuffer, fullBuffer] = await Promise.all([
+    sharp(buffer).resize({ width: 800, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer(),
+    sharp(buffer).resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 87 }).toBuffer(),
+  ]);
 
-  if (error) {
-    throw error;
-  }
+  const thumbPath = `landing/${pathPrefix}-thumb-${timestamp}.webp`;
+  const fullPath = `landing/${pathPrefix}-full-${timestamp}.webp`;
 
-  const { data } = supabase.storage.from(LANDING_STORAGE_BUCKET).getPublicUrl(filePath);
-  return data.publicUrl;
+  const [thumbResult, fullResult] = await Promise.all([
+    supabase.storage.from(LANDING_STORAGE_BUCKET).upload(thumbPath, thumbBuffer, { contentType: "image/webp", upsert: true }),
+    supabase.storage.from(LANDING_STORAGE_BUCKET).upload(fullPath, fullBuffer, { contentType: "image/webp", upsert: true }),
+  ]);
+
+  if (thumbResult.error) throw thumbResult.error;
+  if (fullResult.error) throw fullResult.error;
+
+  const { data: thumbData } = supabase.storage.from(LANDING_STORAGE_BUCKET).getPublicUrl(thumbPath);
+  const { data: fullData } = supabase.storage.from(LANDING_STORAGE_BUCKET).getPublicUrl(fullPath);
+
+  return { thumb: thumbData.publicUrl, full: fullData.publicUrl };
 }
 
 function mergeLandingContent(input?: Partial<LandingContent> | null): LandingContent {
@@ -265,12 +279,19 @@ export async function getLandingContent() {
 export async function saveLandingContent(content: LandingContent) {
   const supabase = createSupabaseAdminClient();
   const mergedContent = mergeLandingContent(content);
+  const [beforeResult, afterResult] = await Promise.all([
+    uploadLandingImage("before", mergedContent.comparison.beforeImage),
+    uploadLandingImage("after", mergedContent.comparison.afterImage),
+  ]);
+
   const nextContent: LandingContent = {
     ...mergedContent,
     comparison: {
       ...mergedContent.comparison,
-      beforeImage: await uploadLandingImage("before", mergedContent.comparison.beforeImage),
-      afterImage: await uploadLandingImage("after", mergedContent.comparison.afterImage),
+      beforeImage: beforeResult.thumb,
+      beforeImageFull: beforeResult.full,
+      afterImage: afterResult.thumb,
+      afterImageFull: afterResult.full,
     },
   };
 
