@@ -35,7 +35,6 @@ export default async function AccountPage() {
       <main className="admin-page">
         {profileError ? (
           <section className="section stack">
-            <p className="muted">Account</p>
             <h1>프로필 연결 오류</h1>
             <p className="muted">이 계정의 profile을 읽는 중 문제가 발생했습니다.</p>
             <p className="muted">message: {profileError.message ?? "없음"}</p>
@@ -46,14 +45,12 @@ export default async function AccountPage() {
           <UserDashboard
             email={profile.email}
             fullName={profile.full_name}
-            role={profile.role}
             username={profile.username}
             hasPassword={Boolean(profile.password_hash)}
             phone={profile.phone}
           />
         ) : (
           <section className="section stack">
-            <p className="muted">Account</p>
             <h1>회원 정보를 불러오지 못했습니다</h1>
             <p className="muted">다시 로그인한 뒤 시도해주세요.</p>
           </section>

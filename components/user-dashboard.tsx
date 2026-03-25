@@ -46,7 +46,6 @@ const userSections = [
 type UserDashboardProps = {
   email: string;
   fullName: string | null;
-  role: string;
   username: string | null;
   hasPassword: boolean;
   phone: string | null;
@@ -55,7 +54,6 @@ type UserDashboardProps = {
 export function UserDashboard({
   email,
   fullName,
-  role,
   username: initialUsername,
   hasPassword: initialHasPassword,
   phone: initialPhone,
@@ -158,17 +156,21 @@ export function UserDashboard({
   }
 
   function renderGeneralSettings() {
+    const hasUsernameInput = usernameInput.trim().length > 0;
+    const hasPhoneInput = phoneInput.trim().length > 0;
+    const hasPasswordInput = passwordInput.trim().length > 0;
+
     return (
       <div className="account-settings stack">
         <div className="account-settings-row">
           <div className="account-settings-copy">
             <h3>사용자 아이디</h3>
             {username ? (
-              <div className="muted">서비스 이용은 아이디 또는 이메일 인증 모두 가능합니다.</div>
+              <div className="muted">로그인 서비스는 ID &amp; 이메일 모두 가능</div>
             ) : null}
           </div>
           {username ? (
-            <div className="account-setting-static">{username}</div>
+            <div className="account-setting-static account-username-static">{username}</div>
           ) : (
             <form className="account-inline-form" onSubmit={submitUsername}>
               <div className="account-inline-row">
@@ -179,7 +181,11 @@ export function UserDashboard({
                   onChange={(event) => setUsernameInput(event.target.value)}
                   placeholder="아이디를 입력하세요"
                 />
-                <button className="admin-save-button" type="submit" disabled={savingKey === "username"}>
+                <button
+                  className={`admin-save-button account-state-button${hasUsernameInput ? " account-action-button-active" : ""}`}
+                  type="submit"
+                  disabled={savingKey === "username" || !hasUsernameInput}
+                >
                   {savingKey === "username" ? "등록 중..." : "등록"}
                 </button>
               </div>
@@ -202,7 +208,11 @@ export function UserDashboard({
                   onChange={(event) => setPhoneInput(event.target.value)}
                   placeholder="01012345678"
                 />
-                <button className="admin-save-button" type="submit" disabled={savingKey === "phone"}>
+                <button
+                  className={`admin-save-button account-state-button${hasPhoneInput ? " account-action-button-active" : ""}`}
+                  type="submit"
+                  disabled={savingKey === "phone" || !hasPhoneInput}
+                >
                   {savingKey === "phone" ? (phone ? "수정 중..." : "등록 중...") : phone ? "수정" : "등록"}
                 </button>
               </div>
@@ -237,8 +247,8 @@ export function UserDashboard({
             ) : null}
           </div>
           <form className="account-inline-form" onSubmit={submitPassword}>
-            <div className="account-inline-row">
-              <div className="account-password-wrap">
+            <div className="account-password-line">
+              <div className="account-password-input-wrap">
                 <input
                   className="admin-input account-password-input"
                   type={showPassword ? "text" : "password"}
@@ -247,23 +257,40 @@ export function UserDashboard({
                   placeholder={hasPassword ? "새 비밀번호를 입력하세요" : "비밀번호를 입력하세요"}
                 />
                 <button
-                  className="account-password-toggle"
+                  className="account-vision-button account-vision-button-inline"
                   type="button"
                   onClick={() => setShowPassword((value) => !value)}
                   aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
                 >
-                  {showPassword ? "🙈" : "👁"}
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2.8 12s3.2-5 9.2-5 9.2 5 9.2 5-3.2 5-9.2 5-9.2-5-9.2-5z" />
+                      <circle cx="12" cy="12" r="2.6" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3 3l18 18" />
+                      <path d="M2.8 12s3.2-5 9.2-5c1.9 0 3.5.5 4.8 1.2" />
+                      <path d="M21.2 12s-3.2 5-9.2 5c-1.9 0-3.5-.5-4.8-1.2" />
+                    </svg>
+                  )}
                 </button>
               </div>
-              <button className="admin-save-button" type="submit" disabled={savingKey === "password"}>
-                {savingKey === "password"
-                  ? hasPassword
-                    ? "수정 중..."
-                    : "등록 중..."
-                  : hasPassword
-                    ? "수정"
-                    : "등록"}
-              </button>
+              <div className="account-password-actions">
+                <button
+                  className={`account-primary-button account-state-button${hasPasswordInput ? " account-action-button-active" : ""}`}
+                  type="submit"
+                  disabled={savingKey === "password" || !hasPasswordInput}
+                >
+                  {savingKey === "password"
+                    ? hasPassword
+                      ? "수정 중..."
+                      : "등록 중..."
+                    : hasPassword
+                      ? "수정"
+                      : "등록"}
+                </button>
+              </div>
             </div>
             <div className="account-helper-text">영문, 숫자 조합으로 6자 이상 입력</div>
           </form>
@@ -275,7 +302,7 @@ export function UserDashboard({
             <h3>이메일</h3>
             <div className="muted">회원가입 시 사용한 이메일 주소입니다.</div>
           </div>
-          <div className="account-setting-static">{email}</div>
+          <div className="account-setting-static account-username-static">{email}</div>
         </div>
 
         <div className="account-settings-row">
@@ -329,11 +356,8 @@ export function UserDashboard({
             </button>
           ))}
         </div>
-        <div className="muted">Account</div>
         <h1>사용자 계정 페이지</h1>
-        <div className="muted">역할: {role}</div>
         <div className="admin-panel-card stack">
-          <div className="muted">{activeSection.eyebrow}</div>
           <h2>{activeSection.title}</h2>
           {activeSection.id === "general" ? (
             renderGeneralSettings()

@@ -15,7 +15,6 @@ export default async function AccountWithdrawPage() {
       <LandingPageHeader />
       <main className="admin-page">
         <section className="section stack">
-          <div className="muted">Account</div>
           <h1>회원탈퇴</h1>
           <div className="muted">탈퇴 기능은 아직 최종 연결 전입니다. 진행 전에 주문, 상담, 후기 데이터 보존 정책을 먼저 정리하는 것이 안전합니다.</div>
           <Link className="account-delete-inline" href="/account">
