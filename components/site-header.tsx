@@ -12,6 +12,7 @@ type SiteHeaderProps = {
   leading?: ReactNode;
   mobileLeading?: ReactNode;
   mobileProfile?: ReactNode;
+  mobileLogout?: ReactNode;
 };
 
 export function SiteHeader({
@@ -21,6 +22,7 @@ export function SiteHeader({
   leading,
   mobileLeading,
   mobileProfile,
+  mobileLogout,
 }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
@@ -139,6 +141,9 @@ export function SiteHeader({
             </div>
             {mobileLeading ?? leading ? (
               <div className="header-menu-extra">{mobileLeading ?? leading}</div>
+            ) : null}
+            {mobileLogout ? (
+              <div className="header-menu-extra">{mobileLogout}</div>
             ) : null}
           </div>
         </div>

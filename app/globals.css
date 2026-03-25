@@ -1550,7 +1550,7 @@ a {
   }
 
   .header-menu-list a {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     white-space: nowrap;
   }
@@ -1565,6 +1565,18 @@ a {
     width: 100%;
     flex-direction: column;
     align-items: flex-end;
+  }
+
+  .header-logout-button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    text-align: right;
+    width: 100%;
   }
 
   .auth-switch-link {
