@@ -422,6 +422,65 @@ export function AdminContentManager({ initialContent }: AdminContentManagerProps
 
       <section className="admin-form-card stack">
         <div className="admin-section-heading">
+          <span className="muted">YouTube</span>
+          <button
+            className="admin-save-button"
+            type="button"
+            onClick={() => void save("video")}
+            disabled={savingKey !== null}
+          >
+            {savingKey === "video" ? "저장 중..." : "저장"}
+          </button>
+        </div>
+        <input
+          className="admin-input"
+          value={content.video.sectionTitle}
+          onChange={(event) =>
+            setContent((current) => ({
+              ...current,
+              video: { ...current.video, sectionTitle: event.target.value },
+            }))
+          }
+          placeholder="섹션 제목"
+        />
+        <input
+          className="admin-input"
+          value={content.video.title}
+          onChange={(event) =>
+            setContent((current) => ({
+              ...current,
+              video: { ...current.video, title: event.target.value },
+            }))
+          }
+          placeholder="영상 제목"
+        />
+        <textarea
+          className="admin-textarea"
+          rows={3}
+          value={content.video.body}
+          onChange={(event) =>
+            setContent((current) => ({
+              ...current,
+              video: { ...current.video, body: event.target.value },
+            }))
+          }
+          placeholder="관련 설명"
+        />
+        <input
+          className="admin-input"
+          value={content.video.youtubeUrl}
+          onChange={(event) =>
+            setContent((current) => ({
+              ...current,
+              video: { ...current.video, youtubeUrl: event.target.value },
+            }))
+          }
+          placeholder="유튜브 주소 (예: https://www.youtube.com/watch?v=...)"
+        />
+      </section>
+
+      <section className="admin-form-card stack">
+        <div className="admin-section-heading">
           <span className="muted">Footer</span>
           <button
             className="admin-save-button"

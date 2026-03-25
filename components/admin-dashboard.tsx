@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SignOutButton } from "@clerk/nextjs";
 import type { LandingContent } from "@/lib/landing-content";
 import { AdminContentManager } from "@/components/admin-content-manager";
 import { AdminPricingManager } from "@/components/admin-pricing-manager";
@@ -64,16 +65,103 @@ type AdminDashboardProps = {
 
 export function AdminDashboard({ email, role, landingContent }: AdminDashboardProps) {
   const [activeSectionId, setActiveSectionId] = useState(adminSections[0].id);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuMounted, setMenuMounted] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSection =
     adminSections.find((section) => section.id === activeSectionId) ?? adminSections[0];
 
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const openMenu = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setMenuMounted(true);
+    setMenuOpen(true);
+  };
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = setTimeout(() => {
+      setMenuMounted(false);
+      closeTimerRef.current = null;
+    }, 180);
+  };
+
   return (
     <div className="admin-layout admin-layout-root">
+      <button
+        aria-expanded={menuOpen}
+        aria-label="관리 메뉴 열기"
+        className="admin-mobile-menu-toggle"
+        type="button"
+        onClick={() => (menuOpen ? closeMenu() : openMenu())}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+
+      {menuMounted ? (
+        <div
+          className={menuOpen ? "admin-mobile-drawer-backdrop is-open" : "admin-mobile-drawer-backdrop is-closing"}
+          onClick={() => closeMenu()}
+          role="presentation"
+        >
+          <aside
+            className={menuOpen ? "admin-mobile-drawer is-open" : "admin-mobile-drawer is-closing"}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="admin-sidebar-title">관리 메뉴</p>
+            <div className="admin-menu-list">
+              <Link className="admin-menu-link admin-menu-link-home" href="/" onClick={() => closeMenu()}>
+                <span className="admin-home-link-content">
+                  <span className="admin-home-icon" aria-hidden="true" />
+                  <span>홈</span>
+                </span>
+              </Link>
+              {adminSections.map((section) => (
+                <button
+                  key={`mobile-${section.id}`}
+                  className={section.id === activeSectionId ? "admin-menu-item active" : "admin-menu-item"}
+                  type="button"
+                  onClick={() => {
+                    setActiveSectionId(section.id);
+                    closeMenu();
+                  }}
+                >
+                  {section.menu}
+                </button>
+              ))}
+              <SignOutButton>
+                <button className="admin-menu-item" type="button" onClick={() => closeMenu()}>
+                  로그아웃
+                </button>
+              </SignOutButton>
+            </div>
+          </aside>
+        </div>
+      ) : null}
+
       <aside className="admin-sidebar admin-sidebar-root">
         <p className="admin-sidebar-title">관리 메뉴</p>
         <div className="admin-sidebar-top">
-          <Link className="admin-menu-link" href="/">
-            홈이동
+          <Link className="admin-menu-link admin-menu-link-home" href="/">
+            <span className="admin-home-link-content">
+              <span className="admin-home-icon" aria-hidden="true" />
+              <span>홈</span>
+            </span>
           </Link>
         </div>
         <div className="admin-menu-list">
@@ -93,7 +181,7 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
         </div>
       </aside>
 
-      <div className="admin-panel stack">
+      <div className="admin-panel stack" onClick={() => (menuOpen ? closeMenu() : null)}>
         <p className="muted">Admin</p>
         <h1>운영 관리 화면</h1>
         <p className="muted">

@@ -25,6 +25,8 @@ export function SiteHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const menuSheetRef = useRef<HTMLDivElement | null>(null);
+  const menuToggleRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -33,6 +35,35 @@ export function SiteHeader({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!menuMounted) {
+      return;
+    }
+
+    const handleDocumentPointerDown = (event: PointerEvent) => {
+      const targetNode = event.target as Node | null;
+
+      if (!targetNode) {
+        return;
+      }
+
+      if (menuSheetRef.current?.contains(targetNode)) {
+        return;
+      }
+
+      if (menuToggleRef.current?.contains(targetNode)) {
+        return;
+      }
+
+      closeMenu();
+    };
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handleDocumentPointerDown);
+    };
+  }, [menuMounted]);
 
   const openMenu = () => {
     if (closeTimerRef.current) {
@@ -78,6 +109,7 @@ export function SiteHeader({
             aria-label="Open menu"
             className="header-menu-toggle"
             type="button"
+            ref={menuToggleRef}
             onClick={() => (menuOpen ? closeMenu() : openMenu())}
           >
             <span />
@@ -93,7 +125,11 @@ export function SiteHeader({
           onClick={() => closeMenu()}
           role="presentation"
         >
-          <div className={menuOpen ? "header-menu-sheet is-open" : "header-menu-sheet is-closing"} onClick={(event) => event.stopPropagation()}>
+          <div
+            className={menuOpen ? "header-menu-sheet is-open" : "header-menu-sheet is-closing"}
+            ref={menuSheetRef}
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="header-menu-list">
               {links.map((link) => (
                 <Link key={link.href} href={link.href} onClick={() => closeMenu()}>

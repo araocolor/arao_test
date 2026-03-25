@@ -5,17 +5,51 @@ import { useState } from "react";
 type LandingVideoSectionProps = {
   label: string;
   title: string;
-  videoId: string;
+  body: string;
+  youtubeUrl: string;
 };
 
-export function LandingVideoSection({ label, title, videoId }: LandingVideoSectionProps) {
+function extractYoutubeId(urlOrId: string) {
+  if (!urlOrId) {
+    return "";
+  }
+
+  if (!urlOrId.includes("http")) {
+    return urlOrId;
+  }
+
+  try {
+    const url = new URL(urlOrId);
+
+    if (url.hostname.includes("youtu.be")) {
+      return url.pathname.replace("/", "");
+    }
+
+    if (url.hostname.includes("youtube.com")) {
+      return url.searchParams.get("v") ?? "";
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+export function LandingVideoSection({ label, title, body, youtubeUrl }: LandingVideoSectionProps) {
   const [playing, setPlaying] = useState(false);
+  const videoId = extractYoutubeId(youtubeUrl);
+
+  if (!videoId) {
+    return null;
+  }
+
   const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
   return (
     <section className="landing-stack-sm">
       <span className="landing-section-label">{label}</span>
       <h2 className="landing-video-title">{title}</h2>
+      <p className="muted">{body}</p>
       <div className="landing-video-wrap">
         {playing ? (
           <iframe

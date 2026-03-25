@@ -48,6 +48,12 @@ export type LandingContent = {
     body: string;
     plans: LandingPlan[];
   };
+  video: {
+    sectionTitle: string;
+    title: string;
+    body: string;
+    youtubeUrl: string;
+  };
   footer: {
     company: string;
     address: string;
@@ -137,6 +143,12 @@ export const defaultLandingContent: LandingContent = {
         accent: "soft",
       },
     ],
+  },
+  video: {
+    sectionTitle: "ARAO 유튜브 영상",
+    title: "프로파일 적용하면 유튜브 컨텐츠도 빠르게 쉽게",
+    body: "영상으로 기능 흐름과 실제 적용 결과를 빠르게 확인할 수 있습니다.",
+    youtubeUrl: "https://www.youtube.com/watch?v=3GJbE7dMUpc",
   },
   footer: {
     company: "ABC Studio",
@@ -240,6 +252,10 @@ function mergeLandingContent(input?: Partial<LandingContent> | null): LandingCon
               ...plan,
             }))
           : defaultLandingContent.pricing.plans,
+    },
+    video: {
+      ...defaultLandingContent.video,
+      ...(input?.video ?? {}),
     },
     footer: {
       ...defaultLandingContent.footer,

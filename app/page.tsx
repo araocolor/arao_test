@@ -66,9 +66,10 @@ export default async function HomePage() {
         </section>
 
         <LandingVideoSection
-          label="ARAO 유튜브 영상"
-          title="프로파일 적용하면 유튜브 컨텐츠도 빠르게 쉽게"
-          videoId="3GJbE7dMUpc"
+          label={landingContent.video.sectionTitle}
+          title={landingContent.video.title}
+          body={landingContent.video.body}
+          youtubeUrl={landingContent.video.youtubeUrl}
         />
 
         <LandingPageFooter content={landingContent.footer} />
