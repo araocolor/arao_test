@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache, revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export { GALLERY_CATEGORIES, type GalleryCategory } from "@/lib/gallery-categories";
@@ -287,25 +287,31 @@ function mergeLandingContent(input?: Partial<LandingContent> | null): LandingCon
   };
 }
 
-export async function getLandingContent() {
-  noStore();
+const fetchLandingContent = unstable_cache(
+  async () => {
+    try {
+      const supabase = createSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from("landing_contents")
+        .select("id, content")
+        .eq("id", "main")
+        .maybeSingle<LandingContentRow>();
 
-  try {
-    const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase
-      .from("landing_contents")
-      .select("id, content")
-      .eq("id", "main")
-      .maybeSingle<LandingContentRow>();
+      if (error || !data) {
+        return defaultLandingContent;
+      }
 
-    if (error || !data) {
+      return mergeLandingContent(data.content);
+    } catch {
       return defaultLandingContent;
     }
+  },
+  ["landing-content"],
+  { revalidate: 3600 },
+);
 
-    return mergeLandingContent(data.content);
-  } catch {
-    return defaultLandingContent;
-  }
+export async function getLandingContent() {
+  return fetchLandingContent();
 }
 
 export async function saveLandingContent(content: LandingContent) {
@@ -363,6 +369,8 @@ export async function saveLandingContent(content: LandingContent) {
   if (error) {
     throw error;
   }
+
+  revalidatePath("/");
 
   return data.content;
 }
