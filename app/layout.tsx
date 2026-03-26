@@ -31,7 +31,6 @@ export default function RootLayout({
               border-radius: 999px;
               z-index: 9999;
               overflow: hidden;
-              transition: opacity 0.3s ease;
             }
             #page-loading-bar::after {
               content: "";
@@ -43,13 +42,6 @@ export default function RootLayout({
               background: #2563eb;
               border-radius: 999px;
               animation: page-loading-fill 2.4s cubic-bezier(0.1, 0.6, 0.4, 1) forwards;
-            }
-            #page-loading-bar.complete {
-              opacity: 0;
-            }
-            #page-loading-bar.complete::after {
-              width: 100%;
-              animation: none;
             }
             @keyframes page-loading-fill {
               0%   { width: 0%; }
@@ -67,10 +59,7 @@ export default function RootLayout({
               __html: `
                 window.addEventListener('load', function() {
                   var bar = document.getElementById('page-loading-bar');
-                  if (bar) {
-                    bar.classList.add('complete');
-                    setTimeout(function() { bar.style.display = 'none'; }, 400);
-                  }
+                  if (bar) { bar.style.display = 'none'; }
                 });
               `,
             }}
