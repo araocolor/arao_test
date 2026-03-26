@@ -560,6 +560,13 @@ a {
   white-space: pre-line;
 }
 
+.gallery-caption {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: rgba(17, 17, 17, 0.4);
+  margin: 6px 0 0;
+}
+
 .gallery-before-btn {
   position: absolute;
   top: 12px;

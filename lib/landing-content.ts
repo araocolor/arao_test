@@ -12,6 +12,7 @@ export type GalleryItem = {
   afterImageFull: string;
   title?: string;
   body?: string;
+  caption?: string;
 };
 
 export type LandingReview = {
@@ -341,6 +342,7 @@ export async function saveLandingContent(content: LandingContent) {
         afterImageFull: afterRes.full,
         title: item.title,
         body: item.body,
+        caption: item.caption,
       }] as [GalleryCategory, GalleryItem];
     }),
   );

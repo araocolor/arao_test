@@ -44,6 +44,7 @@ export default async function GalleryPage() {
                 afterImage={afterSrc}
                 label={GALLERY_CATEGORY_LABELS[category]}
               />
+              {item.caption ? <p className="gallery-caption">{item.caption}</p> : null}
             </section>
           );
         })}

@@ -126,6 +126,7 @@ export function AdminContentManager({ initialContent }: AdminContentManagerProps
               afterImageFull: existing?.afterImageFull ?? "",
               title: existing?.title ?? "",
               body: existing?.body ?? "",
+              caption: existing?.caption ?? "",
               [key]: dataUrl,
             },
           },
@@ -605,6 +606,32 @@ export function AdminContentManager({ initialContent }: AdminContentManagerProps
             });
           }}
           placeholder="섹션 문구"
+        />
+        <input
+          className="admin-input"
+          value={content.gallery[selectedGalleryCategory]?.caption ?? ""}
+          onChange={(event) => {
+            setPendingGalleryText(true);
+            setContent((current) => {
+              const existing = current.gallery[selectedGalleryCategory];
+              return {
+                ...current,
+                gallery: {
+                  ...current.gallery,
+                  [selectedGalleryCategory]: {
+                    beforeImage: existing?.beforeImage ?? "",
+                    beforeImageFull: existing?.beforeImageFull ?? "",
+                    afterImage: existing?.afterImage ?? "",
+                    afterImageFull: existing?.afterImageFull ?? "",
+                    title: existing?.title ?? "",
+                    body: existing?.body ?? "",
+                    caption: event.target.value,
+                  },
+                },
+              };
+            });
+          }}
+          placeholder="촬영 정보 (예: Nikon ZF / 40mm f2 / Profile : ARAO)"
         />
         <div className="admin-form-grid">
           <label className="admin-upload stack">
