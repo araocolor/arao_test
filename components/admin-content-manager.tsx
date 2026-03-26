@@ -127,12 +127,6 @@ async function readGalleryExif(file: File): Promise<GalleryExif | null> {
   try {
     const exifr = await import("exifr");
     const tags = (await exifr.parse(file, {
-      tiff: true,
-      exif: true,
-      gps: false,
-      interop: false,
-      ifd0: true,
-      ifd1: false,
       mergeOutput: true,
       translateKeys: true,
       translateValues: true,
