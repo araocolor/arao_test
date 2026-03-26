@@ -3,14 +3,12 @@ import { LandingPageFooter } from "@/components/landing-page-footer";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import { LandingVideoSection } from "@/components/landing-video-section";
 import { getLandingContent } from "@/lib/landing-content";
-import { PageLoadingBar } from "@/components/page-loading-bar";
 
 export default async function HomePage() {
   const landingContent = await getLandingContent();
 
   return (
     <main className="landing-page">
-      <PageLoadingBar />
       <LandingPageHeader />
 
       <div className="landing-shell">
