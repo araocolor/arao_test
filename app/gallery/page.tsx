@@ -22,7 +22,7 @@ export default async function GalleryPage() {
 
         {GALLERY_CATEGORIES.map((category) => {
           const item = landingContent.gallery[category];
-          if (!item) return null;
+          if (!item || !item.beforeImageFull || !item.afterImageFull) return null;
           const title = item.title || GALLERY_CATEGORY_LABELS[category];
           const body = item.body || GALLERY_CATEGORY_DEFAULTS[category];
           const bodyLines = body.split("\n");
