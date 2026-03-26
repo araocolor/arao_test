@@ -209,7 +209,7 @@ async function uploadLandingImage(pathPrefix: string, imageValue: string) {
 
   const supabase = createSupabaseAdminClient();
   const { buffer } = parseDataUrl(imageValue);
-  const timestamp = Date.now();
+  const timestamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   const [thumbBuffer, fullBuffer] = await Promise.all([
     sharp(buffer).resize({ width: 800, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer(),
