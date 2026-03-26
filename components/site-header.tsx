@@ -6,13 +6,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 type SiteHeaderProps = {
-  links: Array<{ href: string; label: string }>;
+  links: Array<{ href: string; label: string; icon?: string }>;
   action?: ReactNode;
   fullWidth?: boolean;
   leading?: ReactNode;
   mobileLeading?: ReactNode;
   mobileProfile?: ReactNode;
   mobileLogout?: ReactNode;
+  menuHeader?: string;
 };
 
 export function SiteHeader({
@@ -23,6 +24,7 @@ export function SiteHeader({
   mobileLeading,
   mobileProfile,
   mobileLogout,
+  menuHeader,
 }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
@@ -103,9 +105,11 @@ export function SiteHeader({
           ref={menuToggleRef}
           onClick={() => (menuOpen ? closeMenu() : openMenu())}
         >
-          <span />
-          <span />
-          <span />
+          <span className="header-menu-toggle-lines">
+            <span />
+            <span />
+            <span />
+          </span>
         </button>
         <Link className="brand" href="/">
           <Image src="/logo.svg" alt="ARAO logo" width={80} height={28} priority />
@@ -139,8 +143,10 @@ export function SiteHeader({
             onClick={(event) => event.stopPropagation()}
           >
             <div className="header-menu-list">
+              {menuHeader && <span className="header-menu-label">{menuHeader}</span>}
               {links.map((link) => (
-                <Link key={link.href} href={link.href} onClick={() => closeMenu()}>
+                <Link key={link.href} href={link.href} onClick={() => closeMenu()} className="header-menu-link">
+                  {link.icon && <span className={`header-nav-icon header-nav-icon-${link.icon}`} aria-hidden="true" />}
                   {link.label}
                 </Link>
               ))}

@@ -7,6 +7,7 @@ export function LandingPageHeader() {
   return (
     <SiteHeader
       fullWidth
+      menuHeader="Nikon Color Project"
       leading={<LandingAuthControls />}
       mobileLeading={<LandingAuthControlsCompact />}
       mobileProfile={<HeaderProfileLink />}

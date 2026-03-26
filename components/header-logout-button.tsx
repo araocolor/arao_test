@@ -7,17 +7,21 @@ export function HeaderLogoutButton() {
   const { isSignedIn } = useUser();
   const { signOut } = useClerk();
 
-  return isSignedIn ? (
+  if (!isSignedIn) {
+    return (
+      <Link className="header-menu-label" href="/sign-in">
+        login
+      </Link>
+    );
+  }
+
+  return (
     <button
-      className="header-logout-button"
+      className="header-menu-label"
       type="button"
       onClick={() => void signOut({ redirectUrl: "/" })}
     >
-      로그아웃
+      logout
     </button>
-  ) : (
-    <Link className="header-logout-button" href="/sign-in">
-      로그인
-    </Link>
   );
 }
