@@ -189,6 +189,7 @@ a {
 
 .header-menu-toggle {
   display: none;
+  position: relative;
   width: 40px;
   height: 40px;
   border: 1px solid rgba(17, 17, 17, 0.08);
@@ -199,6 +200,17 @@ a {
   flex-direction: column;
   gap: 4px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.header-menu-toggle::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  bottom: -12px;
+  left: -12px;
 }
 
 .header-mobile-actions {
@@ -1131,6 +1143,10 @@ a {
   color: var(--muted);
 }
 
+.account-mobile-extra-section {
+  display: none;
+}
+
 .admin-menu-list {
   display: flex;
   flex-direction: column;
@@ -1252,6 +1268,23 @@ a {
   transform: translateX(-50%) rotate(-45deg);
 }
 
+.account-menu-icon-logout::before {
+  top: 5px;
+  width: 10px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1.2px solid #111111;
+}
+
+.account-menu-icon-logout::after {
+  top: 9px;
+  left: 62%;
+  width: 7px;
+  height: 1.4px;
+  background: #111111;
+  box-shadow: 2px -2px 0 #111111, 2px 2px 0 #111111;
+}
+
 .admin-menu-link {
   display: block;
   width: 100%;
@@ -1367,6 +1400,10 @@ a {
     width: 100%;
   }
 
+  .account-mobile-extra-section {
+    display: flex;
+  }
+
   .admin-sidebar-root,
   .admin-panel {
     min-height: auto;
@@ -1461,16 +1498,14 @@ a {
 
   .account-mobile-menu {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
     position: sticky;
     top: 58px;
     z-index: 30;
     padding: 10px 8px;
     border-radius: 14px;
-    border: 1px solid rgba(17, 17, 17, 0.08);
-    background: rgba(220, 220, 224, 0.96);
-    backdrop-filter: blur(10px);
+    background: #ffffff;
   }
 
   .account-mobile-menu-item {

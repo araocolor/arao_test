@@ -36,3 +36,11 @@ Vercel 배포까지 완료했습니다.
 
 products / orders 기능 확장
 GitHub 정리 및 배포 운영 정리
+
+
+## 로컬에서 페이지 수정하는방법
+
+clerk 에서 localhost 명칭을 허락안해줌
+아이피주소도 허락 안해줘서 
+ngrok.com 에서 접속해서 무료 가입후 authtoken 을 갖고 와야 함 
+임시 http: 주소를 부여받아 우회하면서 테스트 하는 방법

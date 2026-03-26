@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { AdminSignOut } from "@/components/admin-sign-out";
+import { SignOutButton } from "@clerk/nextjs";
 
 const userSections = [
   {
@@ -305,6 +306,11 @@ export function UserDashboard({
           <div className="account-setting-static account-username-static">{email}</div>
         </div>
 
+        <div className="account-settings-row account-mobile-extra-section">
+          <div className="account-settings-copy">
+          </div>
+        </div>
+
         <div className="account-settings-row">
           <Link className="account-delete-inline" href="/account/withdraw">
             회원탈퇴
@@ -355,6 +361,12 @@ export function UserDashboard({
               <span>{section.menu}</span>
             </button>
           ))}
+          <SignOutButton>
+            <button className="account-mobile-menu-item" type="button">
+              <span className="account-menu-icon account-menu-icon-logout" aria-hidden="true" />
+              <span>로그아웃</span>
+            </button>
+          </SignOutButton>
         </div>
         <h1>사용자 계정 페이지</h1>
         <div className="admin-panel-card stack">
