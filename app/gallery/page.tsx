@@ -2,12 +2,7 @@ import { LandingPageFooter } from "@/components/landing-page-footer";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import { GalleryHeroItem } from "@/components/gallery-hero-item";
 import { getLandingContent } from "@/lib/landing-content";
-
-const GALLERY_SECTIONS = [
-  { category: "people" as const, label: "인물" },
-  { category: "outdoor" as const, label: "환경야외" },
-  { category: "indoor" as const, label: "실내카페" },
-];
+import { GALLERY_CATEGORIES, GALLERY_CATEGORY_LABELS, GALLERY_CATEGORY_DEFAULTS } from "@/lib/gallery-categories";
 
 export default async function GalleryPage() {
   const landingContent = await getLandingContent();
@@ -25,16 +20,18 @@ export default async function GalleryPage() {
           </p>
         </section>
 
-        {GALLERY_SECTIONS.map(({ category, label }) => {
+        {GALLERY_CATEGORIES.map((category) => {
           const item = landingContent.gallery[category];
           if (!item) return null;
+          const body = item.body || GALLERY_CATEGORY_DEFAULTS[category];
           return (
             <section key={category} className="landing-stack-sm">
-              <h2 className="gallery-section-title">{label}</h2>
+              <h2 className="gallery-section-title">{GALLERY_CATEGORY_LABELS[category]}</h2>
+              <p className="gallery-section-body">{body}</p>
               <GalleryHeroItem
                 beforeImage={item.beforeImageFull}
                 afterImage={item.afterImageFull}
-                label={label}
+                label={GALLERY_CATEGORY_LABELS[category]}
               />
             </section>
           );

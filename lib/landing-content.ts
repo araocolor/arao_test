@@ -10,6 +10,7 @@ export type GalleryItem = {
   beforeImageFull: string;
   afterImage: string;
   afterImageFull: string;
+  body?: string;
 };
 
 export type LandingReview = {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { GALLERY_CATEGORIES, type GalleryCategory } from "@/lib/gallery-categories";
+import { GALLERY_CATEGORIES, GALLERY_CATEGORY_LABELS, type GalleryCategory } from "@/lib/gallery-categories";
 import type { LandingContent } from "@/lib/landing-content";
 
 type AdminContentManagerProps = {
@@ -533,11 +533,35 @@ export function AdminContentManager({ initialContent }: AdminContentManagerProps
               }}
             >
               {GALLERY_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>{GALLERY_CATEGORY_LABELS[cat]}</option>
               ))}
             </select>
           </div>
         </div>
+        <textarea
+          className="admin-textarea"
+          rows={3}
+          value={content.gallery[selectedGalleryCategory]?.body ?? ""}
+          onChange={(event) =>
+            setContent((current) => {
+              const existing = current.gallery[selectedGalleryCategory];
+              return {
+                ...current,
+                gallery: {
+                  ...current.gallery,
+                  [selectedGalleryCategory]: {
+                    beforeImage: existing?.beforeImage ?? "",
+                    beforeImageFull: existing?.beforeImageFull ?? "",
+                    afterImage: existing?.afterImage ?? "",
+                    afterImageFull: existing?.afterImageFull ?? "",
+                    body: event.target.value,
+                  },
+                },
+              };
+            })
+          }
+          placeholder="섹션 문구"
+        />
         <div className="admin-form-grid">
           <label className="admin-upload stack">
             <span className="muted">Before 이미지</span>
