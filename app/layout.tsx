@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-import { PageLoadingBar } from "@/components/page-loading-bar";
 
 export const metadata: Metadata = {
   title: "Expansion Architecture",
@@ -16,11 +15,25 @@ export default function RootLayout({
   return (
     <ClerkProvider
       telemetry={false}
-      unsafe_disableDevelopmentModeConsoleWarning
+      unsafe_disableDevelopmentModeWarning
     >
       <html lang="ko">
         <body>
-          <PageLoadingBar />
+          <div id="page-loading-bar" />
+          {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.addEventListener('load', function() {
+                  var bar = document.getElementById('page-loading-bar');
+                  if (bar) {
+                    bar.classList.add('complete');
+                    setTimeout(function() { bar.style.display = 'none'; }, 400);
+                  }
+                });
+              `,
+            }}
+          />
           {children}
         </body>
       </html>

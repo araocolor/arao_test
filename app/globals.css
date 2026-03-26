@@ -51,7 +51,7 @@ a {
   padding: 24px 16px 64px;
 }
 
-.page-loading-bar {
+#page-loading-bar {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -65,7 +65,7 @@ a {
   transition: opacity 0.3s ease;
 }
 
-.page-loading-bar::after {
+#page-loading-bar::after {
   content: "";
   position: absolute;
   top: 0;
@@ -77,11 +77,11 @@ a {
   animation: page-loading-fill 2.4s cubic-bezier(0.1, 0.6, 0.4, 1) forwards;
 }
 
-.page-loading-bar.complete {
+#page-loading-bar.complete {
   opacity: 0;
 }
 
-.page-loading-bar.complete::after {
+#page-loading-bar.complete::after {
   width: 100%;
   animation: none;
 }
