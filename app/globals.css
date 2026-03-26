@@ -565,6 +565,51 @@ a {
   font-weight: 400;
   color: rgba(17, 17, 17, 0.4);
   margin: 6px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gallery-caption-edit-btn {
+  font-size: 0.7rem;
+  color: rgba(17, 17, 17, 0.35);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.gallery-caption-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+}
+
+.gallery-caption-input {
+  flex: 1;
+  font-size: 0.75rem;
+  color: rgba(17, 17, 17, 0.7);
+  border: 1px solid rgba(17, 17, 17, 0.15);
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: #fff;
+}
+
+.gallery-caption-btn {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(17, 17, 17, 0.15);
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+
+.gallery-caption-btn-cancel {
+  background: #fff;
+  color: #111;
 }
 
 .gallery-before-btn {

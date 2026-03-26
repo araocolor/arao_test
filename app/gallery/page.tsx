@@ -3,6 +3,7 @@ export const revalidate = 0;
 import { LandingPageFooter } from "@/components/landing-page-footer";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import { GalleryHeroItem } from "@/components/gallery-hero-item";
+import { GalleryCaptionEdit } from "@/components/gallery-caption-edit";
 import { getLandingContent } from "@/lib/landing-content";
 import { GALLERY_CATEGORIES, GALLERY_CATEGORY_LABELS, GALLERY_CATEGORY_DEFAULTS } from "@/lib/gallery-categories";
 
@@ -44,7 +45,13 @@ export default async function GalleryPage() {
                 afterImage={afterSrc}
                 label={GALLERY_CATEGORY_LABELS[category]}
               />
-              {item.caption ? <p className="gallery-caption">{item.caption}</p> : null}
+              {item.caption ? (
+                <GalleryCaptionEdit
+                  category={category}
+                  caption={item.caption}
+                  content={landingContent}
+                />
+              ) : null}
             </section>
           );
         })}
