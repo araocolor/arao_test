@@ -1554,20 +1554,13 @@ a {
   }
 
   .header-menu-popover {
-    display: flex;
+    display: block;
     position: fixed;
     inset: 0;
-    justify-content: flex-start;
-    align-items: flex-start;
-    padding: 64px 12px 12px;
-    background: rgba(17, 17, 17, 0.16);
+    background: transparent;
     z-index: 50;
-    transition: background-color 180ms ease;
   }
 
-  .header-menu-popover.is-closing {
-    background: rgba(17, 17, 17, 0);
-  }
 
   .header-menu-sheet {
     width: max-content;
@@ -1607,9 +1600,9 @@ a {
   }
 
   .header-menu-extra {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(17, 17, 17, 0.08);
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
   }
 
   .header-menu-extra .auth-switch {
@@ -1626,8 +1619,8 @@ a {
     font-weight: 700;
     color: var(--text);
     cursor: pointer;
-    text-align: right;
-    width: 100%;
+    text-align: left;
+    width: auto;
   }
 
   .auth-switch-link {

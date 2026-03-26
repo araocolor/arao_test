@@ -12,10 +12,10 @@ export function LandingPageHeader() {
       mobileProfile={<HeaderProfileLink />}
       mobileLogout={<HeaderLogoutButton />}
       links={[
-        { href: "/arao", label: "Arao" },
-        { href: "/gallery", label: "Gallery" },
-        { href: "/pricing", label: "Buy" },
-        { href: "/manual", label: "Manual" },
+        { href: "/arao", label: "ARAO 소개" },
+        { href: "/gallery", label: "프로파일" },
+        { href: "/pricing", label: "구매정책" },
+        { href: "/manual", label: "설치방법" },
       ]}
     />
   );

@@ -26,6 +26,7 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
+  const [sheetPos, setSheetPos] = useState({ top: 0, left: 0 });
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuSheetRef = useRef<HTMLDivElement | null>(null);
   const menuToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -71,6 +72,10 @@ export function SiteHeader({
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
+    }
+    if (menuToggleRef.current) {
+      const rect = menuToggleRef.current.getBoundingClientRect();
+      setSheetPos({ top: rect.bottom + 8, left: rect.left });
     }
     setMenuMounted(true);
     setMenuOpen(true);
@@ -130,6 +135,7 @@ export function SiteHeader({
           <div
             className={menuOpen ? "header-menu-sheet is-open" : "header-menu-sheet is-closing"}
             ref={menuSheetRef}
+            style={{ position: "fixed", top: sheetPos.top, left: sheetPos.left }}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="header-menu-list">
@@ -138,11 +144,11 @@ export function SiteHeader({
                   {link.label}
                 </Link>
               ))}
+              {mobileLogout}
             </div>
             {mobileLeading ?? leading ? (
               <div className="header-menu-extra">{mobileLeading ?? leading}</div>
             ) : null}
-            {mobileLogout}
           </div>
         </div>
       ) : null}
