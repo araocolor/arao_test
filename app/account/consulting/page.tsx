@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { syncProfile } from "@/lib/profiles";
 import { getInquiriesByProfile } from "@/lib/consulting";
+import type { Inquiry } from "@/lib/consulting";
 import { ConsultingSection } from "@/components/consulting-section";
 
 export default async function AccountConsultingPage() {
@@ -16,7 +17,7 @@ export default async function AccountConsultingPage() {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || null;
 
   let profile = null;
-  let initialInquiries = [];
+  let initialInquiries: Inquiry[] = [];
 
   try {
     profile = await syncProfile({ email, fullName });
