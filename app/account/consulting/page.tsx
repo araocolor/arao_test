@@ -2,10 +2,24 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { syncProfile } from "@/lib/profiles";
 import { getInquiriesByProfile } from "@/lib/consulting";
+import { isDesignMode, mockInquiries } from "@/lib/design-mock";
 import type { Inquiry } from "@/lib/consulting";
 import { ConsultingSection } from "@/components/consulting-section";
 
 export default async function AccountConsultingPage() {
+  // 디자인 모드: Clerk 로그인 없이 더미 데이터 표시
+  if (isDesignMode) {
+    return (
+      <div className="admin-panel-card stack account-section-card account-section-card-consulting">
+        <div className="account-section-head">
+          <h2>상담내역</h2>
+          <p className="muted">상담 요청과 답변 이력을 관리하는 자리입니다. 추후 문의 등록과 상태 변경 기능을 연결할 수 있습니다.</p>
+        </div>
+        <ConsultingSection initialInquiries={mockInquiries} />
+      </div>
+    );
+  }
+
   const { userId } = await auth();
 
   if (!userId) {
@@ -39,10 +53,11 @@ export default async function AccountConsultingPage() {
   }
 
   return (
-    <div className="admin-panel-card stack">
-      <p className="muted">Support</p>
-      <h2>상담내역</h2>
-      <p className="muted">상담 요청과 답변 이력을 관리하는 자리입니다. 추후 문의 등록과 상태 변경 기능을 연결할 수 있습니다.</p>
+    <div className="admin-panel-card stack account-section-card account-section-card-consulting">
+      <div className="account-section-head">
+        <h2>상담내역</h2>
+        <p className="muted">상담 요청과 답변 이력을 관리하는 자리입니다. 추후 문의 등록과 상태 변경 기능을 연결할 수 있습니다.</p>
+      </div>
       <ConsultingSection initialInquiries={initialInquiries} />
     </div>
   );

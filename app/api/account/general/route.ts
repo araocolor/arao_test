@@ -3,8 +3,14 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { hashPassword, validateEnglishNumberPassword } from "@/lib/password";
 import { syncProfile } from "@/lib/profiles";
+import { isDesignMode, mockGeneralProfile } from "@/lib/design-mock";
 
 export async function GET() {
+  // 디자인 모드: Clerk 로그인 없이 더미 데이터 반환
+  if (isDesignMode) {
+    return NextResponse.json(mockGeneralProfile);
+  }
+
   const { userId } = await auth();
 
   if (!userId) {

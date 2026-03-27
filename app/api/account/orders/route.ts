@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { syncProfile } from "@/lib/profiles";
 import { getOrdersByUser } from "@/lib/orders";
+import { isDesignMode, mockOrders } from "@/lib/design-mock";
 
 export async function GET(request: Request) {
+  // 디자인 모드: Clerk 로그인 없이 더미 데이터 반환
+  if (isDesignMode) {
+    return NextResponse.json(mockOrders);
+  }
+
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

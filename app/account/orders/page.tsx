@@ -2,9 +2,15 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { syncProfile } from "@/lib/profiles";
 import { getOrdersByUser } from "@/lib/orders";
 import { OrdersContent } from "@/components/orders-content";
+import { isDesignMode, mockOrders } from "@/lib/design-mock";
 import type { Order } from "@/lib/orders";
 
 export default async function AccountOrdersPage() {
+  // 디자인 모드: Clerk 로그인 없이 더미 데이터 표시
+  if (isDesignMode) {
+    return <OrdersContent orders={mockOrders} />;
+  }
+
   const { userId } = await auth();
   if (!userId) {
     return (
