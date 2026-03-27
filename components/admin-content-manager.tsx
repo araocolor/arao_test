@@ -9,17 +9,6 @@ type AdminContentManagerProps = {
   view?: "gallery" | "landing";
 };
 
-type GalleryExifField = keyof GalleryExif;
-
-const GALLERY_EXIF_FIELDS: GalleryExifField[] = ["camera", "lens", "iso", "aperture", "exposureMode"];
-
-const GALLERY_EXIF_LABELS: Record<GalleryExifField, string> = {
-  camera: "카메라 정보",
-  lens: "렌즈 정보",
-  iso: "ISO",
-  aperture: "F값",
-  exposureMode: "노출모드",
-};
 
 async function loadImageAsDataUrl(file: File) {
   return await new Promise<string>((resolve, reject) => {
@@ -190,9 +179,6 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
   });
   const [pendingGalleryText, setPendingGalleryText] = useState(false);
   const [galleryStatus, setGalleryStatus] = useState<string>("");
-  const [galleryExifOptions, setGalleryExifOptions] = useState<
-    Partial<Record<GalleryCategory, Partial<Record<GalleryExifField, string[]>>>>
-  >({});
   const galleryStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showUploadToast, setShowUploadToast] = useState(false);
@@ -259,51 +245,6 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
     });
   };
 
-  const updateGalleryExifOptions = (category: GalleryCategory, exif?: GalleryExif | null) => {
-    if (!exif) {
-      return;
-    }
-
-    setGalleryExifOptions((current) => {
-      const categoryOptions = current[category] ?? {};
-      const nextCategoryOptions = { ...categoryOptions };
-
-      for (const field of GALLERY_EXIF_FIELDS) {
-        const value = exif[field];
-        if (!value) {
-          continue;
-        }
-
-        nextCategoryOptions[field] = Array.from(new Set([...(categoryOptions[field] ?? []), value]));
-      }
-
-      return {
-        ...current,
-        [category]: nextCategoryOptions,
-      };
-    });
-  };
-
-  const handleGalleryExifChange = (field: GalleryExifField, value: string) => {
-    setPendingGalleryText(true);
-    updateSelectedGalleryItem((existing) => {
-      const nextExif = normalizeGalleryExif({
-        ...existing.exif,
-        [field]: value || undefined,
-      });
-      const previousAutoCaption = buildGalleryCaption(existing.exif);
-      const nextAutoCaption = buildGalleryCaption(nextExif);
-      const nextCaption = !existing.caption || existing.caption === previousAutoCaption
-        ? nextAutoCaption
-        : existing.caption;
-
-      return {
-        ...existing,
-        exif: nextExif,
-        caption: nextCaption,
-      };
-    });
-  };
 
   const onImageChange = async (key: "beforeImage" | "afterImage", file?: File) => {
     if (!file) {
@@ -352,7 +293,6 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
           exif: nextExif,
         };
       });
-      updateGalleryExifOptions(selectedGalleryCategory, extractedExif);
       if (extractedExif) setPendingGalleryText(true);
       setPendingGalleryFiles((current) => ({ ...current, [key]: true }));
       setStatus(extractedExif ? "이미지와 EXIF 정보를 불러왔습니다." : "이미지를 불러왔습니다. 저장하기를 누르면 반영됩니다.");
@@ -841,37 +781,8 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
               caption: event.target.value,
             }));
           }}
-          placeholder="촬영 정보 (예: Nikon ZF / 40mm f2 / Profile : ARAO)"
+          placeholder="촬영 정보 (예: Nikon ZF / 40mm f2 / ISO 400 / f/2)"
         />
-        <div className="admin-form-grid">
-          {GALLERY_EXIF_FIELDS.map((field) => {
-            const currentExif = content.gallery[selectedGalleryCategory]?.exif;
-            const options = Array.from(
-              new Set([
-                ...(galleryExifOptions[selectedGalleryCategory]?.[field] ?? []),
-                currentExif?.[field] ?? "",
-              ].filter(Boolean)),
-            );
-
-            return (
-              <div key={field} className="landing-stack-xs">
-                <span className="muted">{GALLERY_EXIF_LABELS[field]}</span>
-                <select
-                  className="admin-input"
-                  value={currentExif?.[field] ?? ""}
-                  onChange={(event) => handleGalleryExifChange(field, event.target.value)}
-                >
-                  <option value="">정보 없음</option>
-                  {options.map((option) => (
-                    <option key={`${field}-${option}`} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            );
-          })}
-        </div>
         <div className="admin-form-grid">
           <label className="admin-upload stack">
             <span className="muted">Before 이미지</span>

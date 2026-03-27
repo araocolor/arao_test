@@ -8,6 +8,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/claude-code": "^2.1.84",
     "@clerk/nextjs": "latest",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",

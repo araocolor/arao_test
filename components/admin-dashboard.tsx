@@ -18,9 +18,9 @@ const adminSections = [
   },
   {
     id: "landing",
-    menu: "랜딩페이지 관리",
+    menu: "랜딩페이지 문구 변경",
     eyebrow: "Landing",
-    title: "랜딩페이지 관리",
+    title: "랜딩페이지 문구 변경",
     description: "Hero, Before/After, 리뷰, YouTube, 푸터 섹션을 수정합니다.",
   },
   {
