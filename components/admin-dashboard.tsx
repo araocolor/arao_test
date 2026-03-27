@@ -6,6 +6,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import type { LandingContent } from "@/lib/landing-content";
 import { AdminContentManager } from "@/components/admin-content-manager";
 import { AdminPricingManager } from "@/components/admin-pricing-manager";
+import { AdminConsultingManager } from "@/components/admin-consulting-manager";
 import { AdminSignOut } from "@/components/admin-sign-out";
 
 const adminSections = [
@@ -29,6 +30,13 @@ const adminSections = [
     eyebrow: "Pricing",
     title: "상품가격 관리",
     description: "pricing 페이지의 상단 소개와 각 요금 카드 내용을 Supabase와 연결해서 수정합니다.",
+  },
+  {
+    id: "consulting",
+    menu: "상담/문의",
+    eyebrow: "Consulting",
+    title: "상담 및 문의 관리",
+    description: "사용자가 제출한 1:1 상담과 일반 문의를 확인하고 답변을 관리합니다.",
   },
   {
     id: "members",
@@ -201,6 +209,8 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
             <AdminContentManager initialContent={landingContent} view="landing" />
           ) : activeSection.id === "pricing" ? (
             <AdminPricingManager initialContent={landingContent} />
+          ) : activeSection.id === "consulting" ? (
+            <AdminConsultingManager />
           ) : (
             <div className="admin-checklist">
               {activeSection.items?.map((item) => (

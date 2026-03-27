@@ -3,6 +3,29 @@ import { redirect } from "next/navigation";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import { UserDashboard } from "@/components/user-dashboard";
 import { syncProfile } from "@/lib/profiles";
+import { getInquiriesByProfile } from "@/lib/consulting";
+import type { Profile } from "@/lib/profiles";
+
+async function UserDashboardWrapper({ profile }: { profile: Profile }) {
+  let initialInquiries = [];
+  try {
+    const result = await getInquiriesByProfile(profile.id, undefined, 1, 20);
+    initialInquiries = result.inquiries;
+  } catch (error) {
+    console.error("Failed to fetch inquiries:", error);
+  }
+
+  return (
+    <UserDashboard
+      email={profile.email}
+      fullName={profile.full_name}
+      username={profile.username}
+      hasPassword={Boolean(profile.password_hash)}
+      phone={profile.phone}
+      initialInquiries={initialInquiries}
+    />
+  );
+}
 
 export default async function AccountPage() {
   const { userId } = await auth();
@@ -42,13 +65,8 @@ export default async function AccountPage() {
             <p className="muted">로그인 이메일: {email ?? "없음"}</p>
           </section>
         ) : profile ? (
-          <UserDashboard
-            email={profile.email}
-            fullName={profile.full_name}
-            username={profile.username}
-            hasPassword={Boolean(profile.password_hash)}
-            phone={profile.phone}
-          />
+          <UserDashboardWrapper profile={profile} />
+        ) : (
         ) : (
           <section className="section stack">
             <h1>회원 정보를 불러오지 못했습니다</h1>

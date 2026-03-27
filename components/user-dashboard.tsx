@@ -3,7 +3,9 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { AdminSignOut } from "@/components/admin-sign-out";
+import { ConsultingSection } from "@/components/consulting-section";
 import { SignOutButton } from "@clerk/nextjs";
+import type { Inquiry } from "@/lib/consulting";
 
 const userSections = [
   {
@@ -50,6 +52,7 @@ type UserDashboardProps = {
   username: string | null;
   hasPassword: boolean;
   phone: string | null;
+  initialInquiries?: Inquiry[];
 };
 
 export function UserDashboard({
@@ -58,6 +61,7 @@ export function UserDashboard({
   username: initialUsername,
   hasPassword: initialHasPassword,
   phone: initialPhone,
+  initialInquiries = [],
 }: UserDashboardProps) {
   const [activeSectionId, setActiveSectionId] = useState(userSections[0].id);
   const [username, setUsername] = useState(initialUsername ?? "");
@@ -373,6 +377,8 @@ export function UserDashboard({
           <h2>{activeSection.title}</h2>
           {activeSection.id === "general" ? (
             renderGeneralSettings()
+          ) : activeSection.id === "consulting" ? (
+            <ConsultingSection initialInquiries={initialInquiries} />
           ) : (
             <div className="admin-checklist">
               {activeSection.items.map((item) => (

@@ -56,3 +56,27 @@ create table if not exists landing_contents (
   content jsonb not null,
   updated_at timestamptz not null default now()
 );
+
+create table if not exists inquiries (
+  id               uuid primary key default gen_random_uuid(),
+  profile_id       uuid not null references profiles(id) on delete cascade,
+  type             text not null check (type in ('consulting', 'general')),
+  title            text not null,
+  content          text not null,
+  status           text not null default 'pending'
+                     check (status in ('pending', 'in_progress', 'resolved', 'closed')),
+  has_unread_reply boolean not null default false,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+
+create table if not exists inquiry_replies (
+  id           uuid primary key default gen_random_uuid(),
+  inquiry_id   uuid not null references inquiries(id) on delete cascade,
+  author_role  text not null check (author_role in ('customer', 'admin')),
+  content      text not null,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists inquiries_profile_id_idx on inquiries (profile_id);
+create index if not exists inquiry_replies_inquiry_id_idx on inquiry_replies (inquiry_id);

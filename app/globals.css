@@ -237,6 +237,7 @@ a {
 }
 
 .header-profile-link {
+  position: relative;
   display: inline-flex;
   width: 40px;
   height: 40px;
@@ -277,6 +278,33 @@ a {
   transform: translateX(-50%);
 }
 
+.header-profile-link.signed-in .header-profile-head {
+  background: #FCD34D;
+  border-color: #FCD34D;
+}
+
+.header-profile-link.signed-in .header-profile-body {
+  background: #FCD34D;
+  border-color: #FCD34D;
+}
+
+.header-profile-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: #EF4444;
+  border: 2px solid white;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
 
 .header-menu-popover {
   display: none;
@@ -1920,5 +1948,836 @@ a {
 @media (max-width: 480px) {
   .landing-reviews {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Consulting Section - 사용자 상담내역 */
+.consulting-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.consulting-tabs {
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.consulting-tab {
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.consulting-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.consulting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.consulting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.consulting-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.consulting-btn-create {
+  padding: 10px 16px;
+  background: var(--text);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.consulting-btn-create:hover {
+  opacity: 0.9;
+}
+
+.consulting-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: rgba(17, 17, 17, 0.02);
+  border-radius: 8px;
+}
+
+.consulting-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.consulting-item {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.consulting-item:hover {
+  border-color: var(--text);
+  background: rgba(17, 17, 17, 0.02);
+}
+
+.consulting-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.consulting-item-header h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+.consulting-status {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.consulting-status-pending {
+  background: rgba(107, 114, 128, 0.1);
+  color: #475569;
+}
+
+.consulting-status-progress {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.consulting-status-resolved {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.consulting-status-closed {
+  background: rgba(156, 163, 175, 0.1);
+  color: #6b7280;
+}
+
+.consulting-item-date {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.consulting-item-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: #FCD34D;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.consulting-btn-back {
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.consulting-btn-back:hover {
+  color: var(--text);
+}
+
+.consulting-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.consulting-detail-header {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.consulting-detail-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.consulting-detail-meta {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.consulting-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.consulting-section-box {
+  padding: 16px;
+  background: rgba(17, 17, 17, 0.02);
+  border-radius: 8px;
+}
+
+.consulting-section-box h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.consulting-section-box p {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.consulting-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.consulting-replies h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.consulting-reply {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  border-left: 4px solid var(--line);
+}
+
+.consulting-reply-admin {
+  background: rgba(59, 130, 246, 0.05);
+  border-left-color: #2563eb;
+}
+
+.consulting-reply-customer {
+  background: rgba(17, 17, 17, 0.02);
+}
+
+.consulting-reply-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.consulting-reply-author {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.consulting-reply-date {
+  color: var(--muted);
+}
+
+.consulting-reply p {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.consulting-create {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.consulting-create h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.consulting-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.consulting-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.consulting-form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.consulting-form-group input,
+.consulting-form-group textarea {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color 0.2s;
+}
+
+.consulting-form-group input:focus,
+.consulting-form-group textarea:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
+.consulting-form-group input:disabled,
+.consulting-form-group textarea:disabled {
+  background: rgba(17, 17, 17, 0.04);
+  cursor: not-allowed;
+}
+
+.consulting-message {
+  padding: 12px 14px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 8px;
+  color: #16a34a;
+  font-size: 14px;
+}
+
+.consulting-btn-submit,
+.consulting-btn-close {
+  padding: 12px 20px;
+  background: var(--text);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.consulting-btn-submit:hover:not(:disabled),
+.consulting-btn-close:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.consulting-btn-submit:disabled,
+.consulting-btn-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Admin Consulting Manager */
+.admin-consulting-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.admin-consulting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-consulting-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  padding: 16px;
+  background: rgba(17, 17, 17, 0.02);
+  border-radius: 8px;
+}
+
+.admin-consulting-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-consulting-filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.admin-consulting-filter-group select {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.admin-consulting-stats {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.admin-consulting-stat {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.admin-consulting-stat strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.admin-consulting-stat.pending strong {
+  color: #f59e0b;
+}
+
+.admin-consulting-stat.answered strong {
+  color: #2563eb;
+}
+
+.admin-consulting-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: rgba(17, 17, 17, 0.02);
+  border-radius: 8px;
+}
+
+.admin-consulting-items {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin-consulting-header-row {
+  display: grid;
+  grid-template-columns: 150px 80px 1fr 80px 100px;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(17, 17, 17, 0.04);
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.admin-consulting-item {
+  display: grid;
+  grid-template-columns: 150px 80px 1fr 80px 100px;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+  align-items: center;
+  font-size: 14px;
+}
+
+.admin-consulting-item:last-child {
+  border-bottom: none;
+}
+
+.admin-consulting-item:hover {
+  background: rgba(17, 17, 17, 0.02);
+}
+
+.admin-consulting-item .col-email {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.admin-consulting-item .col-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 500;
+}
+
+.admin-consulting-badge {
+  padding: 2px 6px;
+  background: #FCD34D;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #78350f;
+  white-space: nowrap;
+}
+
+.admin-consulting-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-consulting-status-pending {
+  background: rgba(107, 114, 128, 0.1);
+  color: #475569;
+}
+
+.admin-consulting-status-progress {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.admin-consulting-status-resolved {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.admin-consulting-status-closed {
+  background: rgba(156, 163, 175, 0.1);
+  color: #6b7280;
+}
+
+.admin-consulting-btn-back {
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.admin-consulting-btn-back:hover {
+  color: var(--text);
+}
+
+.admin-consulting-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.admin-consulting-detail-header {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.admin-consulting-detail-info h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.admin-consulting-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.admin-consulting-detail-meta span {
+  color: var(--muted);
+}
+
+.admin-consulting-detail-meta .meta-status {
+  padding: 4px 10px;
+  background: transparent;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.admin-consulting-status-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 300px;
+}
+
+.admin-consulting-status-controls label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.admin-consulting-status-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.admin-consulting-status-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-consulting-status-btn:hover {
+  border-color: var(--text);
+}
+
+.admin-consulting-status-btn.active {
+  background: var(--text);
+  color: white;
+  border-color: var(--text);
+}
+
+.admin-consulting-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-consulting-section {
+  padding: 16px;
+  background: rgba(17, 17, 17, 0.02);
+  border-radius: 8px;
+}
+
+.admin-consulting-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.admin-consulting-section p {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admin-consulting-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-consulting-replies h4 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.admin-consulting-reply {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  border-left: 4px solid var(--line);
+}
+
+.admin-consulting-reply-admin {
+  background: rgba(59, 130, 246, 0.05);
+  border-left-color: #2563eb;
+}
+
+.admin-consulting-reply-customer {
+  background: rgba(17, 17, 17, 0.02);
+}
+
+.admin-consulting-reply-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.reply-author {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.reply-date {
+  color: var(--muted);
+}
+
+.admin-consulting-reply p {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admin-consulting-reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(17, 17, 17, 0.02);
+  border-radius: 8px;
+}
+
+.admin-consulting-reply-form h4 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.admin-consulting-reply-form textarea {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.admin-consulting-reply-form textarea:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
+.admin-consulting-reply-form textarea:disabled {
+  background: rgba(17, 17, 17, 0.04);
+  cursor: not-allowed;
+}
+
+.admin-consulting-message {
+  padding: 12px 14px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 6px;
+  color: #16a34a;
+  font-size: 13px;
+}
+
+.admin-consulting-btn-reply {
+  padding: 10px 16px;
+  background: var(--text);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-consulting-btn-reply:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.admin-consulting-btn-reply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .admin-consulting-detail-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .admin-consulting-status-buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .admin-consulting-header-row,
+  .admin-consulting-item {
+    grid-template-columns: 100px 60px 1fr 60px 80px;
+  }
+
+  .admin-consulting-detail-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .consulting-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-consulting-filters {
+    flex-direction: column;
+  }
+
+  .admin-consulting-stats {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .admin-consulting-header-row,
+  .admin-consulting-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .admin-consulting-header-row > div,
+  .admin-consulting-item > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .admin-consulting-header-row > div::before,
+  .admin-consulting-item > div::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted);
   }
 }
