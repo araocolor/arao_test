@@ -5,12 +5,14 @@ import { LandingPageFooter } from "@/components/landing-page-footer";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import { LandingVideoSection } from "@/components/landing-video-section";
 import { getLandingContent } from "@/lib/landing-content";
+import { AccountPrefetchWrapper } from "@/components/account-prefetch-wrapper";
 
 export default async function HomePage() {
   const landingContent = await getLandingContent();
 
   return (
-    <main className="landing-page">
+    <AccountPrefetchWrapper>
+      <main className="landing-page">
       <LandingPageHeader />
 
       <div className="landing-shell">
@@ -77,5 +79,6 @@ export default async function HomePage() {
         <LandingPageFooter content={landingContent.footer} />
       </div>
     </main>
+    </AccountPrefetchWrapper>
   );
 }
