@@ -97,7 +97,7 @@ export default async function ArticlePage() {
               </div>
             ) : (
               <div
-                className="consulting-items"
+                className="consulting-items article-list"
                 style={{ marginTop: "20px" }}
               >
                 <div className="admin-consulting-header-row">
@@ -110,17 +110,7 @@ export default async function ArticlePage() {
                 {inquiries.map((inquiry: InquiryWithProfile) => (
                   <div
                     key={inquiry.id}
-                    className="admin-consulting-item"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "minmax(150px, 1fr) minmax(200px, 2fr) 100px 120px",
-                      gap: "16px",
-                      alignItems: "center",
-                      padding: "12px 16px",
-                      borderBottom: "1px solid #e5e7eb",
-                      cursor: "default",
-                    }}
+                    className="admin-consulting-item article-item"
                   >
                     <div className="col-email">
                       {inquiry.profile.email}

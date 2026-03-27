@@ -2806,3 +2806,54 @@ a {
     color: var(--muted);
   }
 }
+
+/* Article page responsive */
+.article-list .admin-consulting-header-row,
+.article-list .article-item {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(200px, 2fr) 90px 110px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.article-item {
+  cursor: default;
+}
+
+@media (max-width: 1024px) {
+  .article-list .admin-consulting-header-row,
+  .article-list .article-item {
+    grid-template-columns: 1fr auto 80px;
+  }
+
+  .article-item .col-date {
+    display: none;
+  }
+
+  .article-list .admin-consulting-header-row .col-date {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .article-list .admin-consulting-header-row,
+  .article-list .article-item {
+    grid-template-columns: minmax(80px, 1fr) auto;
+    padding: 12px 12px;
+    gap: 12px;
+  }
+
+  .article-item .col-title {
+    display: none;
+  }
+
+  .article-list .admin-consulting-header-row .col-title {
+    display: none;
+  }
+
+  .article-item .col-email {
+    font-size: 13px;
+  }
+}
