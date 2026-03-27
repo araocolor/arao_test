@@ -32,7 +32,7 @@ async function requireAdmin() {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const adminCheck = await requireAdmin();
@@ -43,7 +43,8 @@ export async function GET(
       );
     }
 
-    const result = await getInquiryByIdAdmin(params.id);
+    const { id } = await params;
+    const result = await getInquiryByIdAdmin(id);
 
     if (!result) {
       return NextResponse.json(
@@ -64,7 +65,7 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const adminCheck = await requireAdmin();
@@ -75,6 +76,7 @@ export async function POST(
       );
     }
 
+    const { id } = await params;
     const body = await request.json() as { content?: string };
 
     if (!body.content) {
@@ -84,7 +86,7 @@ export async function POST(
       );
     }
 
-    const reply = await createReply(params.id, body.content);
+    const reply = await createReply(id, body.content);
 
     if (!reply) {
       return NextResponse.json(
@@ -105,7 +107,7 @@ export async function POST(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const adminCheck = await requireAdmin();
@@ -116,6 +118,7 @@ export async function PATCH(
       );
     }
 
+    const { id } = await params;
     const body = await request.json() as { status?: string };
 
     if (
@@ -129,7 +132,7 @@ export async function PATCH(
     }
 
     const updated = await updateInquiryStatus(
-      params.id,
+      id,
       body.status as "pending" | "in_progress" | "resolved" | "closed"
     );
 

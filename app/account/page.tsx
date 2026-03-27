@@ -3,11 +3,11 @@ import { redirect } from "next/navigation";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import { UserDashboard } from "@/components/user-dashboard";
 import { syncProfile } from "@/lib/profiles";
-import { getInquiriesByProfile } from "@/lib/consulting";
+import { getInquiriesByProfile, type Inquiry } from "@/lib/consulting";
 import type { Profile } from "@/lib/profiles";
 
 async function UserDashboardWrapper({ profile }: { profile: Profile }) {
-  let initialInquiries = [];
+  let initialInquiries: Inquiry[] = [];
   try {
     const result = await getInquiriesByProfile(profile.id, undefined, 1, 20);
     initialInquiries = result.inquiries;
@@ -66,7 +66,6 @@ export default async function AccountPage() {
           </section>
         ) : profile ? (
           <UserDashboardWrapper profile={profile} />
-        ) : (
         ) : (
           <section className="section stack">
             <h1>회원 정보를 불러오지 못했습니다</h1>

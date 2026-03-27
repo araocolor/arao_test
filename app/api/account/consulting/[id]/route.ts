@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -39,7 +39,8 @@ export async function GET(
       );
     }
 
-    const result = await getInquiryById(params.id);
+    const { id } = await params;
+    const result = await getInquiryById(id);
 
     if (!result) {
       return NextResponse.json(
@@ -68,7 +69,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -99,6 +100,7 @@ export async function PATCH(
       );
     }
 
+    const { id } = await params;
     const body = await request.json() as { action?: string };
 
     if (body.action !== "close") {
@@ -108,7 +110,7 @@ export async function PATCH(
       );
     }
 
-    const result = await getInquiryById(params.id);
+    const result = await getInquiryById(id);
     if (!result) {
       return NextResponse.json(
         { message: "Inquiry not found" },
@@ -124,7 +126,7 @@ export async function PATCH(
       );
     }
 
-    const updated = await updateInquiryStatus(params.id, "closed");
+    const updated = await updateInquiryStatus(id, "closed");
 
     if (!updated) {
       return NextResponse.json(
