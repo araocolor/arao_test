@@ -107,6 +107,7 @@ function buildGalleryCaption(exif?: GalleryExif | null) {
     normalized.iso ? `ISO ${normalized.iso}` : "",
     normalized.aperture,
     normalized.exposureMode,
+    normalized.whiteBalance,
   ].filter(Boolean);
 
   return parts.join(" / ");
@@ -131,6 +132,7 @@ async function readGalleryExif(file: File): Promise<GalleryExif | null> {
         "RecommendedExposureIndex",
         "ExposureMode",
         "ExposureProgram",
+        "WhiteBalance",
       ],
     })) as Record<string, unknown> | null;
 
@@ -155,6 +157,9 @@ async function readGalleryExif(file: File): Promise<GalleryExif | null> {
           : typeof tags.ExposureProgram === "string"
             ? tags.ExposureProgram
             : "",
+      ),
+      whiteBalance: compactString(
+        typeof tags.WhiteBalance === "string" ? tags.WhiteBalance : "",
       ),
     });
 
@@ -783,6 +788,34 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
           }}
           placeholder="촬영 정보 (예: Nikon ZF / 40mm f2 / ISO 400 / f/2)"
         />
+        {content.gallery[selectedGalleryCategory]?.exif && (
+          <div className="admin-exif-info">
+            <div className="admin-exif-row">
+              <span className="admin-exif-label">카메라</span>
+              <span className="admin-exif-value">{content.gallery[selectedGalleryCategory]!.exif.camera || "—"}</span>
+            </div>
+            <div className="admin-exif-row">
+              <span className="admin-exif-label">렌즈</span>
+              <span className="admin-exif-value">{content.gallery[selectedGalleryCategory]!.exif.lens || "—"}</span>
+            </div>
+            <div className="admin-exif-row">
+              <span className="admin-exif-label">ISO</span>
+              <span className="admin-exif-value">{content.gallery[selectedGalleryCategory]!.exif.iso || "—"}</span>
+            </div>
+            <div className="admin-exif-row">
+              <span className="admin-exif-label">조리개</span>
+              <span className="admin-exif-value">{content.gallery[selectedGalleryCategory]!.exif.aperture || "—"}</span>
+            </div>
+            <div className="admin-exif-row">
+              <span className="admin-exif-label">노출 모드</span>
+              <span className="admin-exif-value">{content.gallery[selectedGalleryCategory]!.exif.exposureMode || "—"}</span>
+            </div>
+            <div className="admin-exif-row">
+              <span className="admin-exif-label">화이트밸런스</span>
+              <span className="admin-exif-value">{content.gallery[selectedGalleryCategory]!.exif.whiteBalance || "—"}</span>
+            </div>
+          </div>
+        )}
         <div className="admin-form-grid">
           <label className="admin-upload stack">
             <span className="muted">Before 이미지</span>

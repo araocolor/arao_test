@@ -1014,6 +1014,35 @@ a {
   padding: 0 14px;
 }
 
+.admin-exif-info {
+  background: rgba(17, 17, 17, 0.04);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-exif-row {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.admin-exif-label {
+  color: var(--muted);
+  min-width: 60px;
+  font-weight: 500;
+}
+
+.admin-exif-value {
+  color: var(--text);
+  flex: 1;
+  word-break: break-word;
+}
+
 .admin-input-compact {
   max-width: 180px;
   padding: 0 12px;

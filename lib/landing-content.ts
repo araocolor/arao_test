@@ -11,6 +11,7 @@ export type GalleryExif = {
   iso?: string;
   aperture?: string;
   exposureMode?: string;
+  whiteBalance?: string;
 };
 
 export type GalleryItem = {
