@@ -254,6 +254,29 @@ export async function createReply(
   return replyRes.data as InquiryReply;
 }
 
+// 사용자: 본인 문의 수정
+export async function updateInquiry(
+  id: string,
+  title: string,
+  content: string
+) {
+  const supabase = createSupabaseAdminClient();
+
+  const { data, error } = await supabase
+    .from("inquiries")
+    .update({ title, content, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("updateInquiry error:", error);
+    return null;
+  }
+
+  return data as Inquiry;
+}
+
 // 관리자: 상태 변경
 export async function updateInquiryStatus(
   id: string,

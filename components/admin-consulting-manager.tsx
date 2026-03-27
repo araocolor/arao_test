@@ -7,7 +7,7 @@ type View = "list" | "detail";
 
 export function AdminConsultingManager() {
   const [view, setView] = useState<View>("list");
-  const [type, setType] = useState<"consulting" | "general" | "all">("all");
+  const [type, setType] = useState<"consulting" | "general" | "all">("consulting");
   const [status, setStatus] = useState<string>("all");
   const [inquiries, setInquiries] = useState<InquiryWithProfile[]>([]);
   const [selectedInquiry, setSelectedInquiry] = useState<InquiryWithProfile | null>(
@@ -19,7 +19,7 @@ export function AdminConsultingManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // 목록 조회
+  // 목록 조회 - 초기 로드 및 타입/상태 변경 시
   useEffect(() => {
     loadInquiries();
   }, [type, status]);
@@ -43,10 +43,21 @@ export function AdminConsultingManager() {
           inquiries: InquiryWithProfile[];
           total: number;
         };
+        console.log("✅ Inquiries loaded:", {
+          url,
+          count: data.inquiries.length,
+          total: data.total,
+          data: data.inquiries,
+        });
         setInquiries(data.inquiries);
+      } else {
+        const errorData = (await response.json()) as { message?: string };
+        console.error("❌ Failed to load inquiries:", response.status, errorData.message);
+        setInquiries([]);
       }
     } catch (error) {
       console.error("Failed to load inquiries:", error);
+      setInquiries([]);
     } finally {
       setIsLoading(false);
     }
@@ -135,11 +146,11 @@ export function AdminConsultingManager() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "pending":
-        return "접수";
+        return "답변대기중";
       case "in_progress":
         return "답변중";
       case "resolved":
-        return "완료";
+        return "답변완료";
       case "closed":
         return "종료";
       default:
@@ -191,9 +202,9 @@ export function AdminConsultingManager() {
               <label>상태</label>
               <select value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="all">전체</option>
-                <option value="pending">접수</option>
+                <option value="pending">답변대기중</option>
                 <option value="in_progress">답변중</option>
-                <option value="resolved">완료</option>
+                <option value="resolved">답변완료</option>
                 <option value="closed">종료</option>
               </select>
             </div>
@@ -204,7 +215,7 @@ export function AdminConsultingManager() {
               </span>
               {pendingCount > 0 && (
                 <span className="admin-consulting-stat pending">
-                  접수됨 <strong>{pendingCount}</strong>건
+                  답변대기중 <strong>{pendingCount}</strong>건
                 </span>
               )}
               {answeredCount > 0 && (

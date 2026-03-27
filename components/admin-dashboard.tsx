@@ -204,13 +204,13 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
           <p className="muted">{activeSection.description}</p>
 
           {activeSection.id === "gallery" ? (
-            <AdminContentManager initialContent={landingContent} view="gallery" />
+            <AdminContentManager key="gallery" initialContent={landingContent} view="gallery" />
           ) : activeSection.id === "landing" ? (
-            <AdminContentManager initialContent={landingContent} view="landing" />
+            <AdminContentManager key="landing" initialContent={landingContent} view="landing" />
           ) : activeSection.id === "pricing" ? (
-            <AdminPricingManager initialContent={landingContent} />
+            <AdminPricingManager key="pricing" initialContent={landingContent} />
           ) : activeSection.id === "consulting" ? (
-            <AdminConsultingManager />
+            <AdminConsultingManager key="consulting" />
           ) : (
             <div className="admin-checklist">
               {activeSection.items?.map((item) => (

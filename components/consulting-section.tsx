@@ -7,7 +7,7 @@ type ConsultingSectionProps = {
   initialInquiries?: Inquiry[];
 };
 
-type View = "list" | "detail" | "create";
+type View = "list" | "detail" | "create" | "edit";
 
 export function ConsultingSection({
   initialInquiries = [],
@@ -24,6 +24,10 @@ export function ConsultingSection({
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 수정 폼 상태
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
 
   // 목록 조회
   useEffect(() => {
@@ -107,6 +111,45 @@ export function ConsultingSection({
     }
   }
 
+  // 상담 수정
+  async function handleEditInquiry(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedInquiry) return;
+
+    try {
+      setIsSubmitting(true);
+      setMessage(null);
+
+      const response = await fetch(
+        `/api/account/consulting/${selectedInquiry.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "edit",
+            title: editTitle,
+            content: editContent,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const data = (await response.json()) as { message?: string };
+        setMessage(data.message ?? "수정 중 오류가 발생했습니다.");
+        return;
+      }
+
+      setMessage("수정이 완료되었습니다.");
+      setView("list");
+      await loadInquiries();
+    } catch (error) {
+      console.error("Failed to edit inquiry:", error);
+      setMessage("수정 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   // 상담 종료
   async function handleCloseInquiry() {
     if (!selectedInquiry) return;
@@ -138,11 +181,11 @@ export function ConsultingSection({
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "pending":
-        return "접수";
+        return "답변대기중";
       case "in_progress":
         return "답변중";
       case "resolved":
-        return "완료";
+        return "답변완료";
       case "closed":
         return "종료";
       default:
@@ -174,6 +217,7 @@ export function ConsultingSection({
           onClick={() => {
             setType("consulting");
             setView("list");
+            setMessage(null);
           }}
         >
           1:1 상담
@@ -183,6 +227,7 @@ export function ConsultingSection({
           onClick={() => {
             setType("general");
             setView("list");
+            setMessage(null);
           }}
         >
           일반 문의
@@ -202,6 +247,7 @@ export function ConsultingSection({
               onClick={() => {
                 setFormTitle("");
                 setFormContent("");
+                setMessage(null);
                 setView("create");
               }}
             >
@@ -307,14 +353,28 @@ export function ConsultingSection({
             )}
           </div>
 
-          {selectedInquiry.status !== "closed" && (
-            <button
-              className="consulting-btn-close"
-              onClick={handleCloseInquiry}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "처리 중..." : "상담 종료"}
-            </button>
+          {selectedInquiry.status !== "closed" && selectedInquiry.status !== "resolved" && (
+            <div className="consulting-btn-group">
+              <button
+                className="consulting-btn-edit"
+                onClick={() => {
+                  setEditTitle(selectedInquiry.title);
+                  setEditContent(selectedInquiry.content);
+                  setMessage(null);
+                  setView("edit");
+                }}
+                disabled={isSubmitting}
+              >
+                수정
+              </button>
+              <button
+                className="consulting-btn-close"
+                onClick={handleCloseInquiry}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "처리 중..." : "상담 종료"}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -365,6 +425,55 @@ export function ConsultingSection({
               disabled={isSubmitting || !formTitle.trim() || !formContent.trim()}
             >
               {isSubmitting ? "등록 중..." : "등록"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* 수정 폼 */}
+      {view === "edit" && selectedInquiry && (
+        <div className="consulting-create">
+          <button className="consulting-btn-back" onClick={() => setView("detail")}>
+            ← 취소
+          </button>
+
+          <h3>상담 수정</h3>
+
+          <form onSubmit={handleEditInquiry} className="consulting-form">
+            <div className="consulting-form-group">
+              <label>제목</label>
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="제목을 입력해주세요"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="consulting-form-group">
+              <label>내용</label>
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="자세한 내용을 작성해주세요"
+                rows={6}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {message && (
+              <div className="consulting-message">{message}</div>
+            )}
+
+            <button
+              type="submit"
+              className="consulting-btn-submit"
+              disabled={isSubmitting || !editTitle.trim() || !editContent.trim()}
+            >
+              {isSubmitting ? "수정 중..." : "수정 완료"}
             </button>
           </form>
         </div>

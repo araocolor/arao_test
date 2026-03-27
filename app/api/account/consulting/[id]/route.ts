@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import {
   getInquiryById,
   updateInquiryStatus,
+  updateInquiry,
 } from "@/lib/consulting";
 import { syncProfile } from "@/lib/profiles";
 import { NextResponse } from "next/server";
@@ -101,14 +102,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json() as { action?: string };
-
-    if (body.action !== "close") {
-      return NextResponse.json(
-        { message: "Invalid action" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json() as { action?: string; title?: string; content?: string };
 
     const result = await getInquiryById(id);
     if (!result) {
@@ -126,16 +120,41 @@ export async function PATCH(
       );
     }
 
-    const updated = await updateInquiryStatus(id, "closed");
-
-    if (!updated) {
-      return NextResponse.json(
-        { message: "Failed to update inquiry" },
-        { status: 500 }
-      );
+    // close 액션
+    if (body.action === "close") {
+      const updated = await updateInquiryStatus(id, "closed");
+      if (!updated) {
+        return NextResponse.json(
+          { message: "Failed to update inquiry" },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ inquiry: updated });
     }
 
-    return NextResponse.json({ inquiry: updated });
+    // edit 액션
+    if (body.action === "edit") {
+      if (!body.title?.trim() || !body.content?.trim()) {
+        return NextResponse.json(
+          { message: "Title and content are required" },
+          { status: 400 }
+        );
+      }
+
+      const updated = await updateInquiry(id, body.title, body.content);
+      if (!updated) {
+        return NextResponse.json(
+          { message: "Failed to update inquiry" },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ inquiry: updated });
+    }
+
+    return NextResponse.json(
+      { message: "Invalid action" },
+      { status: 400 }
+    );
   } catch (error) {
     console.error("PATCH /api/account/consulting/[id] error:", error);
     return NextResponse.json(
