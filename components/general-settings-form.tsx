@@ -141,11 +141,12 @@ export function GeneralSettingsForm({
       return;
     }
 
-    setAvatarMessage("아이콘이 저장되었습니다.");
+    // 팝오버 닫고 아이콘을 미리보기 이미지로 즉시 반영
+    if (previewImage) setIconImage(previewImage);
     setIsEditingAvatar(false);
+    setPreviewImage(null);
     setSavingKey(null);
-    // 페이지 새로고침하여 아이콘 업데이트
-    setTimeout(() => window.location.reload(), 1000);
+    setAvatarMessage("업로드 완료");
   }
 
   function formatMaskedPhone(value: string) {
@@ -200,24 +201,18 @@ export function GeneralSettingsForm({
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const maxSize = 256;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          height = Math.round((height * maxSize) / width);
-          width = maxSize;
-        } else {
-          width = Math.round((width * maxSize) / height);
-          height = maxSize;
-        }
 
         canvas.width = maxSize;
         canvas.height = maxSize;
         const ctx = canvas.getContext("2d");
         if (ctx) {
-          ctx.fillStyle = "#f5f5f7";
-          ctx.fillRect(0, 0, maxSize, maxSize);
-          ctx.drawImage(img, (maxSize - width) / 2, (maxSize - height) / 2, width, height);
+          // cover 방식: 이미지를 원 안에 꽉 채우도록 크롭
+          const scale = Math.max(maxSize / img.width, maxSize / img.height);
+          const scaledW = img.width * scale;
+          const scaledH = img.height * scale;
+          const offsetX = (maxSize - scaledW) / 2;
+          const offsetY = (maxSize - scaledH) / 2;
+          ctx.drawImage(img, offsetX, offsetY, scaledW, scaledH);
         }
 
         setPreviewImage(canvas.toDataURL("image/jpeg", 0.8));
@@ -271,6 +266,10 @@ export function GeneralSettingsForm({
               >
                 edit
               </button>
+
+              {avatarMessage && !isEditingAvatar && (
+                <div className="account-avatar-done-message">{avatarMessage}</div>
+              )}
 
               {isEditingAvatar && (
                 <div className="account-avatar-popover" ref={avatarPopoverRef}>

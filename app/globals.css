@@ -3372,3 +3372,10 @@ a {
 .account-avatar-file-button:active {
   background: var(--bg);
 }
+
+.account-avatar-done-message {
+  font-size: 11px;
+  color: #10b981;
+  text-align: center;
+  white-space: nowrap;
+}
