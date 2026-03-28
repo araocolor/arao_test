@@ -313,12 +313,13 @@ a {
   border-radius: 6px;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.3s ease 1s;
   z-index: 100;
 }
 
 .header-profile-link:hover .header-profile-email-tooltip {
   opacity: 1;
+  transition: opacity 0.2s ease 0s;
 }
 
 .header-profile-badge {
