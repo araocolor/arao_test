@@ -2,6 +2,7 @@
 
 import { FormEvent, useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { clearCached } from "@/hooks/use-prefetch-cache";
 
 type GeneralSettingsFormProps = {
   email: string;
@@ -143,6 +144,7 @@ export function GeneralSettingsForm({
     // 팝오버 닫고 아이콘을 미리보기 이미지로 즉시 반영
     if (previewImage) {
       setIconImage(previewImage);
+      clearCached("general");
       window.dispatchEvent(new CustomEvent("avatar-updated", { detail: { iconImage: previewImage } }));
     }
     setIsEditingAvatar(false);
