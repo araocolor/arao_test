@@ -28,6 +28,7 @@ export async function GET() {
     const { items, unreadCount } = await getNotificationsForProfile(profile.id, {
       username: profile.username,
       password_hash: profile.password_hash,
+      phone: profile.phone,
     });
 
     return NextResponse.json({ unreadCount, items });
