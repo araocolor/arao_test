@@ -9,6 +9,7 @@ type GeneralSettingsFormProps = {
   username: string | null;
   hasPassword: boolean;
   phone: string | null;
+  iconImage?: string;
 };
 
 export function GeneralSettingsForm({
@@ -17,6 +18,7 @@ export function GeneralSettingsForm({
   username: initialUsername,
   hasPassword: initialHasPassword,
   phone: initialPhone,
+  iconImage: initialIconImage,
 }: GeneralSettingsFormProps) {
   const [username, setUsername] = useState(initialUsername ?? "");
   const [hasPassword, setHasPassword] = useState(initialHasPassword);
@@ -30,6 +32,9 @@ export function GeneralSettingsForm({
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [phoneMessage, setPhoneMessage] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
+  const [iconImage, setIconImage] = useState(initialIconImage ?? "");
 
   async function submitUsername(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -102,6 +107,39 @@ export function GeneralSettingsForm({
     setSavingKey(null);
   }
 
+  async function submitAvatar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSavingKey("avatar");
+    setAvatarMessage(null);
+
+    const formData = new FormData(event.currentTarget);
+    const file = formData.get("avatar-file") as File;
+
+    if (!file) {
+      setAvatarMessage("파일을 선택해주세요.");
+      setSavingKey(null);
+      return;
+    }
+
+    const response = await fetch("/api/account/avatar", {
+      method: "POST",
+      body: formData,
+    });
+    const data = (await response.json()) as { message?: string };
+
+    if (!response.ok) {
+      setAvatarMessage(data.message ?? "아이콘 저장 중 오류가 발생했습니다.");
+      setSavingKey(null);
+      return;
+    }
+
+    setAvatarMessage("아이콘이 저장되었습니다.");
+    setIsEditingAvatar(false);
+    setSavingKey(null);
+    // 페이지 새로고침하여 아이콘 업데이트
+    setTimeout(() => window.location.reload(), 1000);
+  }
+
   function formatMaskedPhone(value: string) {
     const digits = value.replace(/\D/g, "");
 
@@ -134,13 +172,62 @@ export function GeneralSettingsForm({
           ) : null}
         </div>
         {username ? (
-          <div className="account-username-display">
-            <img
-              src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${username}`}
-              alt={username}
-              className="account-username-avatar"
-            />
-            <div className="account-setting-static account-username-static">{username}</div>
+          <div className="account-username-section">
+            <div className="account-username-display">
+              {iconImage ? (
+                <img
+                  src={iconImage}
+                  alt={username}
+                  className="account-username-avatar"
+                />
+              ) : (
+                <img
+                  src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${username}`}
+                  alt={username}
+                  className="account-username-avatar"
+                />
+              )}
+              <div className="account-setting-static account-username-static">{username}</div>
+            </div>
+            {!isEditingAvatar ? (
+              <button
+                className="account-avatar-edit-button"
+                type="button"
+                onClick={() => {
+                  setIsEditingAvatar(true);
+                  setAvatarMessage(null);
+                }}
+              >
+                edit
+              </button>
+            ) : (
+              <form className="account-avatar-form" onSubmit={submitAvatar}>
+                <input
+                  type="file"
+                  name="avatar-file"
+                  accept="image/jpeg,image/png,image/gif"
+                  className="account-avatar-input"
+                />
+                <div className="account-avatar-help">jpg, png, gif 파일로 용량 1MB 이내</div>
+                <div className="account-avatar-actions">
+                  <button
+                    type="submit"
+                    className="account-avatar-upload-button"
+                    disabled={savingKey === "avatar"}
+                  >
+                    {savingKey === "avatar" ? "업로드 중..." : "업로드"}
+                  </button>
+                  <button
+                    type="button"
+                    className="account-avatar-cancel-button"
+                    onClick={() => setIsEditingAvatar(false)}
+                  >
+                    취소
+                  </button>
+                </div>
+                {avatarMessage ? <div className="muted">{avatarMessage}</div> : null}
+              </form>
+            )}
           </div>
         ) : (
           <>

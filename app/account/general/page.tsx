@@ -10,6 +10,7 @@ interface GeneralData {
   username: string | null;
   hasPassword: boolean;
   phone: string | null;
+  iconImage?: string;
 }
 
 export default function AccountGeneralPage() {
@@ -70,6 +71,7 @@ export default function AccountGeneralPage() {
         username={data.username}
         hasPassword={data.hasPassword}
         phone={data.phone}
+        iconImage={data.iconImage}
       />
     </div>
   );

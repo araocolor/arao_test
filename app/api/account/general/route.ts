@@ -26,12 +26,19 @@ export async function GET() {
     return NextResponse.json({ message: "회원 정보를 찾을 수 없습니다." }, { status: 404 });
   }
 
+  let iconImage: string | undefined;
+  if ((profile as any).icon_image) {
+    const buffer = (profile as any).icon_image as Buffer;
+    iconImage = `data:image/jpeg;base64,${buffer.toString("base64")}`;
+  }
+
   return NextResponse.json({
     email: profile.email,
     fullName: profile.full_name,
     username: profile.username,
     hasPassword: Boolean(profile.password_hash),
     phone: profile.phone,
+    iconImage,
   });
 }
 

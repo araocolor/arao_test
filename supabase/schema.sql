@@ -153,3 +153,5 @@ create table if not exists gallery_comment_likes (
   created_at timestamptz not null default now(),
   primary key (comment_id, profile_id)
 );
+
+alter table profiles add column if not exists icon_image bytea;

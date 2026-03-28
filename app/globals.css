@@ -3214,3 +3214,95 @@ a {
   font-size: 24px;
   flex-shrink: 0;
 }
+
+/* 아바타 업로드 */
+.account-username-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-username-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.account-avatar-edit-button {
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.7;
+  transition: opacity 120ms ease;
+}
+
+.account-avatar-edit-button:active {
+  opacity: 1;
+}
+
+.account-avatar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-width: 300px;
+}
+
+.account-avatar-input {
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.account-avatar-help {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.account-avatar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.account-avatar-upload-button,
+.account-avatar-cancel-button {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.account-avatar-upload-button {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.account-avatar-upload-button:active:not(:disabled) {
+  opacity: 0.8;
+}
+
+.account-avatar-upload-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account-avatar-cancel-button {
+  background: var(--line);
+  color: var(--text);
+}
+
+.account-avatar-cancel-button:active {
+  opacity: 0.8;
+}
