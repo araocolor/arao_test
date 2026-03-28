@@ -126,15 +126,11 @@ export function GeneralSettingsForm({
       return;
     }
 
-    // 이미 canvas에서 256×256 압축된 dataURL을 Blob으로 변환해서 전송
-    const res = await fetch(previewImage);
-    const blob = await res.blob();
-    const formData = new FormData();
-    formData.append("avatar-file", blob, "avatar.jpg");
-
+    // canvas에서 압축된 base64 dataURL을 JSON으로 전송
     const response = await fetch("/api/account/avatar", {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataUrl: previewImage }),
     });
     const data = (await response.json()) as { message?: string };
 

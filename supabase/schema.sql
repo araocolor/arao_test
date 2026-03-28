@@ -154,4 +154,5 @@ create table if not exists gallery_comment_likes (
   primary key (comment_id, profile_id)
 );
 
-alter table profiles add column if not exists icon_image bytea;
+alter table profiles add column if not exists icon_image text;
+alter table profiles alter column icon_image type text using icon_image::text;
