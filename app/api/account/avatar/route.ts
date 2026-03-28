@@ -30,9 +30,9 @@ export async function POST(request: Request) {
 
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get("avatar-file") as File;
 
-    if (!file) {
+    if (!file || file.size === 0) {
       return NextResponse.json(
         { message: "파일을 선택해주세요." },
         { status: 400 }
@@ -55,15 +55,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // 이미지 압축 (간단한 리사이징 - 최대 256x256px)
-    const buffer = await file.arrayBuffer();
-    const compressedBuffer = await compressImage(buffer, file.type);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     // 데이터베이스에 저장
     const supabase = createSupabaseAdminClient();
     const { error } = await supabase
       .from("profiles")
-      .update({ icon_image: compressedBuffer })
+      .update({ icon_image: buffer })
       .eq("id", profile.id);
 
     if (error) {
@@ -83,17 +82,3 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * 이미지 압축 함수
- * Canvas API를 사용하여 이미지 리사이징 (최대 256x256px)
- */
-async function compressImage(
-  buffer: ArrayBuffer,
-  mimeType: string
-): Promise<ArrayBuffer> {
-  // Node.js 환경에서는 Canvas 라이브러리 필요
-  // 현재는 클라이언트에서 압축된 파일을 받으므로 원본 반환
-  // 프로덕션에서는 Sharp 사용 권장:
-  // const image = sharp(buffer).resize(256, 256, { fit: 'cover' }).toBuffer();
-  return buffer;
-}

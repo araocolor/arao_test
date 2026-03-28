@@ -120,14 +120,16 @@ export function GeneralSettingsForm({
     setSavingKey("avatar");
     setAvatarMessage(null);
 
-    const formData = new FormData(event.currentTarget);
-    const file = formData.get("avatar-file") as File;
+    const file = fileInputRef.current?.files?.[0];
 
-    if (!file) {
+    if (!file || file.size === 0) {
       setAvatarMessage("파일을 선택해주세요.");
       setSavingKey(null);
       return;
     }
+
+    const formData = new FormData();
+    formData.append("avatar-file", file);
 
     const response = await fetch("/api/account/avatar", {
       method: "POST",
