@@ -266,10 +266,6 @@ export function GeneralSettingsForm({
                 edit
               </button>
 
-              {avatarMessage && !isEditingAvatar && (
-                <div className="account-avatar-done-message">{avatarMessage}</div>
-              )}
-
               {isEditingAvatar && (
                 <div className="account-avatar-popover" ref={avatarPopoverRef}>
                   <form onSubmit={submitAvatar}>
