@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 type SiteHeaderProps = {
-  links: Array<{ href: string; label: string; icon?: string }>;
+  links: Array<{ href: string; label: string; icon?: string; divider?: boolean }>;
   action?: ReactNode;
   fullWidth?: boolean;
   leading?: ReactNode;
@@ -145,10 +145,13 @@ export function SiteHeader({
             <div className="header-menu-list">
               {menuHeader && <span className="header-menu-label">{menuHeader}</span>}
               {links.map((link) => (
-                <Link key={link.href} href={link.href} onClick={() => closeMenu()} className="header-menu-link">
-                  {link.icon && <span className={`header-nav-icon header-nav-icon-${link.icon}`} aria-hidden="true" />}
-                  {link.label}
-                </Link>
+                <div key={link.href}>
+                  {link.divider && <hr className="header-menu-divider" />}
+                  <Link href={link.href} onClick={() => closeMenu()} className="header-menu-link">
+                    {link.icon && <span className={`header-nav-icon header-nav-icon-${link.icon}`} aria-hidden="true" />}
+                    {link.label}
+                  </Link>
+                </div>
               ))}
               {mobileLogout}
             </div>

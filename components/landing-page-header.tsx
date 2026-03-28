@@ -14,7 +14,7 @@ export function LandingPageHeader() {
     { href: "/gallery", label: "프로파일" },
     { href: "/pricing", label: "구매정책" },
     { href: "/manual", label: "설치방법" },
-    ...(isSignedIn ? [{ href: "/account/general", label: "마이페이지" }] : []),
+    ...(isSignedIn ? [{ href: "/account/general", label: "개인/설정", divider: true }] : []),
   ];
 
   return (
