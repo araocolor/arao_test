@@ -134,26 +134,36 @@ export function GeneralSettingsForm({
           ) : null}
         </div>
         {username ? (
-          <div className="account-setting-static account-username-static">{username}</div>
+          <div className="account-username-display">
+            <img
+              src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${username}`}
+              alt={username}
+              className="account-username-avatar"
+            />
+            <div className="account-setting-static account-username-static">{username}</div>
+          </div>
         ) : (
-          <form className="account-inline-form" onSubmit={submitUsername}>
-            <div className="account-inline-row">
-              <input
-                className="admin-input"
-                type="text"
-                value={usernameInput}
-                onChange={(event) => setUsernameInput(event.target.value)}
-                placeholder="아이디를 입력하세요"
-              />
-              <button
-                className={`admin-save-button account-state-button${hasUsernameInput ? " account-action-button-active" : ""}`}
-                type="submit"
-                disabled={savingKey === "username" || !hasUsernameInput}
-              >
-                {savingKey === "username" ? "등록 중..." : "등록"}
-              </button>
-            </div>
-          </form>
+          <>
+            <div className="account-username-avatar-placeholder">👤</div>
+            <form className="account-inline-form" onSubmit={submitUsername}>
+              <div className="account-inline-row">
+                <input
+                  className="admin-input"
+                  type="text"
+                  value={usernameInput}
+                  onChange={(event) => setUsernameInput(event.target.value)}
+                  placeholder="아이디를 입력하세요"
+                />
+                <button
+                  className={`admin-save-button account-state-button${hasUsernameInput ? " account-action-button-active" : ""}`}
+                  type="submit"
+                  disabled={savingKey === "username" || !hasUsernameInput}
+                >
+                  {savingKey === "username" ? "등록 중..." : "등록"}
+                </button>
+              </div>
+            </form>
+          </>
         )}
         {usernameMessage ? <div className="muted">{usernameMessage}</div> : null}
       </div>

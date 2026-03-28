@@ -3186,3 +3186,31 @@ a {
   color: var(--muted);
   font-size: 13px;
 }
+
+/* 사용자 아이디 아바타 */
+.account-username-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-username-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.account-username-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #d1d5db;
+  font-size: 24px;
+  flex-shrink: 0;
+}
