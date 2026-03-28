@@ -205,7 +205,7 @@ export function GeneralSettingsForm({
 
       <div className="account-settings-row">
         <div className="account-settings-copy">
-          <h3>{hasPassword ? "비밀번호 수정" : "비밀번호"}</h3>
+          <h3>{hasPassword ? "비밀번호 👌" : "비밀번호"}</h3>
           {!hasPassword ? (
             <div className="muted">비밀번호를 설정하면 아이디 로그인 확장에 사용할 수 있습니다.</div>
           ) : null}
