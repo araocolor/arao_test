@@ -35,11 +35,18 @@ export function useNotificationCount(isSignedIn: boolean) {
       }
     };
 
+    // 알림 카운트 강제 갱신 (이벤트 기반)
+    const handleRefreshNotification = () => {
+      void fetchUnreadCount();
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("notification-refresh", handleRefreshNotification);
 
     return () => {
       clearInterval(pollInterval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("notification-refresh", handleRefreshNotification);
     };
   }, [isSignedIn]);
 

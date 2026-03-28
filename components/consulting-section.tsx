@@ -67,6 +67,9 @@ export function ConsultingSection({
         setSelectedInquiry(data.inquiry);
         setReplies(data.replies);
         setView("detail");
+
+        // 답변을 읽었으므로 알림 카운트 즉시 갱신
+        window.dispatchEvent(new Event("notification-refresh"));
       }
     } catch (error) {
       console.error("Failed to load inquiry detail:", error);
@@ -169,6 +172,9 @@ export function ConsultingSection({
         setMessage("상담이 종료되었습니다.");
         setView("list");
         await loadInquiries();
+
+        // 상담 종료 시 알림 카운트 즉시 갱신
+        window.dispatchEvent(new Event("notification-refresh"));
       }
     } catch (error) {
       console.error("Failed to close inquiry:", error);
