@@ -31,7 +31,7 @@ export async function GET() {
       phone: profile.phone,
     });
 
-    return NextResponse.json({ unreadCount, items, iconImage: (profile as any).icon_image ?? null });
+    return NextResponse.json({ unreadCount, items, iconImage: profile.icon_image ?? null });
   } catch (error) {
     console.error("GET /api/account/notifications error:", error);
     return NextResponse.json({ unreadCount: 0, items: [] });

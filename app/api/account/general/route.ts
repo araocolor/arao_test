@@ -32,7 +32,7 @@ export async function GET() {
     username: profile.username,
     hasPassword: Boolean(profile.password_hash),
     phone: profile.phone,
-    iconImage: (profile as any).icon_image ?? null,
+    iconImage: profile.icon_image ?? null,
     role: profile.role,
     createdAt: profile.created_at,
   });

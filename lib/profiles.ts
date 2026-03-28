@@ -9,6 +9,7 @@ export type Profile = {
   phone: string | null;
   username: string | null;
   password_hash: string | null;
+  icon_image: string | null;
   created_at: string;
 };
 
@@ -27,7 +28,7 @@ export async function syncProfile({ email, fullName }: SyncProfileInput) {
 
   const { data: existingProfile, error: fetchError } = await supabase
     .from("profiles")
-    .select("id, email, role, full_name, phone, username, password_hash, created_at")
+    .select("id, email, role, full_name, phone, username, password_hash, icon_image, created_at")
     .eq("email", normalizedEmail)
     .maybeSingle<Profile>();
 
@@ -41,7 +42,7 @@ export async function syncProfile({ email, fullName }: SyncProfileInput) {
         .from("profiles")
         .update({ full_name: fullName })
         .eq("id", existingProfile.id)
-        .select("id, email, role, full_name, phone, username, password_hash, created_at")
+        .select("id, email, role, full_name, phone, username, password_hash, icon_image, created_at")
         .single<Profile>();
 
       if (updateError) {
@@ -62,7 +63,7 @@ export async function syncProfile({ email, fullName }: SyncProfileInput) {
       role: "customer",
       full_name: fullName ?? null,
     })
-    .select("id, email, role, full_name, phone, username, password_hash, created_at")
+    .select("id, email, role, full_name, phone, username, password_hash, icon_image, created_at")
     .single<Profile>();
 
   if (insertError) {
