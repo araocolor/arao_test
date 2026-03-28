@@ -289,7 +289,7 @@ export function GeneralSettingsForm({
                     >
                       파일 선택
                     </button>
-                    <div className="account-avatar-help">jpg, png, gif 파일로 용량 1MB 이내</div>
+                    <div className="account-avatar-help">jpg, png, gif 파일을 업로드 하세요</div>
                     <div className="account-avatar-actions">
                       <button
                         type="submit"

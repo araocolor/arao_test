@@ -3254,32 +3254,29 @@ a {
   border: 1px solid var(--line);
   border-radius: 10px;
   box-shadow: var(--shadow-soft);
-  padding: 14px;
+  padding: 16px;
   width: 220px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.account-avatar-input {
-  font-size: 13px;
-  cursor: pointer;
+  gap: 12px;
 }
 
 .account-avatar-help {
   font-size: 12px;
   color: var(--muted);
+  line-height: 1.4;
 }
 
 .account-avatar-actions {
   display: flex;
   gap: 8px;
+  padding-top: 4px;
 }
 
 .account-avatar-upload-button,
 .account-avatar-cancel-button {
   flex: 1;
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-size: 12px;
   border-radius: 6px;
   border: none;
@@ -3342,7 +3339,7 @@ a {
 .account-avatar-preview-container {
   display: flex;
   justify-content: center;
-  padding: 8px 0;
+  padding: 4px 0 8px;
 }
 
 .account-avatar-preview {
@@ -3358,7 +3355,7 @@ a {
 }
 
 .account-avatar-file-button {
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-size: 13px;
   background: var(--surface);
   color: var(--text);
@@ -3366,6 +3363,8 @@ a {
   border-radius: 6px;
   cursor: pointer;
   transition: background 120ms ease;
+  width: 100%;
+  text-align: center;
 }
 
 .account-avatar-file-button:active {
