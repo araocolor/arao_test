@@ -10,7 +10,7 @@ export function HeaderLogoutButton() {
   if (!isSignedIn) {
     return (
       <Link className="header-menu-label" href="/sign-in">
-        login
+        로그인
       </Link>
     );
   }
