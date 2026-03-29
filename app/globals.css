@@ -3416,6 +3416,11 @@ a {
 }
 
 .notif-item.is-unread {
+  background: rgba(252, 211, 77, 0.18);
+}
+
+.notif-item.is-unread .notif-item-title {
+  color: #92400e;
 }
 
 /* 카테고리 아이콘 (동그란 원형) */

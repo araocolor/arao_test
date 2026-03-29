@@ -59,12 +59,12 @@ export async function getNotificationsForProfile(
     unreadCount += dbNotifications.filter((n) => !n.is_read).length;
   }
 
-  // 3. consulting 알림: inquiries.has_unread_reply = true
+  // 3. consulting 알림: 답변이 있는 모든 inquiries (읽음 여부 포함)
   const { data: inquiries, error: inquiriesError } = await supabase
     .from("inquiries")
     .select("id, type, title, status, has_unread_reply, updated_at")
     .eq("profile_id", profileId)
-    .eq("has_unread_reply", true)
+    .in("status", ["in_progress", "resolved", "closed"])
     .order("updated_at", { ascending: false });
 
   if (inquiriesError) {
@@ -77,11 +77,11 @@ export async function getNotificationsForProfile(
         title: "고객님이 작성한 글에 답변이 완료되었습니다",
         link: "/account/consulting",
         source_id: inq.id,
-        is_read: false,
+        is_read: !inq.has_unread_reply,
         created_at: inq.updated_at,
       }))
     );
-    unreadCount += inquiries.length;
+    unreadCount += inquiries.filter((inq) => inq.has_unread_reply).length;
   }
 
   // items를 created_at 기준으로 정렬 (settings는 이미 맨 위)
