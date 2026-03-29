@@ -25,7 +25,26 @@ export function HeaderProfileLink() {
   // 배지 카운트: items 중 is_read = false인 개수
   const badgeCount = items.filter((item) => !item.is_read).length;
 
-  // 알림 목록 조회
+  // 아바타만 먼저 조회 (빠른 업데이트)
+  async function fetchAvatar() {
+    try {
+      const response = await fetch("/api/account/avatar");
+      if (response.ok) {
+        const data = (await response.json()) as { iconImage?: string | null };
+        const img = data.iconImage ?? null;
+        setIconImage(img);
+        if (img) {
+          localStorage.setItem("header-avatar", img);
+        } else {
+          localStorage.removeItem("header-avatar");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch avatar:", error);
+    }
+  }
+
+  // 알림 목록 조회 (백그라운드)
   async function fetchNotificationItems() {
     try {
       const response = await fetch("/api/account/notifications");
@@ -36,13 +55,6 @@ export function HeaderProfileLink() {
           iconImage?: string | null;
         };
         setItems(data.items);
-        const img = data.iconImage ?? null;
-        setIconImage(img);
-        if (img) {
-          localStorage.setItem("header-avatar", img);
-        } else {
-          localStorage.removeItem("header-avatar");
-        }
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
@@ -57,9 +69,10 @@ export function HeaderProfileLink() {
     if (cached) setIconImage(cached);
   }, []);
 
-  // 초기 로드: 마운트 시 알림 항목 미리 조회 / 로그아웃 시 캐시 제거
+  // 초기 로드: 아바타 먼저 → 알림은 백그라운드 / 로그아웃 시 캐시 제거
   useEffect(() => {
     if (isSignedIn) {
+      void fetchAvatar();
       void fetchNotificationItems();
     } else if (isSignedIn === false) {
       setIconImage(null);

@@ -3,6 +3,20 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfile } from "@/lib/profiles";
 
+export async function GET() {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ iconImage: null }, { status: 401 });
+  }
+
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || null;
+  const profile = await syncProfile({ email, fullName });
+
+  return NextResponse.json({ iconImage: profile?.icon_image ?? null });
+}
+
 export async function POST(request: Request) {
   const { userId } = await auth();
 
