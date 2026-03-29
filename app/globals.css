@@ -3289,6 +3289,7 @@ a {
   padding: 0 16px;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
+  position: relative;
 }
 
 .notif-back-btn {
@@ -3308,14 +3309,18 @@ a {
 }
 
 .notif-header-username {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 15px;
   font-weight: 600;
   color: var(--text);
-  padding-left: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 60%;
+  text-align: center;
+  pointer-events: none;
 }
 
 .notif-settings-btn {
