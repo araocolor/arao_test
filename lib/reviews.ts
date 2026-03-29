@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createNotification } from "@/lib/notifications";
 
 export type Review = {
   id: string;
@@ -275,7 +276,7 @@ export async function toggleReviewLike(
 }
 
 /**
- * 리뷰 답글 작성 (notifications 생성은 API에서)
+ * 리뷰 답글 작성 + 원댓글 작성자에게 알림
  */
 export async function createReviewReply(
   reviewId: string,
@@ -297,6 +298,29 @@ export async function createReviewReply(
   if (error) {
     console.error("createReviewReply error:", error);
     return null;
+  }
+
+  // 원댓글(리뷰) 작성자 조회 후 알림 생성 (본인 제외)
+  const { data: review } = await supabase
+    .from("reviews")
+    .select("profile_id")
+    .eq("id", reviewId)
+    .single();
+
+  if (review && review.profile_id !== profileId) {
+    const { data: liker } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", profileId)
+      .single();
+
+    await createNotification(
+      review.profile_id,
+      "review_reply",
+      `${liker?.username ?? "누군가"}님이 작성한 댓글에 새로운 답글이 있습니다`,
+      `/account/reviews/${reviewId}`,
+      data.id
+    );
   }
 
   return data as ReviewReply;

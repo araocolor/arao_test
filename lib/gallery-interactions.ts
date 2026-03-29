@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createNotification } from "@/lib/notifications";
 
 export type GalleryComment = {
   id: string;
@@ -248,6 +249,32 @@ export async function toggleGalleryCommentLike(
     }
 
     const likeCount = (comment?.like_count ?? 0) + 1;
+
+    // 댓글 작성자에게 알림 생성 (본인 제외)
+    if (commentAuthorProfileId !== profileId) {
+      const { data: liker } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", profileId)
+        .single();
+
+      const { data: commentData } = await supabase
+        .from("gallery_comments")
+        .select("item_category, item_index")
+        .eq("id", commentId)
+        .single();
+
+      if (commentData) {
+        await createNotification(
+          commentAuthorProfileId,
+          "gallery_like",
+          `${liker?.username ?? "누군가"}님이 좋아요 하트를 남겼습니다`,
+          `/gallery`,
+          commentId
+        );
+      }
+    }
+
     return { liked: true, count: likeCount };
   }
 }
