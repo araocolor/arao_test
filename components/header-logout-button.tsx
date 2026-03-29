@@ -19,7 +19,7 @@ export function HeaderLogoutButton() {
     <button
       className="header-menu-label"
       type="button"
-      onClick={() => void signOut({ redirectUrl: "/" })}
+      onClick={() => void signOut().then(() => { window.location.href = "/"; })}
     >
       로그아웃
     </button>

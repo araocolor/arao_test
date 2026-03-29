@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { GeneralSettingsForm } from "@/components/general-settings-form";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
+import { useReviewsPrefetch } from "@/hooks/use-reviews-prefetch";
 
 interface GeneralData {
   email: string;
@@ -16,6 +17,7 @@ interface GeneralData {
 }
 
 export default function AccountGeneralPage() {
+  useReviewsPrefetch();
   const [data, setData] = useState<GeneralData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
