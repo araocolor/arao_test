@@ -113,7 +113,13 @@ export function NotificationDrawer({
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
           </button>
-          <span className="notif-header-username">{username ?? ""}</span>
+          {username ? (
+            <span className="notif-header-username">{username}</span>
+          ) : (
+            <Link href="/account/general" className="notif-header-register" onClick={onClose}>
+              아이디 등록
+            </Link>
+          )}
           <Link
             href="/account/general"
             className="notif-settings-btn"
