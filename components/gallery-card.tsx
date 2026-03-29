@@ -97,7 +97,7 @@ export function GalleryCard({
         {/* 인터랙션 바 */}
         <div className="gallery-action-bar">
           <button
-            className={`gallery-action-btn${liked ? " gallery-liked" : ""}`}
+            className={`gallery-action-btn${likeCount >= 1 ? " gallery-liked" : ""}`}
             onClick={handleLike}
             disabled={likeLoading}
           >
@@ -105,8 +105,8 @@ export function GalleryCard({
               width="24"
               height="24"
               viewBox="0 0 24 24"
-              fill={liked ? "#ef4444" : "none"}
-              stroke={liked ? "#ef4444" : "currentColor"}
+              fill={likeCount >= 1 ? "#FF2D2D" : "none"}
+              stroke={likeCount >= 1 ? "#FF2D2D" : "currentColor"}
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
