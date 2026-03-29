@@ -8,7 +8,7 @@ export const userSections = [
   {
     id: "general",
     menu: "사용자",
-    icon: "settings",
+    icon: "mycolor",
     eyebrow: "General",
     title: "사용자",
     description: "기본 계정 정보와 프로필 상태를 확인하고 이후 알림, 연락처, 비밀번호 변경 기능을 이 영역으로 확장할 수 있습니다.",
@@ -35,7 +35,7 @@ export const userSections = [
   {
     id: "mycolor",
     menu: "내프로파일",
-    icon: "mycolor",
+    icon: "settings",
     eyebrow: "My Profile",
     title: "내프로파일",
     description: "나의 컬러 프로파일 페이지입니다.",
