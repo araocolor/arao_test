@@ -3453,6 +3453,13 @@ a {
   min-width: 0;
 }
 
+.notif-item-category {
+  margin: 2px 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
 .notif-item-title {
   margin: 0;
   font-size: 13px;
