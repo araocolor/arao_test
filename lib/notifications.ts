@@ -35,11 +35,12 @@ export async function getNotificationsForProfile(
     unreadCount++;
   }
 
-  // 2. notifications 테이블에서 모든 알림 조회 (orders, reviews, gallery)
+  // 2. notifications 테이블에서 알림 조회 (consulting 제외 — inquiries 쿼리에서 별도 처리)
   const { data: dbNotifications, error } = await supabase
     .from("notifications")
     .select("*")
     .eq("profile_id", profileId)
+    .neq("type", "consulting")
     .order("created_at", { ascending: false });
 
   if (error) {
