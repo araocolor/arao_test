@@ -15,7 +15,7 @@ export type Product = {
 export type Order = {
   id: string;
   user_id: string;
-  status: "pending" | "결제완료" | "환불진행중" | "환불완료" | "결제오류";
+  status: "pending" | "결제완료" | "발송완료" | "환불진행중" | "환불완료" | "결제오류";
   total_amount: number;
   currency: string;
   payment_provider: string | null;
@@ -174,14 +174,24 @@ export async function updateOrderStatus(id: string, status: string): Promise<Ord
   const order = data || null;
 
   // 상태 변경 시 알림 생성
-  if (order && status === "결제오류") {
-    await createNotification(
-      order.user_id,
-      "order_cancelled",
-      "카드결제가 취소처리되었습니다.",
-      `/account/orders/${id}`,
-      id
-    );
+  if (order) {
+    if (status === "발송완료") {
+      await createNotification(
+        order.user_id,
+        "order_shipped",
+        "상품이 최종결제되어 발송되었습니다",
+        `/account/orders/${id}`,
+        id
+      );
+    } else if (status === "결제오류") {
+      await createNotification(
+        order.user_id,
+        "order_cancelled",
+        "카드결제가 취소되었습니다. 재결제를 진행해주세요",
+        `/account/orders/${id}`,
+        id
+      );
+    }
   }
 
   return order;

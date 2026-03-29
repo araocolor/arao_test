@@ -118,19 +118,23 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 background:
                   status === "결제완료"
                     ? "#dbeafe"
-                    : status === "환불진행중"
-                      ? "#fef08a"
-                      : status === "환불완료"
-                        ? "#f3e8ff"
-                        : "#fee2e2",
+                    : status === "발송완료"
+                      ? "#dcfce7"
+                      : status === "환불진행중"
+                        ? "#fef08a"
+                        : status === "환불완료"
+                          ? "#f3e8ff"
+                          : "#fee2e2",
                 color:
                   status === "결제완료"
                     ? "#0369a1"
-                    : status === "환불진행중"
-                      ? "#854d0e"
-                      : status === "환불완료"
-                        ? "#6b21a8"
-                        : "#991b1b",
+                    : status === "발송완료"
+                      ? "#15803d"
+                      : status === "환불진행중"
+                        ? "#854d0e"
+                        : status === "환불완료"
+                          ? "#6b21a8"
+                          : "#991b1b",
                 fontSize: 12,
                 fontWeight: 600,
                 width: "fit-content",

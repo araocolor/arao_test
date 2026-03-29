@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createNotification } from "@/lib/notifications";
 
 export type Inquiry = {
   id: string;
@@ -297,5 +298,18 @@ export async function updateInquiryStatus(
     return null;
   }
 
-  return data as Inquiry;
+  const inquiry = data as Inquiry;
+
+  // 상태가 resolved로 변경되면 알림 생성
+  if (status === "resolved") {
+    await createNotification(
+      inquiry.profile_id,
+      "consulting",
+      "고객님이 작성한 글에 답변이 완료되었습니다",
+      "/account/consulting",
+      inquiry.id
+    );
+  }
+
+  return inquiry;
 }
