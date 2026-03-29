@@ -20,14 +20,13 @@ export async function getGalleryItemLikeStatus(
   category: string,
   index: number,
   profileId?: string
-): Promise<{ count: number; liked: boolean }> {
+): Promise<{ count: number; liked: boolean; firstLiker: string | null; commentCount: number }> {
   const supabase = createSupabaseAdminClient();
 
-  const { count } = await supabase
-    .from("gallery_item_likes")
-    .select("*", { count: "exact" })
-    .eq("item_category", category)
-    .eq("item_index", index);
+  const [{ count }, { count: commentCount }] = await Promise.all([
+    supabase.from("gallery_item_likes").select("*", { count: "exact" }).eq("item_category", category).eq("item_index", index),
+    supabase.from("gallery_comments").select("*", { count: "exact" }).eq("item_category", category).eq("item_index", index),
+  ]);
 
   let liked = false;
   if (profileId) {
@@ -41,7 +40,28 @@ export async function getGalleryItemLikeStatus(
     liked = !!data;
   }
 
-  return { count: count ?? 0, liked };
+  // 첫 번째 좋아요한 사용자 이름
+  let firstLiker: string | null = null;
+  if ((count ?? 0) > 0) {
+    const { data: firstLike } = await supabase
+      .from("gallery_item_likes")
+      .select("profile_id")
+      .eq("item_category", category)
+      .eq("item_index", index)
+      .limit(1)
+      .single();
+
+    if (firstLike) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", firstLike.profile_id)
+        .single();
+      firstLiker = profile?.username ?? null;
+    }
+  }
+
+  return { count: count ?? 0, liked, firstLiker, commentCount: commentCount ?? 0 };
 }
 
 /**

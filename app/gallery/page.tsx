@@ -2,7 +2,7 @@ export const revalidate = 0;
 
 import { LandingPageFooter } from "@/components/landing-page-footer";
 import { LandingPageHeader } from "@/components/landing-page-header";
-import { GalleryHeroItem } from "@/components/gallery-hero-item";
+import { GalleryCard } from "@/components/gallery-card";
 import { getLandingContent } from "@/lib/landing-content";
 import { GALLERY_CATEGORIES, GALLERY_CATEGORY_LABELS, GALLERY_CATEGORY_DEFAULTS } from "@/lib/gallery-categories";
 
@@ -38,7 +38,7 @@ export default async function GalleryPage() {
           </p>
         </section>
 
-        {GALLERY_CATEGORIES.map((category) => {
+        {GALLERY_CATEGORIES.map((category, categoryIdx) => {
           const item = landingContent.gallery[category];
           if (!item) return null;
           const beforeSrc = item.beforeImageFull || item.beforeImage || "";
@@ -47,27 +47,18 @@ export default async function GalleryPage() {
           const title = item.title || GALLERY_CATEGORY_LABELS[category];
           const body = item.body || GALLERY_CATEGORY_DEFAULTS[category];
           const caption = formatGalleryExifCaption(item);
-          const bodyLines = body.split("\n");
           return (
-            <section key={category} className="gallery-section">
-              <h2 className="gallery-section-title">{title}</h2>
-              <p className="gallery-section-body">
-                {bodyLines.map((line, i) => (
-                  <span key={i}>{line}{i < bodyLines.length - 1 ? <br /> : null}</span>
-                ))}
-              </p>
-              <div className="gallery-image-block">
-                <GalleryHeroItem
-                  beforeImage={beforeSrc}
-                  afterImage={afterSrc}
-                  label={GALLERY_CATEGORY_LABELS[category]}
-                  aspectRatio={item.aspectRatio}
-                />
-                {caption ? (
-                  <p className="gallery-caption">{caption}</p>
-                ) : null}
-              </div>
-            </section>
+            <GalleryCard
+              key={category}
+              category={category}
+              index={categoryIdx}
+              title={title}
+              body={body}
+              beforeImage={beforeSrc}
+              afterImage={afterSrc}
+              caption={caption || undefined}
+              aspectRatio={item.aspectRatio}
+            />
           );
         })}
 
