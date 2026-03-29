@@ -74,12 +74,12 @@ export function GalleryCard({
     }
   };
 
-  const likeLabel =
-    likeCount === 0
-      ? null
-      : likeCount === 1
-        ? `${firstLiker ?? "누군가"}님이 좋아합니다`
-        : `${firstLiker ?? "누군가"}님 외 ${likeCount - 1}명이 좋아합니다`;
+  const likeLabelNode =
+    likeCount === 0 ? null : likeCount === 1 ? (
+      <><strong>{firstLiker ?? "누군가"}</strong>님이 좋아합니다</>
+    ) : (
+      <><strong>{firstLiker ?? "누군가"}</strong>님 외 <strong>{likeCount - 1}명</strong>이 좋아합니다</>
+    );
 
   const bodyLines = body ? body.split("\n") : [];
 
@@ -149,7 +149,7 @@ export function GalleryCard({
           </button>
         </div>
 
-        {likeLabel && <p className="gallery-like-label">{likeLabel}</p>}
+        {likeLabelNode && <p className="gallery-like-label">{likeLabelNode}</p>}
 
         {bodyLines.length > 0 && (
           <p className="gallery-card-body">

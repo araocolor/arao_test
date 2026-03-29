@@ -722,7 +722,7 @@ a {
 
 .gallery-action-count {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .gallery-action-share {
@@ -730,14 +730,18 @@ a {
 }
 
 .gallery-like-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 400;
   margin: 0 0 4px;
   color: #111;
 }
 
+.gallery-like-label strong {
+  font-weight: 700;
+}
+
 .gallery-card-body {
-  font-size: 13px;
+  font-size: 15px;
   color: rgba(17, 17, 17, 0.6);
   line-height: 1.6;
   margin: 0 0 2px;
