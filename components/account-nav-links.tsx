@@ -6,31 +6,13 @@ import { SignOutButton } from "@clerk/nextjs";
 
 export const userSections = [
   {
-    id: "mycolor",
-    menu: "내프로파일",
-    icon: "mycolor",
-    eyebrow: "My Profile",
-    title: "내프로파일",
-    description: "나의 컬러 프로파일 페이지입니다.",
-    items: [],
-  },
-  {
     id: "general",
-    menu: "일반설정",
+    menu: "사용자",
     icon: "settings",
     eyebrow: "General",
-    title: "일반설정",
+    title: "사용자",
     description: "기본 계정 정보와 프로필 상태를 확인하고 이후 알림, 연락처, 비밀번호 변경 기능을 이 영역으로 확장할 수 있습니다.",
     items: ["이메일 확인", "이름 확인", "계정 기본 정보 관리"],
-  },
-  {
-    id: "orders",
-    menu: "주문내역",
-    icon: "orders",
-    eyebrow: "Orders",
-    title: "주문내역",
-    description: "구매한 상품과 진행 중인 주문, 결제 상태를 한 곳에서 확인할 수 있도록 준비된 영역입니다.",
-    items: ["최근 주문 목록", "주문 상태 추적", "결제 내역 확인"],
   },
   {
     id: "consulting",
@@ -42,13 +24,22 @@ export const userSections = [
     items: ["문의 접수 내역", "답변 상태 확인", "상담 기록 보관"],
   },
   {
-    id: "reviews",
-    menu: "나의 후기",
-    icon: "reviews",
-    eyebrow: "Reviews",
-    title: "나의 후기",
-    description: "작성한 후기와 공개 상태를 확인하고 수정 흐름을 연결할 수 있도록 비워둔 영역입니다.",
-    items: ["작성 후기 목록", "노출 여부 확인", "후기 수정 준비"],
+    id: "orders",
+    menu: "주문내역",
+    icon: "orders",
+    eyebrow: "Orders",
+    title: "주문내역",
+    description: "구매한 상품과 진행 중인 주문, 결제 상태를 한 곳에서 확인할 수 있도록 준비된 영역입니다.",
+    items: ["최근 주문 목록", "주문 상태 추적", "결제 내역 확인"],
+  },
+  {
+    id: "mycolor",
+    menu: "내프로파일",
+    icon: "mycolor",
+    eyebrow: "My Profile",
+    title: "내프로파일",
+    description: "나의 컬러 프로파일 페이지입니다.",
+    items: [],
   },
 ];
 
@@ -68,6 +59,15 @@ export function AccountNavLinks({ mobile, footer }: NavLinksProps) {
     return (
       <nav className="account-footer-nav">
         <div className="account-footer-menu">
+          <Link
+            href="/"
+            prefetch={true}
+            className={`account-footer-item${pathname === "/" ? " active" : ""}`}
+            title="홈"
+          >
+            <span className="account-menu-icon account-menu-icon-home" aria-hidden="true" />
+            <span className="account-footer-label">홈</span>
+          </Link>
           {userSections.map((section) => (
             <Link
               key={section.id}
