@@ -127,6 +127,18 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded }
             );
           })}
         </div>
+        <div className="gallery-sheet-emoji-row">
+          {["❤️","😍","🥰","😊","😂","🔥","✨","👍","🎉","💯","🙏","😭","💕","😎","🤩","👏","💪","🌟","😆","🥹","💖","😘","🫶","🤍","😁","🫠","😅","🤗","😇","🥲","😴","🤭","😋","🤔","😬","🥳","😤","😢","🤯","🫡"].map((emoji) => (
+            <button
+              key={emoji}
+              className="gallery-sheet-emoji-btn"
+              onClick={() => setInput((prev) => prev + emoji)}
+              type="button"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
         <div className="gallery-sheet-input-row">
           <div className="gallery-comment-avatar gallery-comment-avatar-sm" />
           <input

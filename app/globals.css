@@ -903,6 +903,38 @@ a {
   color: #ef4444;
 }
 
+.gallery-sheet-emoji-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 6px 12px;
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.gallery-sheet-emoji-row::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-sheet-emoji-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  padding: 4px 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gallery-sheet-emoji-btn:active {
+  background: rgba(17, 17, 17, 0.06);
+}
+
 .gallery-sheet-input-row {
   display: flex;
   align-items: center;
