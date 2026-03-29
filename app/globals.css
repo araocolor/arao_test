@@ -103,6 +103,20 @@ a {
   backdrop-filter: blur(14px);
 }
 
+.simple-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 480px);
+  margin: 0 auto;
+  padding: 14px 16px;
+}
+
+.simple-header-logo {
+  display: inline-flex;
+  align-items: center;
+}
+
 
 .header-inner,
 .header-inner-inline {

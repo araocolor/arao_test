@@ -1,6 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { LandingPageHeader } from "@/components/landing-page-header";
+import { SimpleHeader } from "@/components/simple-header";
 import { AccountNavLinks } from "@/components/account-nav-links";
 import { AdminSignOut } from "@/components/admin-sign-out";
 import { syncProfile } from "@/lib/profiles";
@@ -33,7 +33,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   return (
     <>
-      <LandingPageHeader />
+      <SimpleHeader />
       <AccountPrefetchWrapper>
         <main className="account-page">
           {profileError ? (
