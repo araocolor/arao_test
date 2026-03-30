@@ -42,6 +42,7 @@ export function GalleryCard({
   const [commentSheetOpen, setCommentSheetOpen] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
+  const userInteractedRef = useRef(false);
 
   useEffect(() => {
     if (autoOpenComments) {
@@ -78,7 +79,9 @@ export function GalleryCard({
           // 좋아요 fetch
           fetch(`/api/gallery/${category}/${index}/likes`)
             .then((r) => r.json())
-            .then((data) => applyData(data))
+            .then((data) => {
+              if (!userInteractedRef.current) applyData(data);
+            })
             .catch(() => {});
           // 댓글 미리 캐시 (댓글창 열면 즉시 표시)
           const commentKey = `gallery_comments_${category}_${index}`;
@@ -103,6 +106,7 @@ export function GalleryCard({
       return;
     }
     if (likeLoading) return;
+    userInteractedRef.current = true;
     setLikeLoading(true);
     const wasLiked = liked;
     setLiked(!wasLiked);

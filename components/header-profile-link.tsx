@@ -113,7 +113,7 @@ export function HeaderProfileLink() {
     setDrawerOpen(false);
     closeTimerRef.current = setTimeout(() => {
       setDrawerMounted(false);
-    }, 180); // CSS transition duration과 동일
+    }, 1000); // CSS transition duration과 동일
   }
 
   // 정리
