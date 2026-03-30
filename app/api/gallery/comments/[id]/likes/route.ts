@@ -35,7 +35,7 @@ export async function POST(
     const supabase = createSupabaseAdminClient();
     const { data: comment, error: commentError } = await supabase
       .from("gallery_comments")
-      .select("profile_id")
+      .select("profile_id, item_category, item_index")
       .eq("id", id)
       .single();
 
@@ -55,7 +55,7 @@ export async function POST(
         comment.profile_id,
         "gallery_like",
         `${profile.username || profile.email || "사용자"}님이 좋아요를 남겼습니다`,
-        `/gallery?comment=${id}`,
+        `/gallery?category=${comment.item_category}&index=${comment.item_index}`,
         id
       );
     }

@@ -14,6 +14,7 @@ type GalleryCardProps = {
   afterImage: string;
   caption?: string;
   aspectRatio?: string;
+  autoOpenComments?: boolean;
 };
 
 export function GalleryCard({
@@ -25,6 +26,7 @@ export function GalleryCard({
   afterImage,
   caption,
   aspectRatio,
+  autoOpenComments = false,
 }: GalleryCardProps) {
   const [likeCount, setLikeCount] = useState(0);
   const [liked, setLiked] = useState(false);
@@ -33,6 +35,13 @@ export function GalleryCard({
   const [commentSheetOpen, setCommentSheetOpen] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (autoOpenComments) {
+      cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setCommentSheetOpen(true);
+    }
+  }, [autoOpenComments]);
 
   useEffect(() => {
     const cacheKey = `gallery_card_${category}_${index}`;
