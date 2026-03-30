@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { GalleryHeroItem } from "@/components/gallery-hero-item";
 import { GalleryCommentSheet } from "@/components/gallery-comment-sheet";
+import { getCached } from "@/hooks/use-prefetch-cache";
 
 type GalleryCardProps = {
   category: string;
@@ -31,17 +32,44 @@ export function GalleryCard({
   const [commentCount, setCommentCount] = useState(0);
   const [commentSheetOpen, setCommentSheetOpen] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const cardRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    fetch(`/api/gallery/${category}/${index}/likes`)
-      .then((r) => r.json())
-      .then((data) => {
-        setLikeCount(data.count ?? 0);
-        setLiked(data.liked ?? false);
-        setFirstLiker(data.firstLiker ?? null);
-        setCommentCount(data.commentCount ?? 0);
-      })
-      .catch(() => {});
+    const cacheKey = `gallery_card_${category}_${index}`;
+
+    function applyData(data: { count?: number; liked?: boolean; firstLiker?: string | null; commentCount?: number }) {
+      setLikeCount(data.count ?? 0);
+      setLiked(data.liked ?? false);
+      setFirstLiker(data.firstLiker ?? null);
+      setCommentCount(data.commentCount ?? 0);
+    }
+
+    // 캐시 히트 시 즉시 표시
+    const cached = getCached<{ count: number; liked: boolean; firstLiker: string | null; commentCount: number }>(cacheKey);
+    if (cached) {
+      applyData(cached);
+      return;
+    }
+
+    // Intersection Observer: 카드가 화면 300px 앞에 오면 fetch
+    const el = cardRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          observer.disconnect();
+          fetch(`/api/gallery/${category}/${index}/likes`)
+            .then((r) => r.json())
+            .then((data) => applyData(data))
+            .catch(() => {});
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [category, index]);
 
   const handleLike = async () => {
@@ -84,7 +112,7 @@ export function GalleryCard({
   const bodyLines = body ? body.split("\n") : [];
 
   return (
-    <section className="gallery-section">
+    <section className="gallery-section" ref={cardRef}>
       <h2 className="gallery-section-title">{title}</h2>
       <div className="gallery-image-block">
         <GalleryHeroItem

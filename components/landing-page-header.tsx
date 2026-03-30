@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 export function LandingPageHeader() {
   const links = [
     { href: "/arao", label: "ARAO 소개" },
-    { href: "/gallery", label: "프로파일" },
+    { href: "/gallery", label: "갤러리" },
     { href: "/pricing", label: "구매정책" },
     { href: "/manual", label: "설치방법" },
     { href: "/account/general", label: "개인/설정", divider: true },
