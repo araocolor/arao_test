@@ -8,6 +8,7 @@ export type NotificationItem = {
   source_id?: string;
   is_read: boolean;
   created_at: string;
+  sender_icon?: string | null;
 };
 
 /**
@@ -46,16 +47,48 @@ export async function getNotificationsForProfile(
   if (error) {
     console.error("getNotificationsForProfile db notifications error:", error);
   } else if (dbNotifications) {
+    // 알림 제목에서 발신자 이름(username/email) 추출 후 프로필 아이콘 조회
+    const senderNames = new Set<string>();
+    for (const n of dbNotifications) {
+      const idx = n.title.indexOf("님이");
+      if (idx > 0) {
+        const name = n.title.slice(0, idx);
+        if (name !== "고객" && name !== "사용자" && name !== "누군가") {
+          senderNames.add(name);
+        }
+      }
+    }
+
+    const senderIconMap: Record<string, string | null> = {};
+    if (senderNames.size > 0) {
+      const names = Array.from(senderNames);
+      const orFilter = names.map((n) => `username.eq.${n},email.eq.${n}`).join(",");
+      const { data: senderProfiles } = await supabase
+        .from("profiles")
+        .select("username, email, icon_image")
+        .or(orFilter);
+      for (const p of senderProfiles ?? []) {
+        if (p.username) senderIconMap[p.username] = p.icon_image ?? null;
+        if (p.email) senderIconMap[p.email] = p.icon_image ?? null;
+      }
+    }
+
     items.push(
-      ...dbNotifications.map((n) => ({
-        id: n.id,
-        type: n.type,
-        title: n.title,
-        link: n.link,
-        source_id: n.source_id,
-        is_read: n.is_read,
-        created_at: n.created_at,
-      }))
+      ...dbNotifications.map((n) => {
+        const idx = n.title.indexOf("님이");
+        const senderName = idx > 0 ? n.title.slice(0, idx) : null;
+        const senderIcon = senderName ? (senderIconMap[senderName] ?? null) : null;
+        return {
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          link: n.link,
+          source_id: n.source_id,
+          is_read: n.is_read,
+          created_at: n.created_at,
+          sender_icon: senderIcon,
+        };
+      })
     );
     unreadCount += dbNotifications.filter((n) => !n.is_read).length;
   }
@@ -104,7 +137,8 @@ export async function createNotification(
   type: string,
   title: string,
   link: string,
-  sourceId?: string
+  sourceId?: string,
+  senderIcon?: string | null
 ): Promise<void> {
   const supabase = createSupabaseAdminClient();
 
@@ -129,6 +163,7 @@ export async function createNotification(
     link,
     source_id: sourceId,
     is_read: false,
+    sender_icon: senderIcon ?? null,
   });
 
   if (error) {

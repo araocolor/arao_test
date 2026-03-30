@@ -13,6 +13,16 @@ type NotificationDrawerProps = {
   onClose: () => void;
 };
 
+// 알림 제목에서 "{이름}님이" 앞부분을 bold 처리
+function formatTitle(title: string): React.ReactNode {
+  const t = title.endsWith(".") ? title : title + ".";
+  const idx = t.indexOf("님이");
+  if (idx <= 0) return t;
+  const name = t.slice(0, idx);
+  const rest = t.slice(idx);
+  return <><strong>{name}</strong>{rest}</>;
+}
+
 // 상대 시간 포맷 함수
 function formatRelativeTime(isoString: string): string {
   const now = Date.now();
@@ -173,11 +183,19 @@ export function NotificationDrawer({
                   {TYPE_ICON[item.type] || "🔔"}
                 </div>
                 <div className="notif-item-body">
-                  <p className="notif-item-title">{item.title}</p>
+                  <p className="notif-item-title">{formatTitle(item.title)}</p>
                   <p className="notif-item-time">
                     {formatRelativeTime(item.created_at)}
                   </p>
                 </div>
+                {item.sender_icon ? (
+                  <img src={item.sender_icon} className="notif-sender-avatar" alt="" />
+                ) : (
+                  <span className="notif-sender-avatar notif-sender-avatar-default">
+                    <span className="notif-sender-head" />
+                    <span className="notif-sender-body" />
+                  </span>
+                )}
               </Link>
               );
             })}

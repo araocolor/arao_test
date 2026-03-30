@@ -280,7 +280,7 @@ export async function toggleGalleryCommentLike(
     if (commentAuthorProfileId !== profileId) {
       const { data: liker } = await supabase
         .from("profiles")
-        .select("username, email")
+        .select("username, email, icon_image")
         .eq("id", profileId)
         .single();
 
@@ -297,7 +297,8 @@ export async function toggleGalleryCommentLike(
           "gallery_like",
           `${likerName}님이 좋아요를 남겼습니다`,
           `/gallery?category=${commentData.item_category}&index=${commentData.item_index}&commentId=${commentId}`,
-          commentId
+          commentId,
+          liker?.icon_image ?? null
         );
       }
     }

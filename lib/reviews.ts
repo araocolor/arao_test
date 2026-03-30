@@ -310,7 +310,7 @@ export async function createReviewReply(
   if (review && review.profile_id !== profileId) {
     const { data: liker } = await supabase
       .from("profiles")
-      .select("username")
+      .select("username, icon_image")
       .eq("id", profileId)
       .single();
 
@@ -319,7 +319,8 @@ export async function createReviewReply(
       "review_reply",
       `${liker?.username ?? "누군가"}님이 작성한 댓글에 새로운 답글이 있습니다`,
       `/account/reviews/${reviewId}`,
-      data.id
+      data.id,
+      liker?.icon_image ?? null
     );
   }
 

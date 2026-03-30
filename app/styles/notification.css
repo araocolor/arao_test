@@ -96,8 +96,8 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -206,7 +206,7 @@
 
 .notif-item-title {
   margin: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.4;
   color: var(--text);
@@ -243,6 +243,44 @@
   pointer-events: none;
   user-select: none;
   cursor: default;
+}
+
+/* 발신자 아바타 (오른쪽) */
+.notif-sender-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  align-self: center;
+}
+
+.notif-sender-avatar-default {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  background: var(--bg);
+  overflow: hidden;
+  position: relative;
+}
+
+.notif-sender-head {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--muted);
+  opacity: 0.5;
+  margin-bottom: 2px;
+}
+
+.notif-sender-body {
+  width: 22px;
+  height: 14px;
+  border-radius: 999px 999px 0 0;
+  background: var(--muted);
+  opacity: 0.35;
 }
 
 /* 더보기 버튼 */

@@ -56,7 +56,8 @@ export async function POST(
         "gallery_like",
         `${profile.username || profile.email || "사용자"}님이 좋아요를 남겼습니다`,
         `/gallery?category=${comment.item_category}&index=${comment.item_index}&commentId=${id}`,
-        id
+        id,
+        profile.icon_image ?? null
       );
     }
 
