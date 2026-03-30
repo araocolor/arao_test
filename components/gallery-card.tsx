@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { GalleryHeroItem } from "@/components/gallery-hero-item";
 import { GalleryCommentSheet } from "@/components/gallery-comment-sheet";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
@@ -30,6 +32,8 @@ export function GalleryCard({
   autoOpenComments = false,
   highlightCommentId,
 }: GalleryCardProps) {
+  const { isSignedIn } = useUser();
+  const router = useRouter();
   const [likeCount, setLikeCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [highlight, setHighlight] = useState(false);
@@ -56,10 +60,10 @@ export function GalleryCard({
       setCommentCount(data.commentCount ?? 0);
     }
 
-    // 캐시 히트 시 즉시 표시
+    // 캐시 히트 시 즉시 표시 (비로그인이면 liked 무시)
     const cached = getCached<{ count: number; liked: boolean; firstLiker: string | null; commentCount: number }>(cacheKey);
     if (cached) {
-      applyData(cached);
+      applyData(isSignedIn ? cached : { ...cached, liked: false });
       return;
     }
 
@@ -91,9 +95,13 @@ export function GalleryCard({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [category, index]);
+  }, [category, index, isSignedIn]);
 
   const handleLike = async () => {
+    if (!isSignedIn) {
+      router.push("/sign-in");
+      return;
+    }
     if (likeLoading) return;
     setLikeLoading(true);
     const wasLiked = liked;

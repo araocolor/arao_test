@@ -71,7 +71,18 @@ export function NotificationDrawer({
   onClose,
 }: NotificationDrawerProps) {
   const [optimisticReadIds, setOptimisticReadIds] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setExpanded(false);
+      return;
+    }
+    // 알림창 열릴 때 배경 스크롤 차단
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -150,7 +161,7 @@ export function NotificationDrawer({
           <div className="notif-empty">알림이 없습니다.</div>
         ) : (
           <div className="notif-list">
-            {items.map((item) => {
+            {(expanded ? items : items.slice(0, 5)).map((item) => {
               const isRead = item.is_read || optimisticReadIds.has(item.id);
               return (
               <Link
@@ -171,6 +182,15 @@ export function NotificationDrawer({
               </Link>
               );
             })}
+            {!expanded && items.length > 5 && (
+              <button
+                className="notif-more-btn"
+                onClick={() => setExpanded(true)}
+                type="button"
+              >
+                더보기 ({items.length - 5}개)
+              </button>
+            )}
           </div>
         )}
 

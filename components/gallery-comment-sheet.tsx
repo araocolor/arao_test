@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import type { GalleryComment } from "@/lib/gallery-interactions";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 
@@ -22,7 +23,8 @@ type Props = {
 };
 
 export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, highlightCommentId }: Props) {
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
+  const router = useRouter();
   const [comments, setComments] = useState<GalleryComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
@@ -328,6 +330,12 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            onFocus={(e) => {
+              if (!isSignedIn) {
+                e.target.blur();
+                router.push("/sign-in");
+              }
+            }}
           />
           <button
             className="gallery-sheet-submit"
