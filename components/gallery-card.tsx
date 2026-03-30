@@ -105,6 +105,12 @@ export function GalleryCard({
         const data = await res.json();
         setLiked(data.liked);
         setLikeCount(data.count);
+        // 캐시 업데이트 → 페이지 재방문 시 liked 상태 유지
+        const cacheKey = `gallery_card_${category}_${index}`;
+        const cached = getCached<{ count: number; liked: boolean; firstLiker: string | null; commentCount: number }>(cacheKey);
+        if (cached) {
+          setCached(cacheKey, { ...cached, liked: data.liked, count: data.count });
+        }
       } else {
         setLiked(wasLiked);
         setLikeCount((prev) => (wasLiked ? prev + 1 : Math.max(prev - 1, 0)));
@@ -219,7 +225,14 @@ export function GalleryCard({
           category={category}
           index={index}
           onClose={() => setCommentSheetOpen(false)}
-          onCommentAdded={() => setCommentCount((c) => c + 1)}
+          onCommentAdded={() => {
+            setCommentCount((c) => c + 1);
+            const cacheKey = `gallery_card_${category}_${index}`;
+            const cached = getCached<{ count: number; liked: boolean; firstLiker: string | null; commentCount: number }>(cacheKey);
+            if (cached) {
+              setCached(cacheKey, { ...cached, commentCount: cached.commentCount + 1 });
+            }
+          }}
           highlightCommentId={highlightCommentId}
         />
       )}

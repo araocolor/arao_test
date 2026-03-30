@@ -33,6 +33,7 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
   const [dragY, setDragY] = useState(0);
   const isDragging = useRef(false);
   const dragStartY = useRef(0);
+  const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const commentKey = `gallery_comments_${category}_${index}`;
@@ -73,6 +74,15 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
       .finally(() => { if (!cached) setLoading(false); });
   }, [category, index]);
 
+  // 하이라이트 댓글로 스크롤 (시트 슬라이드 애니메이션 끝난 후)
+  useEffect(() => {
+    if (!highlightCommentId || loading) return;
+    const timer = setTimeout(() => {
+      highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 380);
+    return () => clearTimeout(timer);
+  }, [highlightCommentId, loading]);
+
   function dismiss() {
     if (closing) return;
     setDragY(0);
@@ -93,6 +103,15 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
       if (res.ok) {
         const data = await res.json();
         setCommentLikes((s) => ({ ...s, [commentId]: { liked: data.liked, count: data.count } }));
+        // 캐시에도 반영 → 댓글창 재오픈 시 정확한 liked 상태 유지
+        const commentKey = `gallery_comments_${category}_${index}`;
+        const cached = getCached<{ comments: (GalleryComment & { user_liked?: boolean })[] }>(commentKey);
+        if (cached?.comments) {
+          const updatedComments = cached.comments.map((c) =>
+            c.id === commentId ? { ...c, user_liked: data.liked, like_count: data.count } : c
+          );
+          setCached(commentKey, { ...cached, comments: updatedComments });
+        }
       } else {
         // 실패 시 롤백
         setCommentLikes((s) => ({ ...s, [commentId]: prev }));
@@ -142,6 +161,13 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
           next[comment.id] = { liked: false, count: 0 };
           return next;
         });
+        // 캐시 업데이트 → 댓글창 재오픈 시 새 댓글 유지
+        const commentKey = `gallery_comments_${category}_${index}`;
+        const cached = getCached<{ comments: GalleryComment[] }>(commentKey);
+        if (cached?.comments) {
+          const withoutTemp = cached.comments.filter((c) => c.id !== tempId);
+          setCached(commentKey, { ...cached, comments: [...withoutTemp, comment] });
+        }
       } else {
         // 실패 시 롤백
         setComments((prev) => prev.filter((c) => c.id !== tempId));
@@ -233,8 +259,13 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
           )}
           {comments.map((c) => {
             const likeState = commentLikes[c.id] ?? { liked: false, count: c.like_count };
+            const isHighlight = c.id === highlightCommentId;
             return (
-              <div key={c.id} className={`gallery-comment-item${c.id === highlightCommentId ? " flash-highlight" : ""}`}>
+              <div
+                key={c.id}
+                ref={isHighlight ? highlightRef : undefined}
+                className={`gallery-comment-item${isHighlight ? " flash-highlight" : ""}`}
+              >
                 {c.author_icon_image ? (
                   <img src={c.author_icon_image} className="gallery-comment-avatar gallery-comment-avatar-img" alt="" />
                 ) : (
