@@ -30,6 +30,7 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [commentLikes, setCommentLikes] = useState<Record<string, { liked: boolean; count: number }>>({});
+  const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
   const [closing, setClosing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [dragY, setDragY] = useState(0);
@@ -93,6 +94,8 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
   }
 
   const handleCommentLike = async (commentId: string) => {
+    setAnimatingIds((s) => new Set(s).add(commentId));
+    setTimeout(() => setAnimatingIds((s) => { const n = new Set(s); n.delete(commentId); return n; }), 450);
     const prev = commentLikes[commentId] ?? { liked: false, count: 0 };
     const nextLiked = !prev.liked;
     const nextCount = nextLiked ? prev.count + 1 : Math.max(prev.count - 1, 0);
@@ -287,7 +290,7 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
                   <span className="gallery-comment-content">{c.content}</span>
                 </div>
                 <button
-                  className={`gallery-comment-like-btn${likeState.liked ? " liked" : ""}`}
+                  className={`gallery-comment-like-btn${likeState.liked ? " liked" : ""}${animatingIds.has(c.id) ? " heart-animate" : ""}`}
                   onClick={() => handleCommentLike(c.id)}
                 >
                   <svg

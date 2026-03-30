@@ -41,6 +41,7 @@ export function GalleryCard({
   const [commentCount, setCommentCount] = useState(0);
   const [commentSheetOpen, setCommentSheetOpen] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [likeAnimating, setLikeAnimating] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const userInteractedRef = useRef(false);
 
@@ -107,6 +108,8 @@ export function GalleryCard({
     }
     if (likeLoading) return;
     userInteractedRef.current = true;
+    setLikeAnimating(true);
+    setTimeout(() => setLikeAnimating(false), 450);
     setLikeLoading(true);
     const wasLiked = liked;
     setLiked(!wasLiked);
@@ -164,7 +167,7 @@ export function GalleryCard({
         {/* 인터랙션 바 */}
         <div className="gallery-action-bar">
           <button
-            className={`gallery-action-btn${liked ? " gallery-liked" : ""}`}
+            className={`gallery-action-btn${liked ? " gallery-liked" : ""}${likeAnimating ? " heart-animate" : ""}`}
             onClick={handleLike}
             disabled={likeLoading}
           >
