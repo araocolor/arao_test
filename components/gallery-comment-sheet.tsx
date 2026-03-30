@@ -45,14 +45,31 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded }
       setLoading(false);
     }
 
+    // 캐시 히트 시 즉시 댓글 표시
+    const cached = getCached<{ comments: (GalleryComment & { user_liked?: boolean })[] }>(commentKey);
+    if (cached) {
+      applyComments(cached);
+    }
+
+    // 항상 서버에서 최신 user_liked 상태 백그라운드 갱신
     fetch(`/api/gallery/${category}/${index}/comments`)
       .then((r) => r.json())
       .then((data) => {
         setCached(commentKey, data);
-        applyComments(data);
+        if (!cached) {
+          // 캐시 없었으면 전체 반영
+          applyComments(data);
+        } else {
+          // 캐시 있었으면 liked 상태만 조용히 업데이트
+          const likes: Record<string, { liked: boolean; count: number }> = {};
+          (data.comments ?? []).forEach((c: GalleryComment & { user_liked?: boolean }) => {
+            likes[c.id] = { liked: c.user_liked ?? false, count: c.like_count };
+          });
+          setCommentLikes(likes);
+        }
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => { if (!cached) setLoading(false); });
   }, [category, index]);
 
   function dismiss() {
