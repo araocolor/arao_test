@@ -30,38 +30,43 @@
   z-index: 60;
   display: flex;
   flex-direction: column;
-  transform: translateX(-100%);
-  opacity: 0;
-  transition: transform 1000ms cubic-bezier(0.25, 0.8, 0.25, 1), opacity 600ms ease;
+  transform: translateX(100%);
+  opacity: 1;
+  transition: transform 1000ms cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow: hidden;
 }
 
 .notif-drawer.is-open {
   transform: translateX(0);
-  opacity: 1;
 }
 
 .notif-drawer.is-closing {
   transform: translateX(100%);
-  opacity: 1;
-  transition: transform 1000ms cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* 태블릿 기준 (481px - 1023px) */
-@media (min-width: 481px) and (max-width: 1023px) {
+/* 태블릿+: 열기 페이드인, 닫기 페이드아웃 */
+@media (min-width: 481px) {
   .notif-drawer {
-    max-width: var(--tablet-width, 820px);
-    margin: 0 auto;
-    right: 0;
+    opacity: 0;
+    transition: transform 1000ms cubic-bezier(0.25, 0.8, 0.25, 1), opacity 400ms ease;
+  }
+  .notif-drawer.is-open {
+    opacity: 1;
+  }
+  .notif-drawer.is-closing {
+    transform: translateX(0);
+    opacity: 0;
+    transition: opacity 300ms ease;
   }
 }
 
-/* 데스크톱 기준 (1024px 이상) */
-@media (min-width: 1024px) {
+/* 태블릿/데스크톱: 컨테이너 기준 오른쪽 50% */
+@media (min-width: 481px) {
   .notif-drawer {
-    max-width: var(--tablet-width, 820px);
-    margin: 0 auto;
-    right: 0;
+    width: calc(var(--tablet-width, 820px) * 0.5);
+    left: auto;
+    right: max(0px, calc((100vw - var(--tablet-width, 820px)) / 2));
+    margin: 0;
   }
 }
 

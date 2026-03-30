@@ -111,9 +111,10 @@ export function HeaderProfileLink() {
   // 드로어 닫기
   function closeDrawer() {
     setDrawerOpen(false);
+    const isTablet = window.innerWidth >= 481;
     closeTimerRef.current = setTimeout(() => {
       setDrawerMounted(false);
-    }, 1000); // CSS transition duration과 동일
+    }, isTablet ? 300 : 1000);
   }
 
   // 정리
