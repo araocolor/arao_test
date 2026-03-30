@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { type NotificationItem } from "@/lib/notifications";
 
@@ -71,6 +71,22 @@ export function NotificationDrawer({
   onClose,
 }: NotificationDrawerProps) {
   const [optimisticReadIds, setOptimisticReadIds] = useState<Set<string>>(new Set());
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleOutsideClick(e: MouseEvent | TouchEvent) {
+      if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [isOpen, onClose]);
 
   if (!isMounted) return null;
 
@@ -94,6 +110,7 @@ export function NotificationDrawer({
 
       {/* 드로어 */}
       <div
+        ref={drawerRef}
         className={`notif-drawer ${isOpen ? "is-open" : "is-closing"}`}
         role="dialog"
         aria-modal="true"
