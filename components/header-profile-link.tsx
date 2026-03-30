@@ -189,6 +189,7 @@ export function HeaderProfileLink() {
           username={username}
           email={email}
           onClose={closeDrawer}
+          onMarkRead={(id) => setItems((prev) => prev.map((item) => item.id === id ? { ...item, is_read: true } : item))}
         />
       )}
     </>

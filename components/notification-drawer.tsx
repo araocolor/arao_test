@@ -11,6 +11,7 @@ type NotificationDrawerProps = {
   username: string | null;
   email: string | null;
   onClose: () => void;
+  onMarkRead: (id: string) => void;
 };
 
 // 알림 제목에서 "{이름}님이" 앞부분을 bold 처리
@@ -79,6 +80,7 @@ export function NotificationDrawer({
   username,
   email,
   onClose,
+  onMarkRead,
 }: NotificationDrawerProps) {
   const [optimisticReadIds, setOptimisticReadIds] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState(false);
@@ -115,6 +117,7 @@ export function NotificationDrawer({
     // settings/consulting 제외, 나머지는 즉시 읽음 처리
     if (item.type !== "settings" && item.type !== "consulting" && !item.is_read) {
       setOptimisticReadIds((prev) => new Set(prev).add(item.id));
+      onMarkRead(item.id);
       fetch(`/api/account/notifications/${item.id}`, { method: "PATCH" }).catch(() => {});
     }
     onClose();
