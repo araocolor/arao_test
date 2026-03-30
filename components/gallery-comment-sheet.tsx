@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useUser } from "@clerk/nextjs";
 import type { GalleryComment } from "@/lib/gallery-interactions";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function GalleryCommentSheet({ category, index, onClose, onCommentAdded }: Props) {
+  const { user } = useUser();
   const [comments, setComments] = useState<GalleryComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
@@ -87,10 +89,10 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded }
       content: input.trim(),
       like_count: 0,
       created_at: new Date().toISOString(),
-      author_username: null,
-      author_fullname: null,
+      author_username: (user?.username ?? null),
+      author_fullname: (user?.fullName ?? null),
       author_icon_image: null,
-      author_email: null,
+      author_email: (user?.primaryEmailAddress?.emailAddress ?? null),
     };
 
     // 즉시 UI 반영
