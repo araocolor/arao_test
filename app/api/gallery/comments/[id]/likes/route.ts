@@ -54,7 +54,7 @@ export async function POST(
       await createNotification(
         comment.profile_id,
         "gallery_like",
-        `${profile.username || "사용자"}님이 좋아요 ❤️를 남겼습니다.`,
+        `${profile.username || profile.email || "사용자"}님이 좋아요 ❤️를 남겼습니다.`,
         `/gallery?comment=${id}`,
         id
       );

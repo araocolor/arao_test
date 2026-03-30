@@ -280,7 +280,7 @@ export async function toggleGalleryCommentLike(
     if (commentAuthorProfileId !== profileId) {
       const { data: liker } = await supabase
         .from("profiles")
-        .select("username")
+        .select("username, email")
         .eq("id", profileId)
         .single();
 
@@ -291,10 +291,11 @@ export async function toggleGalleryCommentLike(
         .single();
 
       if (commentData) {
+        const likerName = liker?.username || liker?.email || "누군가";
         await createNotification(
           commentAuthorProfileId,
           "gallery_like",
-          `${liker?.username ?? "누군가"}님이 좋아요 하트를 남겼습니다`,
+          `${likerName}님이 좋아요 하트를 남겼습니다`,
           `/gallery`,
           commentId
         );
