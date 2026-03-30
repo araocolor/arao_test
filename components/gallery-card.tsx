@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { GalleryHeroItem } from "@/components/gallery-hero-item";
 import { GalleryCommentSheet } from "@/components/gallery-comment-sheet";
-import { getCached } from "@/hooks/use-prefetch-cache";
+import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 
 type GalleryCardProps = {
   category: string;
@@ -59,10 +59,19 @@ export function GalleryCard({
       (entries) => {
         if (entries[0].isIntersecting) {
           observer.disconnect();
+          // 좋아요 fetch
           fetch(`/api/gallery/${category}/${index}/likes`)
             .then((r) => r.json())
             .then((data) => applyData(data))
             .catch(() => {});
+          // 댓글 미리 캐시 (댓글창 열면 즉시 표시)
+          const commentKey = `gallery_comments_${category}_${index}`;
+          if (!getCached(commentKey)) {
+            fetch(`/api/gallery/${category}/${index}/comments`)
+              .then((r) => r.json())
+              .then((data) => setCached(commentKey, data))
+              .catch(() => {});
+          }
         }
       },
       { rootMargin: "300px" }

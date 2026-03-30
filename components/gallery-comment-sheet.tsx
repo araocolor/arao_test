@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { GalleryComment } from "@/lib/gallery-interactions";
+import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 
 function maskEmail(email: string): string {
   const atIndex = email.indexOf("@");
@@ -30,16 +31,29 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded }
   const dragStartY = useRef(0);
 
   useEffect(() => {
+    const commentKey = `gallery_comments_${category}_${index}`;
+
+    function applyComments(data: { comments?: GalleryComment[] }) {
+      const list: GalleryComment[] = data.comments ?? [];
+      setComments(list);
+      const likes: Record<string, { liked: boolean; count: number }> = {};
+      list.forEach((c) => { likes[c.id] = { liked: false, count: c.like_count }; });
+      setCommentLikes(likes);
+      setLoading(false);
+    }
+
+    // 캐시 히트 시 즉시 표시
+    const cached = getCached<{ comments: GalleryComment[] }>(commentKey);
+    if (cached) {
+      applyComments(cached);
+      return;
+    }
+
     fetch(`/api/gallery/${category}/${index}/comments`)
       .then((r) => r.json())
       .then((data) => {
-        const list: GalleryComment[] = data.comments ?? [];
-        setComments(list);
-        const likes: Record<string, { liked: boolean; count: number }> = {};
-        list.forEach((c) => {
-          likes[c.id] = { liked: false, count: c.like_count };
-        });
-        setCommentLikes(likes);
+        setCached(commentKey, data);
+        applyComments(data);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
