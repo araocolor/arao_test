@@ -97,11 +97,15 @@ See **backend.md** for API route patterns.
 
 `components/notification-drawer.tsx` — 헤더 캐릭터 클릭 시 표시
 
-- 헤더: 홈 아이콘(닫기) + 아이디/이메일(가운데) + 설정 아이콘(오른쪽)
+- 헤더: 왼쪽 화살표(닫기) + 아이디/이메일(가운데) + 설정 아이콘(오른쪽)
 - 아이디 없으면 이메일 표시
 - 새 알림(is_read=false): 노란색 배경 강조
 - consulting 알림: `notifications` 테이블 조회 시 `.neq("type","consulting")` 필수 → `lib/notifications.ts`에서 `inquiries` 쿼리로 별도 처리
-- 위치: `top: 56px` (헤더 바로 아래)
+- **레이아웃:** 모바일(≤480px) 전체화면, 태블릿/웹(≥481px) 500px 오른쪽 정렬
+- **애니메이션:** 오른쪽에서 슬라이드 인(1000ms) / 모바일 닫기: 오른쪽 슬라이드 아웃 / 태블릿 닫기: 페이드 아웃
+- **발신자 아바타:** `lib/notifications.ts`에서 알림 제목의 "님이" 앞 이름으로 프로필 조회 → `icon_image` 실시간 표시
+- **gallery_like 알림 링크:** `&t=${Date.now()}` 타임스탬프 추가 — 이미 같은 URL에 있어도 강제 재이동
+- `notifications` 테이블에 `sender_icon text` 컬럼 존재 (현재 미사용, 실시간 조회 방식 사용 중)
 
 ## Account Footer Nav
 
@@ -199,7 +203,7 @@ app/globals.css   # Global styles (500+ lines)
 ## Commit Convention
 
 - **Commit message pattern:** When user says "XXX로 올려", use "XXX" as the commit message verbatim
-- **Permission required:** Always request user approval before committing or pushing
+- **Permission required:** NEVER commit or push without explicit user instruction. Always ask first. This is a strict rule.
 - **Format:** `git commit -m "message" -m "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"`
 
 ## Pre-Push Checklist
@@ -228,3 +232,5 @@ User communicates in **Korean**. Respond in Korean when addressed in Korean. Gra
 | iOS input zoom | `font-size` must be ≥ 16px on `<input>` to prevent iOS Safari auto-zoom |
 | Hydration error after nav change | Delete `.next/` cache — stale server/client mismatch in client components |
 | Consulting notification duplicate | `notifications` 테이블 조회 시 `.neq("type", "consulting")` 필수 — inquiries 쿼리에서 별도 처리 |
+| Gallery like 하트 사라짐 | IntersectionObserver GET 응답이 클릭 후 도착해 상태 덮어씀 → `userInteractedRef`로 차단 (`gallery-card.tsx`) |
+| 지난 알림 클릭 시 flash 미동작 | 같은 URL 재방문 시 Next.js 재렌더 안 함 → `gallery_like` 링크에 `&t=Date.now()` 추가 |

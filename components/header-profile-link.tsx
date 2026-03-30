@@ -7,6 +7,7 @@ import { useNotificationCount } from "@/hooks/use-notification-count";
 import { useAdminPendingCount } from "@/hooks/use-admin-pending-count";
 import { NotificationDrawer } from "@/components/notification-drawer";
 import type { NotificationItem } from "@/lib/notifications";
+import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 
 export function HeaderProfileLink() {
   const { isSignedIn } = useUser();
@@ -61,6 +62,28 @@ export function HeaderProfileLink() {
         setItems(data.items);
         if (data.username) setUsername(data.username);
         if (data.email) setEmail(data.email);
+
+        // 새 알림(gallery_like)의 댓글 미리 캐시
+        const unreadGallery = (data.items as NotificationItem[]).filter(
+          (item) => item.type === "gallery_like" && !item.is_read
+        );
+        for (const item of unreadGallery) {
+          try {
+            const url = new URL(item.link, window.location.origin);
+            const category = url.searchParams.get("category");
+            const index = url.searchParams.get("index");
+            if (!category || !index) continue;
+            const commentKey = `gallery_comments_${category}_${index}`;
+            if (!getCached(commentKey)) {
+              fetch(`/api/gallery/${category}/${index}/comments`)
+                .then((r) => r.json())
+                .then((d) => setCached(commentKey, d))
+                .catch(() => {});
+            }
+          } catch {
+            // URL 파싱 실패 시 무시
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
