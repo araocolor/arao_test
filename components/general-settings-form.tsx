@@ -253,9 +253,8 @@ export function GeneralSettingsForm({
               {iconImage ? (
                 <img src={iconImage} alt={username} className="account-username-avatar" />
               ) : (
-                <span className="account-avatar-default">
-                  <span className="account-avatar-default-head" />
-                  <span className="account-avatar-default-body" />
+                <span className="account-avatar-default" aria-hidden="true">
+                  <span className="account-avatar-circle-icon" />
                 </span>
               )}
               <button
@@ -330,7 +329,21 @@ export function GeneralSettingsForm({
           </div>
         ) : (
           <>
-            <div className="account-username-avatar-placeholder">👤</div>
+            <div className="account-username-avatar-placeholder" aria-hidden="true">
+              <svg
+                className="account-username-register-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="9.2" />
+                <circle cx="12" cy="9" r="3" />
+                <path d="M7.2 17.2c1.4-2.1 2.9-3 4.8-3s3.4.9 4.8 3" />
+              </svg>
+            </div>
             <form className="account-inline-form" onSubmit={submitUsername}>
               <div className="account-inline-row">
                 <input

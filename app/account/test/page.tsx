@@ -4,7 +4,7 @@ import { syncProfile } from "@/lib/profiles";
 
 export const dynamic = "force-dynamic";
 
-export default async function MyColorPage() {
+export default async function AccountTestPage() {
   const { userId } = await auth();
   if (!userId) {
     redirect("/sign-in");
@@ -14,12 +14,13 @@ export default async function MyColorPage() {
   const email = user?.emailAddresses?.[0]?.emailAddress ?? user?.primaryEmailAddress?.emailAddress;
   const fullName = user?.fullName || null;
   const profile = await syncProfile({ email, fullName });
+
   const displayId = user?.username || profile?.username || profile?.email || email || "회원";
 
   return (
     <div className="admin-panel-card stack account-section-card page-slide-down">
-      <h2>{displayId}의 프로파일 입니다.</h2>
-      <p className="muted">나의 컬러 프로파일 페이지입니다.</p>
+      <h2>account/test</h2>
+      <p className="muted">불러온 아이디(또는 이메일):</p>
       <p style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>{displayId}</p>
     </div>
   );

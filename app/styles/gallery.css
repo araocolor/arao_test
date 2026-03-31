@@ -186,7 +186,7 @@
 }
 
 .gallery-action-like-count {
-  margin-left: -2px;
+  margin-left: -12px;
 }
 
 .gallery-action-count {
@@ -282,6 +282,20 @@
   padding: 10px 12px 14px;
 }
 
+.gallery-like-sheet-search-wrap {
+  padding: 2px 4px 8px;
+}
+
+.gallery-like-sheet-search {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #111;
+  background: #fff;
+}
+
 .gallery-like-sheet-row {
   display: flex;
   align-items: center;
@@ -296,15 +310,71 @@
   color: #111;
 }
 
-.gallery-like-sheet-save-btn {
-  border: 0;
-  background: transparent;
-  color: #111;
-  display: inline-flex;
+.gallery-like-sheet-profile-open-btn {
+  border: 1px solid #d1d5db;
+  background: #f3f4f6;
+  color: #111827;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gallery-inline-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  z-index: 20;
+}
+
+.gallery-inline-modal {
+  width: min(74%, 260px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  padding: 15px 10px 14px;
+}
+
+.gallery-inline-modal-text {
+  margin: 0;
+  font-size: 14px;
+  color: #111;
+  text-align: center;
+}
+
+.gallery-inline-modal-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.gallery-inline-modal-btn {
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+  min-width: 58px;
+  width: auto;
   cursor: pointer;
+}
+
+.gallery-inline-modal-btn-cancel {
+  border: 1px solid #d1d5db;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.gallery-inline-modal-btn-ok {
+  border: 1px solid rgba(107, 114, 128, 0.9);
+  background: rgba(107, 114, 128, 0.9);
+  color: #fff;
 }
 
 .gallery-like-sheet-avatar {
@@ -366,6 +436,7 @@
   max-width: var(--tablet-width, 820px);
   margin: 0 auto;
   height: 50vh;
+  position: relative;
   display: flex;
   flex-direction: column;
   animation: sheet-slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);

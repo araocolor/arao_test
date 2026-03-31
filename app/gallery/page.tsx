@@ -25,9 +25,9 @@ function formatGalleryExifCaption(item: { caption?: string; exif?: { camera?: st
 export default async function GalleryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; index?: string; commentId?: string; t?: string }>;
+  searchParams: Promise<{ category?: string; index?: string; commentId?: string; likesSheet?: string; t?: string }>;
 }) {
-  const { category: openCategory, index: openIndex, commentId: openCommentId, t: openTimestamp } = await searchParams;
+  const { category: openCategory, index: openIndex, commentId: openCommentId, likesSheet, t: openTimestamp } = await searchParams;
   const landingContent = await getLandingContent();
 
   return (
@@ -64,6 +64,7 @@ export default async function GalleryPage({
               caption={caption || undefined}
               aspectRatio={item.aspectRatio}
               autoOpenComments={category === openCategory && String(categoryIdx) === openIndex}
+              autoOpenLikes={likesSheet === "1" && category === openCategory && String(categoryIdx) === openIndex}
               highlightCommentId={category === openCategory && String(categoryIdx) === openIndex ? openCommentId : undefined}
               openTimestamp={category === openCategory && String(categoryIdx) === openIndex ? openTimestamp : undefined}
             />

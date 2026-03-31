@@ -18,6 +18,7 @@ type GalleryCardProps = {
   caption?: string;
   aspectRatio?: string;
   autoOpenComments?: boolean;
+  autoOpenLikes?: boolean;
   highlightCommentId?: string;
   openTimestamp?: string;
 };
@@ -32,6 +33,7 @@ export function GalleryCard({
   caption,
   aspectRatio,
   autoOpenComments = false,
+  autoOpenLikes = false,
   highlightCommentId,
   openTimestamp,
 }: GalleryCardProps) {
@@ -47,7 +49,10 @@ export function GalleryCard({
   const [likeAnimating, setLikeAnimating] = useState(false);
   const [likeUsersSheetOpen, setLikeUsersSheetOpen] = useState(false);
   const [likeUsersLoading, setLikeUsersLoading] = useState(false);
-  const [likeUsers, setLikeUsers] = useState<Array<{ username: string | null; email: string | null; icon_image: string | null; created_at: string | null }>>([]);
+  const [likeUsers, setLikeUsers] = useState<Array<{ profile_id: string; username: string | null; email: string | null; icon_image: string | null; created_at: string | null }>>([]);
+  const [likeUsersSearch, setLikeUsersSearch] = useState("");
+  const [profileCheckLoading, setProfileCheckLoading] = useState(false);
+  const [usernamePromptOpen, setUsernamePromptOpen] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const userInteractedRef = useRef(false);
   const cardCacheKey = `gallery_card_${category}_${index}_${user?.id ?? "guest"}`;
@@ -77,6 +82,13 @@ export function GalleryCard({
       setCommentSheetOpen(true);
     }
   }, [autoOpenComments, openTimestamp]);
+
+  useEffect(() => {
+    if (autoOpenLikes) {
+      cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      void openLikeUsersSheet();
+    }
+  }, [autoOpenLikes, openTimestamp]);
 
   useEffect(() => {
     if (!likeUsersSheetOpen) return;
@@ -213,6 +225,11 @@ export function GalleryCard({
     }
   };
 
+  const closeLikeUsersSheet = () => {
+    setLikeUsersSheetOpen(false);
+    setLikeUsersSearch("");
+  };
+
   const openLikeUsersSheet = async () => {
     setLikeUsersSheetOpen(true);
     if (likeUsers.length > 0) return;
@@ -231,16 +248,62 @@ export function GalleryCard({
     }
   };
 
+  const openUserProfilePage = async (profileId: string, username: string | null) => {
+    if (!isSignedIn) {
+      router.push("/sign-in");
+      return;
+    }
+
+    setProfileCheckLoading(true);
+    try {
+      const cachedGeneral = getCached<{ username?: string | null }>("general");
+      let myUsername = cachedGeneral?.username ?? null;
+
+      if (myUsername === null) {
+        const res = await fetch("/api/account/general");
+        if (res.ok) {
+          const generalData = await res.json();
+          setCached("general", generalData);
+          myUsername = generalData?.username ?? null;
+        }
+      }
+
+      if (!myUsername) {
+        setUsernamePromptOpen(true);
+        return;
+      }
+
+      const params = new URLSearchParams({ profileId });
+      if (username) params.set("username", username);
+      router.push(`/account/userpage?${params.toString()}`);
+    } catch {
+      setUsernamePromptOpen(true);
+    } finally {
+      setProfileCheckLoading(false);
+    }
+  };
+
   const likeLabelNode =
     likeCount === 0 ? null : likeCount === 1 ? (
       <><strong>{firstLiker ?? "누군가"}</strong>님이 좋아합니다</>
     ) : (
       <>
-        <strong>{firstLiker ?? "누군가"}</strong>님 외 <strong>{likeCount - 1}명</strong>이 좋아합니다
+        <strong>{firstLiker ?? "누군가"}</strong>님 외{" "}
+        <button type="button" className="gallery-like-count-btn" onClick={() => void openLikeUsersSheet()}>
+          <strong>{likeCount - 1}명</strong>
+        </button>
+        이 좋아합니다
       </>
     );
 
   const bodyLines = body ? body.split("\n") : [];
+  const filteredLikeUsers = likeUsers.filter((u) => {
+    const q = likeUsersSearch.trim().toLowerCase();
+    if (!q) return true;
+    const name = (u.username ?? "").toLowerCase();
+    const email = (u.email ?? "").toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
 
   return (
     <section className="gallery-section" ref={cardRef}>
@@ -274,13 +337,7 @@ export function GalleryCard({
             </svg>
           </button>
           {likeCount > 0 && (
-            <button
-              type="button"
-              className="gallery-action-btn gallery-action-like-count-btn"
-              onClick={() => void openLikeUsersSheet()}
-            >
-              <span className="gallery-action-count gallery-action-like-count">{likeCount}</span>
-            </button>
+            <span className="gallery-action-count gallery-action-like-count">{likeCount}</span>
           )}
 
           <button className="gallery-action-btn" onClick={() => setCommentSheetOpen(true)}>
@@ -349,20 +406,29 @@ export function GalleryCard({
       )}
 
       {likeUsersSheetOpen && (
-        <div className="gallery-sheet-overlay" onClick={() => setLikeUsersSheetOpen(false)}>
+        <div className="gallery-sheet-overlay" onClick={closeLikeUsersSheet}>
           <div className="gallery-sheet-panel gallery-like-sheet-panel" onClick={(e) => e.stopPropagation()}>
             <div className="gallery-sheet-drag-area">
               <div className="gallery-sheet-handle" />
               <p className="gallery-sheet-title">좋아요</p>
             </div>
             <div className="gallery-like-sheet-list">
+              <div className="gallery-like-sheet-search-wrap">
+                <input
+                  type="text"
+                  className="gallery-like-sheet-search"
+                  placeholder="아이디 또는 이메일 검색"
+                  value={likeUsersSearch}
+                  onChange={(e) => setLikeUsersSearch(e.target.value)}
+                />
+              </div>
               {likeUsersLoading ? (
                 <p className="gallery-sheet-empty">불러오는 중...</p>
-              ) : likeUsers.length === 0 ? (
+              ) : filteredLikeUsers.length === 0 ? (
                 <p className="gallery-sheet-empty">표시할 사용자가 없습니다</p>
               ) : (
-                likeUsers.map((u, i) => (
-                    <div key={`${u.username ?? u.email ?? "user"}-${i}`} className="gallery-like-sheet-row">
+                filteredLikeUsers.map((u, i) => (
+                  <div key={`${u.username ?? u.email ?? "user"}-${i}`} className="gallery-like-sheet-row">
                       <div className="gallery-like-sheet-left">
                         {u.icon_image ? (
                           <img src={u.icon_image} alt="" className="gallery-like-sheet-avatar" />
@@ -374,15 +440,48 @@ export function GalleryCard({
                           <p className="gallery-like-sheet-user-joined">{formatJoinDate(u.created_at)}</p>
                         </div>
                       </div>
-                    <button type="button" className="gallery-like-sheet-save-btn" aria-label="저장">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                      </svg>
+                    <button
+                      type="button"
+                      className="gallery-like-sheet-profile-open-btn"
+                      onClick={() => {
+                        if (!u.profile_id) return;
+                        void openUserProfilePage(u.profile_id, u.username);
+                      }}
+                      disabled={profileCheckLoading}
+                    >
+                      사용자프로파일
                     </button>
                   </div>
                 ))
               )}
             </div>
+
+            {usernamePromptOpen && (
+              <div className="gallery-inline-modal-overlay" onClick={(e) => e.stopPropagation()}>
+                <div className="gallery-inline-modal" onClick={(e) => e.stopPropagation()}>
+                  <p className="gallery-inline-modal-text">아이디 등록후 사용할수 있습니다.</p>
+                  <div className="gallery-inline-modal-actions">
+                    <button
+                      type="button"
+                      className="gallery-inline-modal-btn gallery-inline-modal-btn-cancel"
+                      onClick={() => setUsernamePromptOpen(false)}
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      className="gallery-inline-modal-btn gallery-inline-modal-btn-ok"
+                      onClick={() => {
+                        setUsernamePromptOpen(false);
+                        router.push("/account/general");
+                      }}
+                    >
+                      확인
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

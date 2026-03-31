@@ -791,48 +791,68 @@
 }
 
 .account-username-avatar-placeholder {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #d1d5db;
-  font-size: 24px;
+  background: transparent;
+  border: 1px solid transparent;
   flex-shrink: 0;
 }
 
 .account-avatar-default {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--line);
-  background: #fff;
+  border: 1px solid transparent;
+  background: transparent;
   flex-shrink: 0;
 }
 
-.account-avatar-default-head {
-  position: absolute;
-  top: 7px;
-  left: 50%;
-  width: 14px;
-  height: 14px;
-  background: #FCD34D;
-  border-radius: 999px;
-  transform: translateX(-50%);
+.account-avatar-modern-icon {
+  color: #6b7280;
+  width: 17px;
+  height: 17px;
 }
 
-.account-avatar-default-body {
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  width: 26px;
+.account-avatar-modern-icon-lg {
+  width: 19px;
+  height: 19px;
+}
+
+.account-avatar-any-icon {
+  font-size: 16px;
+  line-height: 1;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.account-avatar-circle-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.6px solid currentColor;
+  display: inline-block;
+}
+
+.account-avatar-circle-icon-lg {
+  width: 16px;
   height: 16px;
-  background: #FCD34D;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  transform: translateX(-50%);
+}
+
+.account-username-register-icon {
+  width: 30px;
+  height: 30px;
+  color: #8e8e93;
 }
 
 .account-avatar-edit-button {
