@@ -33,17 +33,10 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
   const [commentLikes, setCommentLikes] = useState<Record<string, { liked: boolean; count: number }>>({});
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
   const [closing, setClosing] = useState(false);
-  const [sheetMode, setSheetMode] = useState<"half" | "full">("half");
+  const [expanded, setExpanded] = useState(false);
   const [dragY, setDragY] = useState(0);
   const isDragging = useRef(false);
   const dragStartY = useRef(0);
-  const dragLastY = useRef(0);
-  const dragLastTs = useRef(0);
-  const dragVelocityY = useRef(0);
-  const gestureDecided = useRef(false);
-  const gestureControlsSheet = useRef(false);
-  const startedInComments = useRef(false);
-  const commentsContainerRef = useRef<HTMLDivElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const commentsRef = useRef<GalleryComment[]>([]);
 
@@ -244,81 +237,44 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
   // 드래그 핸들러
   function onDragStart(e: React.TouchEvent) {
     isDragging.current = true;
-    const y = e.touches[0].clientY;
-    dragStartY.current = y;
-    dragLastY.current = y;
-    dragLastTs.current = Date.now();
-    dragVelocityY.current = 0;
-    gestureDecided.current = false;
-    gestureControlsSheet.current = false;
-    startedInComments.current = commentsContainerRef.current?.contains(e.target as Node) ?? false;
+    dragStartY.current = e.touches[0].clientY;
   }
 
   function onDragMove(e: React.TouchEvent) {
     if (!isDragging.current) return;
-    const y = e.touches[0].clientY;
-    const now = Date.now();
-    const diff = y - dragStartY.current;
-    const stepDt = Math.max(now - dragLastTs.current, 1);
-    dragVelocityY.current = (y - dragLastY.current) / stepDt; // px/ms
-    dragLastY.current = y;
-    dragLastTs.current = now;
-
-    if (!gestureDecided.current && Math.abs(diff) > 6) {
-      if (!startedInComments.current) {
-        gestureControlsSheet.current = true;
-      } else {
-        const scrollTop = commentsContainerRef.current?.scrollTop ?? 0;
-        if (diff > 0) {
-          gestureControlsSheet.current = scrollTop <= 0;
-        } else {
-          gestureControlsSheet.current = sheetMode === "half" && scrollTop <= 0;
-        }
-      }
-      gestureDecided.current = true;
+    const diff = e.touches[0].clientY - dragStartY.current;
+    if (expanded) {
+      // 확장 상태: 아래로만
+      if (diff > 0) setDragY(diff);
+    } else {
+      // 기본 상태: 위아래 모두
+      setDragY(diff);
     }
-
-    if (!gestureControlsSheet.current) return;
-    e.preventDefault();
-
-    let next = diff;
-    if (sheetMode === "full" && next < 0) {
-      // full 상태에서 위로 더 끌 때는 저항만 주고 사실상 고정
-      next = next * 0.2;
-    }
-    setDragY(next);
   }
 
   function onDragEnd() {
     isDragging.current = false;
-    if (!gestureControlsSheet.current) return;
-
-    const fastDown = dragVelocityY.current > 0.6;
-    const fastUp = dragVelocityY.current < -0.6;
-
-    if (sheetMode === "half") {
-      if (dragY < -70 || fastUp) {
-        setSheetMode("full"); // 전체화면 확장
-      } else if (dragY > 130 || fastDown) {
-        dismiss(); // 닫기
-      }
+    if (expanded) {
+      if (dragY > 100) setExpanded(false); // 50vh로 복귀
       setDragY(0);
     } else {
-      if (dragY > 280 || (dragY > 180 && fastDown)) {
-        dismiss(); // 크게 내리면 닫기
-      } else if (dragY > 100 || fastDown) {
-        setSheetMode("half"); // 중간 높이로 복귀
+      if (dragY < -60) {
+        setExpanded(true); // 전체화면 확장
+        setDragY(0);
+      } else if (dragY > 80) {
+        dismiss(); // 닫기
+      } else {
+        setDragY(0);
       }
-      setDragY(0);
     }
   }
 
   const panelStyle: React.CSSProperties = {
-    height: sheetMode === "full" ? "100dvh" : "56vh",
-    borderRadius: sheetMode === "full" ? "0" : "20px 20px 0 0",
+    height: expanded ? "100dvh" : "50vh",
+    borderRadius: expanded ? "0" : "20px 20px 0 0",
     transform: closing
       ? "translateY(100%)"
-      : dragY !== 0
+      : dragY > 0
         ? `translateY(${dragY}px)`
         : undefined,
     transition: isDragging.current
@@ -337,21 +293,19 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
         className="gallery-sheet-panel"
         style={panelStyle}
         onClick={(e) => e.stopPropagation()}
-        onTouchStart={onDragStart}
-        onTouchMove={onDragMove}
-        onTouchEnd={onDragEnd}
       >
         {/* 드래그 핸들 + 타이틀 — 드래그 영역 */}
-        <div className="gallery-sheet-drag-area">
+        <div
+          className="gallery-sheet-drag-area"
+          onTouchStart={onDragStart}
+          onTouchMove={onDragMove}
+          onTouchEnd={onDragEnd}
+        >
           <div className="gallery-sheet-handle" />
           <p className="gallery-sheet-title">댓글</p>
         </div>
 
-        <div
-          ref={commentsContainerRef}
-          className="gallery-sheet-comments"
-          style={{ overscrollBehavior: "contain" }}
-        >
+        <div className="gallery-sheet-comments">
           {loading && <p className="gallery-sheet-empty">불러오는 중...</p>}
           {!loading && comments.length === 0 && (
             <p className="gallery-sheet-empty">첫 번째 댓글을 남겨보세요</p>
