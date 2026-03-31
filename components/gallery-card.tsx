@@ -45,12 +45,11 @@ export function GalleryCard({
   const [commentSheetOpen, setCommentSheetOpen] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [likeAnimating, setLikeAnimating] = useState(false);
-  const [likeUsersOpen, setLikeUsersOpen] = useState(false);
+  const [likeUsersSheetOpen, setLikeUsersSheetOpen] = useState(false);
   const [likeUsersLoading, setLikeUsersLoading] = useState(false);
-  const [likeUsers, setLikeUsers] = useState<Array<{ username: string | null; email: string | null }>>([]);
+  const [likeUsers, setLikeUsers] = useState<Array<{ username: string | null; email: string | null; icon_image: string | null; created_at: string | null }>>([]);
   const cardRef = useRef<HTMLElement>(null);
   const userInteractedRef = useRef(false);
-  const likePopupRef = useRef<HTMLDivElement>(null);
   const cardCacheKey = `gallery_card_${category}_${index}_${user?.id ?? "guest"}`;
 
   function maskEmail(email: string): string {
@@ -58,7 +57,18 @@ export function GalleryCard({
     if (atIndex < 0) return email;
     const local = email.slice(0, atIndex);
     const domain = email.slice(atIndex);
-    return local.slice(0, 2) + "***" + domain;
+    const visible = local.slice(0, 2);
+    return `${visible}******${domain}`;
+  }
+
+  function formatJoinDate(value: string | null): string {
+    if (!value) return "가입일 정보 없음";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "가입일 정보 없음";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `가입일 ${y}.${m}.${day}`;
   }
 
   useEffect(() => {
@@ -69,19 +79,16 @@ export function GalleryCard({
   }, [autoOpenComments, openTimestamp]);
 
   useEffect(() => {
-    if (!likeUsersOpen) return;
-    function handleOutsideClick(e: MouseEvent | TouchEvent) {
-      if (!likePopupRef.current?.contains(e.target as Node)) {
-        setLikeUsersOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("touchstart", handleOutsideClick);
+    if (!likeUsersSheetOpen) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("touchstart", handleOutsideClick);
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
     };
-  }, [likeUsersOpen]);
+  }, [likeUsersSheetOpen]);
 
   useEffect(() => {
     function applyData(data: { count?: number; liked?: boolean; firstLiker?: string | null; commentCount?: number }) {
@@ -206,15 +213,16 @@ export function GalleryCard({
     }
   };
 
-  const openLikeUsersPopup = async () => {
-    setLikeUsersOpen((prev) => !prev);
+  const openLikeUsersSheet = async () => {
+    setLikeUsersSheetOpen(true);
     if (likeUsers.length > 0) return;
     setLikeUsersLoading(true);
     try {
       const res = await fetch(`/api/gallery/${category}/${index}/likes/users`);
       if (res.ok) {
         const data = await res.json();
-        setLikeUsers(Array.isArray(data.users) ? data.users : []);
+        const users = Array.isArray(data.users) ? data.users : [];
+        setLikeUsers(users.slice(1));
       }
     } catch {
       setLikeUsers([]);
@@ -228,11 +236,7 @@ export function GalleryCard({
       <><strong>{firstLiker ?? "누군가"}</strong>님이 좋아합니다</>
     ) : (
       <>
-        <strong>{firstLiker ?? "누군가"}</strong>님 외{" "}
-        <button type="button" className="gallery-like-count-btn" onClick={() => void openLikeUsersPopup()}>
-          <strong>{likeCount - 1}명</strong>
-        </button>
-        이 좋아합니다
+        <strong>{firstLiker ?? "누군가"}</strong>님 외 <strong>{likeCount - 1}명</strong>이 좋아합니다
       </>
     );
 
@@ -268,8 +272,16 @@ export function GalleryCard({
             >
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
-            {likeCount > 0 && <span className="gallery-action-count">{likeCount}</span>}
           </button>
+          {likeCount > 0 && (
+            <button
+              type="button"
+              className="gallery-action-btn gallery-action-like-count-btn"
+              onClick={() => void openLikeUsersSheet()}
+            >
+              <span className="gallery-action-count gallery-action-like-count">{likeCount}</span>
+            </button>
+          )}
 
           <button className="gallery-action-btn" onClick={() => setCommentSheetOpen(true)}>
             <svg
@@ -304,26 +316,7 @@ export function GalleryCard({
           </button>
         </div>
 
-        {likeLabelNode && (
-          <div className="gallery-like-label-wrap" ref={likePopupRef}>
-            <p className="gallery-like-label">{likeLabelNode}</p>
-            {likeUsersOpen && (
-              <div className="gallery-like-users-popup">
-                {likeUsersLoading ? (
-                  <p className="gallery-like-users-empty">불러오는 중...</p>
-                ) : likeUsers.length === 0 ? (
-                  <p className="gallery-like-users-empty">표시할 사용자가 없습니다</p>
-                ) : (
-                  likeUsers.map((u, i) => (
-                    <p key={`${u.username ?? u.email ?? "user"}-${i}`} className="gallery-like-user-item">
-                      {u.username ?? (u.email ? maskEmail(u.email) : "익명")}
-                    </p>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        {likeLabelNode && <p className="gallery-like-label">{likeLabelNode}</p>}
 
         {bodyLines.length > 0 && (
           <p className="gallery-card-body">
@@ -353,6 +346,45 @@ export function GalleryCard({
           }}
           highlightCommentId={highlightCommentId}
         />
+      )}
+
+      {likeUsersSheetOpen && (
+        <div className="gallery-sheet-overlay" onClick={() => setLikeUsersSheetOpen(false)}>
+          <div className="gallery-sheet-panel gallery-like-sheet-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="gallery-sheet-drag-area">
+              <div className="gallery-sheet-handle" />
+              <p className="gallery-sheet-title">좋아요</p>
+            </div>
+            <div className="gallery-like-sheet-list">
+              {likeUsersLoading ? (
+                <p className="gallery-sheet-empty">불러오는 중...</p>
+              ) : likeUsers.length === 0 ? (
+                <p className="gallery-sheet-empty">표시할 사용자가 없습니다</p>
+              ) : (
+                likeUsers.map((u, i) => (
+                    <div key={`${u.username ?? u.email ?? "user"}-${i}`} className="gallery-like-sheet-row">
+                      <div className="gallery-like-sheet-left">
+                        {u.icon_image ? (
+                          <img src={u.icon_image} alt="" className="gallery-like-sheet-avatar" />
+                        ) : (
+                          <div className="gallery-like-sheet-avatar gallery-like-user-avatar-default" />
+                        )}
+                        <div className="gallery-like-sheet-user-meta">
+                          <p className="gallery-like-sheet-user-name">{u.username ?? (u.email ? maskEmail(u.email) : "익명")}</p>
+                          <p className="gallery-like-sheet-user-joined">{formatJoinDate(u.created_at)}</p>
+                        </div>
+                      </div>
+                    <button type="button" className="gallery-like-sheet-save-btn" aria-label="저장">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

@@ -72,7 +72,7 @@ export async function getGalleryItemLikeStatus(
 export async function getGalleryItemLikers(
   category: string,
   index: number
-): Promise<Array<{ profile_id: string; username: string | null; email: string | null }>> {
+): Promise<Array<{ profile_id: string; username: string | null; email: string | null; icon_image: string | null; created_at: string | null }>> {
   const supabase = createSupabaseAdminClient();
 
   const { data: likes, error: likesError } = await supabase
@@ -92,7 +92,7 @@ export async function getGalleryItemLikers(
 
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, username, email")
+    .select("id, username, email, icon_image, created_at")
     .in("id", profileIds);
 
   if (profilesError) {
@@ -107,6 +107,8 @@ export async function getGalleryItemLikers(
       profile_id: like.profile_id,
       username: profile?.username ?? null,
       email: profile?.email ?? null,
+      icon_image: profile?.icon_image ?? null,
+      created_at: profile?.created_at ?? null,
     };
   });
 }
