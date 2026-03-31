@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { GalleryHeroItem } from "@/components/gallery-hero-item";
 import { GalleryCommentSheet } from "@/components/gallery-comment-sheet";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type GalleryCardProps = {
   category: string;
@@ -18,6 +19,7 @@ type GalleryCardProps = {
   aspectRatio?: string;
   autoOpenComments?: boolean;
   highlightCommentId?: string;
+  openTimestamp?: string;
 };
 
 export function GalleryCard({
@@ -31,6 +33,7 @@ export function GalleryCard({
   aspectRatio,
   autoOpenComments = false,
   highlightCommentId,
+  openTimestamp,
 }: GalleryCardProps) {
   const { isSignedIn } = useUser();
   const router = useRouter();
@@ -50,7 +53,7 @@ export function GalleryCard({
       cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       setCommentSheetOpen(true);
     }
-  }, [autoOpenComments]);
+  }, [autoOpenComments, openTimestamp]);
 
   useEffect(() => {
     const cacheKey = `gallery_card_${category}_${index}`;
@@ -100,6 +103,38 @@ export function GalleryCard({
     observer.observe(el);
     return () => observer.disconnect();
   }, [category, index, isSignedIn]);
+
+  // Supabase Realtime: 다른 사용자의 좋아요 변경 실시간 반영
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel(`gallery-likes-${category}-${index}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "gallery_item_likes",
+          filter: `item_category=eq.${category}&item_index=eq.${index}`,
+        },
+        () => {
+          if (!userInteractedRef.current) {
+            fetch(`/api/gallery/${category}/${index}/likes`)
+              .then((r) => r.json())
+              .then((data) => {
+                if (!userInteractedRef.current) {
+                  setLikeCount(data.count ?? 0);
+                  setFirstLiker(data.firstLiker ?? null);
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [category, index]);
 
   const handleLike = async () => {
     if (!isSignedIn) {

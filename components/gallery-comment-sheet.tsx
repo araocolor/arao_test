@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import type { GalleryComment } from "@/lib/gallery-interactions";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function maskEmail(email: string): string {
   const atIndex = email.indexOf("@");
@@ -37,6 +38,10 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
   const isDragging = useRef(false);
   const dragStartY = useRef(0);
   const highlightRef = useRef<HTMLDivElement>(null);
+  const commentsRef = useRef<GalleryComment[]>([]);
+
+  // commentsRef를 항상 최신 상태로 유지 (Realtime 핸들러에서 사용)
+  useEffect(() => { commentsRef.current = comments; }, [comments]);
 
   useEffect(() => {
     const commentKey = `gallery_comments_${category}_${index}`;
@@ -92,6 +97,42 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
     }, 100);
     return () => clearTimeout(scrollTimer);
   }, [highlightCommentId, loading]);
+
+  // Supabase Realtime: 다른 사용자의 댓글 실시간 반영
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel(`gallery-comments-${category}-${index}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "gallery_comments",
+          filter: `item_category=eq.${category}&item_index=eq.${index}`,
+        },
+        (payload) => {
+          const newId = payload.new.id as string;
+          // 내가 방금 추가한 댓글이면 무시 (이미 옵티미스틱 UI로 반영됨)
+          if (commentsRef.current.some((c) => c.id === newId)) return;
+          // 다른 사람 댓글 → API 재조회로 author 정보 포함해서 추가
+          fetch(`/api/gallery/${category}/${index}/comments`)
+            .then((r) => r.json())
+            .then((data) => {
+              const list: (GalleryComment & { user_liked?: boolean })[] = data.comments ?? [];
+              setComments(list);
+              const likes: Record<string, { liked: boolean; count: number }> = {};
+              list.forEach((c) => { likes[c.id] = { liked: c.user_liked ?? false, count: c.like_count }; });
+              setCommentLikes(likes);
+              setCached(`gallery_comments_${category}_${index}`, data);
+            })
+            .catch(() => {});
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [category, index]);
 
   function dismiss() {
     if (closing) return;

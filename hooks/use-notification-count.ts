@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function useNotificationCount(isSignedIn: boolean) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -25,26 +26,31 @@ export function useNotificationCount(isSignedIn: boolean) {
     // 초기 로드
     void fetchUnreadCount();
 
-    // 60초마다 polling
-    const pollInterval = setInterval(fetchUnreadCount, 60_000);
-
-    // 탭 포커스 시 즉시 재조회
+    // 탭 포커스 시 재조회 (안전망)
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        void fetchUnreadCount();
-      }
+      if (!document.hidden) void fetchUnreadCount();
     };
 
     // 알림 카운트 강제 갱신 (이벤트 기반)
-    const handleRefreshNotification = () => {
-      void fetchUnreadCount();
-    };
+    const handleRefreshNotification = () => void fetchUnreadCount();
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("notification-refresh", handleRefreshNotification);
 
+    // Supabase Realtime 구독 (notifications + inquiries 테이블)
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel("notification-count")
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => {
+        void fetchUnreadCount();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "inquiries" }, () => {
+        void fetchUnreadCount();
+      })
+      .subscribe();
+
     return () => {
-      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("notification-refresh", handleRefreshNotification);
     };
