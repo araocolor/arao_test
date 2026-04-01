@@ -180,6 +180,15 @@
   gap: 16px;
 }
 
+.landing-review-section-link {
+  display: inline-flex;
+  width: fit-content;
+}
+
+.landing-review-card-link {
+  display: block;
+}
+
 .landing-card {
   border-radius: 16px;
   padding: 16px;

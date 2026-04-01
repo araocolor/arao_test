@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { BoardHeader } from "@/components/board-header";
 
 type Category = "일반" | "공지";
 
@@ -41,6 +42,9 @@ function compressImage(file: File): Promise<string | null> {
 
 export default function WriteReviewPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+  const isEditMode = !!editId;
   const { isSignedIn } = useUser();
   const [category, setCategory] = useState<Category>("일반");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -51,6 +55,20 @@ export default function WriteReviewPage() {
   const [imageError, setImageError] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 수정 모드: 기존 데이터 로드
+  useEffect(() => {
+    if (!editId) return;
+    fetch(`/api/main/user-review/${editId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.title) setTitle(d.title);
+        if (d.content) setContent(d.content);
+        if (d.category && (d.category === "일반" || d.category === "공지")) setCategory(d.category);
+        if (d.thumbnailImage) setImagePreview(d.thumbnailImage);
+      })
+      .catch(() => {});
+  }, [editId]);
 
   function handleCancel() {
     router.back();
@@ -80,18 +98,24 @@ export default function WriteReviewPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/main/user-review", {
-        method: "POST",
+      const url = isEditMode ? `/api/main/user-review/${editId}` : "/api/main/user-review";
+      const method = isEditMode ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category,
           title: title.trim(),
           content: content.trim(),
-          thumbnailImage: imagePreview ?? undefined,
+          thumbnailImage: imagePreview ?? null,
         }),
       });
       if (res.ok) {
-        router.push("/user_review");
+        if (isEditMode) {
+          router.push(`/user_content/${editId}`);
+        } else {
+          router.push("/user_review");
+        }
       }
     } finally {
       setSaving(false);
@@ -101,16 +125,9 @@ export default function WriteReviewPage() {
   return (
     <main className="write-review-shell">
       {/* 상단 헤더 */}
-      <header className="write-review-header">
-        <span className="write-review-header-title">후기 작성</span>
-        <button
-          type="button"
-          className="write-review-cancel-btn"
-          onClick={handleCancel}
-        >
-          취소
-        </button>
-      </header>
+      <BoardHeader
+        menuItems={[{ label: "취소", onClick: handleCancel }]}
+      />
 
       {/* 본문 */}
       <div className="write-review-body">

@@ -127,6 +127,50 @@ create table if not exists review_replies (
 );
 create index if not exists review_replies_review_id_idx on review_replies (review_id);
 
+-- 사용자 리뷰 (main/user_review 전용)
+create table if not exists user_reviews (
+  id              uuid primary key default gen_random_uuid(),
+  profile_id      uuid not null references profiles(id) on delete cascade,
+  title           text not null,
+  content         text not null,
+  thumbnail_image text,
+  view_count      int not null default 0,
+  like_count      int not null default 0,
+  is_public       boolean not null default true,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index if not exists user_reviews_profile_id_idx on user_reviews (profile_id);
+create index if not exists user_reviews_created_at_idx on user_reviews (created_at desc);
+
+create table if not exists user_review_likes (
+  review_id   uuid not null references user_reviews(id) on delete cascade,
+  profile_id  uuid not null references profiles(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (review_id, profile_id)
+);
+
+create table if not exists user_review_comments (
+  id          uuid primary key default gen_random_uuid(),
+  review_id   uuid not null references user_reviews(id) on delete cascade,
+  profile_id  uuid not null references profiles(id) on delete cascade,
+  parent_id   uuid references user_review_comments(id) on delete cascade,
+  is_deleted  boolean not null default false,
+  deleted_at  timestamptz,
+  content     text not null,
+  like_count  int not null default 0,
+  created_at  timestamptz not null default now()
+);
+create index if not exists user_review_comments_review_id_idx on user_review_comments (review_id, created_at);
+create index if not exists user_review_comments_parent_idx on user_review_comments (parent_id);
+
+create table if not exists user_review_comment_likes (
+  comment_id  uuid not null references user_review_comments(id) on delete cascade,
+  profile_id  uuid not null references profiles(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (comment_id, profile_id)
+);
+
 -- 갤러리 이미지 좋아요
 create table if not exists gallery_item_likes (
   item_category text not null,

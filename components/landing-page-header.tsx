@@ -11,6 +11,7 @@ export function LandingPageHeader() {
     { href: "/gallery", label: "갤러리" },
     { href: "/pricing", label: "구매정책" },
     { href: "/manual", label: "설치방법" },
+    { href: "/user_review", label: "커뮤니티" },
     { href: "/account/general", label: "개인/설정", divider: true },
   ];
 

@@ -339,6 +339,210 @@
   font-size: 13px;
 }
 
+/* ── 후기 내용 페이지 ── */
+
+.user-content-article {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 40px;
+}
+
+.user-content-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.user-content-meta {
+  margin: 0;
+  font-size: 13px;
+}
+
+.user-content-thumb {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+.user-content-body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text);
+  white-space: pre-line;
+}
+
+/* ── 좋아요 / 댓글 ── */
+
+.user-content-like-section {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+}
+
+.user-content-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 10px 20px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.user-content-like-btn.liked {
+  border-color: #FF2D2D;
+  color: #FF2D2D;
+}
+
+.user-content-like-count {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-content-comment-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  padding-bottom: 40px;
+}
+
+.user-content-comment-label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.user-content-comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.user-content-comment-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.user-content-comment-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-content-comment-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-content-comment-avatar-default {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.user-content-comment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.user-content-comment-author {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.user-content-comment-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.user-content-comment-text.deleted {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.user-content-comment-date {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.user-content-comment-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 6px 6px 6px 14px;
+}
+
+.user-content-comment-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--text);
+  outline: none;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.user-content-comment-input::placeholder {
+  color: var(--muted);
+}
+
+.user-content-comment-submit {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.user-content-comment-submit.active {
+  color: var(--text);
+}
+
+.user-content-comment-submit:disabled {
+  cursor: default;
+}
+
 /* ── 후기 작성 페이지 ── */
 
 .write-review-shell {

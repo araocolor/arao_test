@@ -8,6 +8,7 @@ import "./styles/admin.css";
 import "./styles/account.css";
 import "./styles/consulting.css";
 import "./styles/notification.css";
+import "./styles/user-review.css";
 
 export const metadata: Metadata = {
   title: "Expansion Architecture",
