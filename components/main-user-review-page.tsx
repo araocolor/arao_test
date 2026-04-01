@@ -211,7 +211,6 @@ export function MainUserReviewPage() {
                 <div className="user-review-item-main">
                   <p className="user-review-item-title">{item.title}</p>
                   <p className="user-review-item-meta">
-                    <span className="user-review-author-icon" aria-hidden="true">◯</span>
                     <span>{item.authorId}</span>
                     <span>{formatDate(item.createdAt)}</span>
                     <span>조회 {item.viewCount}</span>
@@ -250,7 +249,6 @@ export function MainUserReviewPage() {
                   <p className="user-review-item-title">{item.title}</p>
                   <p className="user-review-feed-text">{excerpt(item.content, 80)}</p>
                   <p className="user-review-item-meta">
-                    <span className="user-review-author-icon" aria-hidden="true">◯</span>
                     <span>{item.authorId}</span>
                     <span>{formatDate(item.createdAt)}</span>
                     <span>조회 {item.viewCount}</span>
