@@ -210,7 +210,12 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
         : null;
     const optimisticUsername = user?.username ?? knownUsernameFromComments ?? null;
     const parentId = replyTo?.parentId ?? null;
-    const replyTargetLabel = replyTo
+    const targetEmail = replyTo?.target.author_email?.toLowerCase() ?? null;
+    const targetUsername = replyTo?.target.author_username ?? null;
+    const isReplyToSelfByEmail = !!(replyTo && myEmail && targetEmail && myEmail === targetEmail);
+    const isReplyToSelfByUsername = !!(replyTo && user?.username && targetUsername && user.username === targetUsername);
+    const shouldShowReplyTarget = !!replyTo && !isReplyToSelfByEmail && !isReplyToSelfByUsername;
+    const replyTargetLabel = shouldShowReplyTarget
       ? (replyTo.target.author_username
         ? replyTo.target.author_username
         : replyTo.target.author_email
