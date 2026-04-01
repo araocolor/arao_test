@@ -41,6 +41,17 @@ export default async function MainUserContentPage({
   await incrementUserReviewViewCount(id);
   const isAuthor = userId === item.profileId;
 
+  // 단일 이미지 또는 JSON 배열 파싱
+  let contentImages: string[] = [];
+  if (item.thumbnailImage) {
+    try {
+      const parsed = JSON.parse(item.thumbnailImage);
+      contentImages = Array.isArray(parsed) ? parsed : [item.thumbnailImage];
+    } catch {
+      contentImages = [item.thumbnailImage];
+    }
+  }
+
   return (
     <main className="landing-page">
       <UserContentHeader reviewId={id} isAuthor={isAuthor} />
@@ -50,13 +61,9 @@ export default async function MainUserContentPage({
           <p className="user-content-meta muted">
             {item.authorId} · {formatDate(item.createdAt)} · 조회 {item.viewCount + 1}
           </p>
-          {item.thumbnailImage && (
-            <img
-              src={item.thumbnailImage}
-              alt=""
-              className="user-content-thumb"
-            />
-          )}
+          {contentImages.map((src, i) => (
+            <img key={i} src={src} alt="" className="user-content-thumb" />
+          ))}
           <p className="user-content-body">{item.content}</p>
         </article>
 
