@@ -1,5 +1,0 @@
-{
-  "name": "InstaClone",
-  "description": "A responsive Instagram-like social media app with photo uploads, likes, and nested comments.",
-  "requestFramePermissions": ["camera"]
-}

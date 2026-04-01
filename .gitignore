@@ -6,3 +6,11 @@ node_modules
 .env.local
 .DS_Store
 images/
+
+# 별도 프로젝트
+instaclone/
+
+# 빈 메모 파일
+Arao
+setting으로
+사용자로
