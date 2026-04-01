@@ -30,6 +30,17 @@ const SORT_OPTIONS: Array<{ value: SortMode; label: string; icon: string }> = [
   { value: "likes", label: "좋아요순", icon: "♥" },
 ];
 
+function getFirstImage(thumbnailImage: string | null): string | null {
+  if (!thumbnailImage) return null;
+  try {
+    const parsed = JSON.parse(thumbnailImage);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed[0] as string;
+  } catch {
+    // not JSON — use as-is
+  }
+  return thumbnailImage;
+}
+
 function formatDate(value: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "0000.00.00";
@@ -188,80 +199,89 @@ export function MainUserReviewPage() {
         <div className="user-review-empty">표시할 후기가 없습니다.</div>
       ) : viewMode === "list" ? (
         <div className="user-review-list">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="user-review-item list"
-              onClick={() => openReview(item.id)}
-            >
-              <div className="user-review-item-main">
-                <p className="user-review-item-title">{item.title}</p>
-                <p className="user-review-item-meta">
-                  <span className="user-review-author-icon" aria-hidden="true">◯</span>
-                  <span>{item.authorId}</span>
-                  <span>{formatDate(item.createdAt)}</span>
-                  <span>조회 {item.viewCount}</span>
-                </p>
-              </div>
-              <div className="user-review-item-thumb">
-                {item.thumbnailImage ? (
-                  <img src={item.thumbnailImage} alt="" loading="lazy" />
-                ) : (
-                  <span className="user-review-item-thumb-empty" aria-hidden="true" />
-                )}
-              </div>
-            </button>
-          ))}
+          {items.map((item) => {
+            const thumb = getFirstImage(item.thumbnailImage);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className="user-review-item list"
+                onClick={() => openReview(item.id)}
+              >
+                <div className="user-review-item-main">
+                  <p className="user-review-item-title">{item.title}</p>
+                  <p className="user-review-item-meta">
+                    <span className="user-review-author-icon" aria-hidden="true">◯</span>
+                    <span>{item.authorId}</span>
+                    <span>{formatDate(item.createdAt)}</span>
+                    <span>조회 {item.viewCount}</span>
+                  </p>
+                </div>
+                <div className="user-review-item-thumb">
+                  {thumb ? (
+                    <img src={thumb} alt="" loading="lazy" />
+                  ) : (
+                    <span className="user-review-item-thumb-empty" aria-hidden="true" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       ) : viewMode === "feed" ? (
         <div className="user-review-feed">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="user-review-item feed"
-              onClick={() => openReview(item.id)}
-            >
-              <div className="user-review-feed-thumb">
-                {item.thumbnailImage ? (
-                  <img src={item.thumbnailImage} alt="" loading="lazy" />
-                ) : (
-                  <span className="user-review-item-thumb-empty" aria-hidden="true" />
-                )}
-              </div>
-              <div className="user-review-feed-body">
-                <p className="user-review-item-title">{item.title}</p>
-                <p className="user-review-feed-text">{excerpt(item.content, 80)}</p>
-                <p className="user-review-item-meta">
-                  <span className="user-review-author-icon" aria-hidden="true">◯</span>
-                  <span>{item.authorId}</span>
-                  <span>{formatDate(item.createdAt)}</span>
-                  <span>조회 {item.viewCount}</span>
-                </p>
-              </div>
-            </button>
-          ))}
+          {items.map((item) => {
+            const thumb = getFirstImage(item.thumbnailImage);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className="user-review-item feed"
+                onClick={() => openReview(item.id)}
+              >
+                <div className="user-review-feed-thumb">
+                  {thumb ? (
+                    <img src={thumb} alt="" loading="lazy" />
+                  ) : (
+                    <span className="user-review-item-thumb-empty" aria-hidden="true" />
+                  )}
+                </div>
+                <div className="user-review-feed-body">
+                  <p className="user-review-item-title">{item.title}</p>
+                  <p className="user-review-feed-text">{excerpt(item.content, 80)}</p>
+                  <p className="user-review-item-meta">
+                    <span className="user-review-author-icon" aria-hidden="true">◯</span>
+                    <span>{item.authorId}</span>
+                    <span>{formatDate(item.createdAt)}</span>
+                    <span>조회 {item.viewCount}</span>
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="user-review-album">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="user-review-item album"
-              onClick={() => openReview(item.id)}
-            >
-              <div className="user-review-album-thumb">
-                {item.thumbnailImage ? (
-                  <img src={item.thumbnailImage} alt="" loading="lazy" />
-                ) : (
-                  <span className="user-review-item-thumb-empty" aria-hidden="true" />
-                )}
-              </div>
-              <p className="user-review-album-title">{item.title}</p>
-            </button>
-          ))}
+          {items.map((item) => {
+            const thumb = getFirstImage(item.thumbnailImage);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className="user-review-item album"
+                onClick={() => openReview(item.id)}
+              >
+                <div className="user-review-album-thumb">
+                  {thumb ? (
+                    <img src={thumb} alt="" loading="lazy" />
+                  ) : (
+                    <span className="user-review-item-thumb-empty" aria-hidden="true" />
+                  )}
+                </div>
+                <p className="user-review-album-title">{item.title}</p>
+              </button>
+            );
+          })}
         </div>
       )}
 
