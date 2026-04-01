@@ -18,7 +18,6 @@ export function useAccountPrefetch() {
     // 모든 캐시가 이미 있으면 prefetch 스킵 (효율성)
     if (
       getCached("orders") &&
-      getCached("general") &&
       getCached("consulting") &&
       getCached("general_inquiries")
     ) {
@@ -71,14 +70,14 @@ async function prefetchOrders() {
  */
 async function prefetchGeneral() {
   try {
-    // 캐시된 데이터가 있으면 스킵
-    if (getCached("general")) return;
-
     const res = await fetch("/api/account/general");
     if (!res.ok) return;
 
     const data = await res.json();
-    setCached("general", data);
+    const email = typeof data?.email === "string" ? data.email.toLowerCase() : null;
+    const cacheKey = email ? `general_${email}` : "general";
+    if (getCached(cacheKey)) return;
+    setCached(cacheKey, data);
   } catch (error) {
     console.error("[Prefetch Error] Failed to prefetch general:", error);
   }

@@ -69,7 +69,7 @@ See **backend.md** for API route patterns.
 - Unified notification system (6 types: settings, orders, consulting, reviews, gallery)
 - Reviews board with replies and likes
 - Gallery with Instagram-style card UI (likes, comments, emoji bar, drag-dismiss sheet)
-- Real-time notification badges (60s polling)
+- Real-time notification badges (Supabase Realtime — `notifications` + `inquiries` 테이블 구독)
 
 ## Gallery Card UI (Instagram Style)
 
@@ -79,12 +79,23 @@ See **backend.md** for API route patterns.
   - 하트: `likeCount >= 1` 이면 `#FF2D2D` (로고 빨간색) 채움
   - 좋아요 문구: `<strong>` 으로 아이디/N명 부분만 bold
 - **`components/gallery-comment-sheet.tsx`** — 바텀 시트 댓글창
-  - 높이 `50vh`, 드래그 다운 닫기, 외부 클릭 슬라이드 다운
+  - 높이 `70vh` (확장 시 `100dvh`), 드래그 다운 닫기, 외부 클릭 슬라이드 다운
   - 이모지 바 (40개), 이메일 마스킹 (`ch***@gmail.com`), 아바타 표시
   - input `font-size: 16px` 필수 (iOS 줌 방지)
+  - Supabase Realtime으로 다른 사용자 댓글 실시간 반영 (`commentsRef`로 중복 방지)
 - **`lib/gallery-interactions.ts`** — 좋아요/댓글 DB 로직 (admin 클라이언트, `GalleryComment` 타입 정의)
-- **API:** `/api/gallery/[category]/[index]/likes`, `/api/gallery/[category]/[index]/comments`, `/api/gallery/comments/[id]/likes`
+- **API:** `/api/gallery/[category]/[index]/likes`, `/api/gallery/[category]/[index]/comments`, `/api/gallery/comments/[id]/likes`, `/api/gallery/[category]/[index]/likes/users`
 - **DB 테이블:** `gallery_item_likes`, `gallery_comments`, `gallery_comment_likes` (RLS 비활성화)
+- **Supabase Realtime 필수 설정:** 아래 4개 테이블은 `supabase_realtime` publication에 추가되어 있어야 함
+  ```sql
+  alter publication supabase_realtime add table gallery_item_likes;
+  alter publication supabase_realtime add table gallery_comments;
+  alter publication supabase_realtime add table notifications;
+  alter publication supabase_realtime add table inquiries;
+  ```
+- **`autoOpenLikes` prop:** URL에 `likesSheet=1` 파라미터 있으면 좋아요 누른 사용자 시트 자동 오픈
+- **`/api/gallery/[category]/[index]/likes/users`** — 좋아요 누른 사용자 목록 API (시트에서 사용)
+- **좋아요 시트 → 사용자 프로필 이동:** 시트에서 아이디 클릭 시 `/usercolor/[profileId]` 또는 `/account/userpage`로 이동. 돌아오면 `likesSheet=1&t=` 파라미터로 좋아요 시트 복원
 - **아이디 없는 사용자 댓글:** `profile_id`로 저장됨 — 아이디 없어도 DB에 정상 저장됨
 
 ## Headers
@@ -107,6 +118,15 @@ See **backend.md** for API route patterns.
 - **gallery_like 알림 링크:** `&t=${Date.now()}` 타임스탬프 추가 — 이미 같은 URL에 있어도 강제 재이동
 - `notifications` 테이블에 `sender_icon text` 컬럼 존재 (현재 미사용, 실시간 조회 방식 사용 중)
 
+## 사용자 프로필 페이지
+
+갤러리 좋아요 시트에서 다른 유저 아이디 클릭 시 진입하는 공개 프로필 페이지.
+
+- **`/usercolor/[profileId]`** — 비로그인도 접근 가능한 공개 프로필 (아바타 + 가입일 표시)
+- **`/account/userpage`** — 로그인 필수, 본인 아이디 등록 필수. `profileId` 쿼리로 대상 사용자 표시
+- **`components/username-required-gate.tsx`** — 아이디 미등록 사용자 접근 시 confirm → `/account/general` 리다이렉트
+- 두 페이지 모두 `category`, `index`, `likesSheet` 쿼리를 유지해 "돌아가기" 버튼으로 갤러리 좋아요 시트 복원
+
 ## Account Footer Nav
 
 5개 고정: **홈(/)** → **사용자(/account/general)** → **상담내역** → **주문내역** → **내프로파일**
@@ -123,7 +143,7 @@ app/              # Next.js App Router
 
 components/       # React components
 lib/              # Utilities (supabase, consulting, profiles)
-hooks/            # React hooks (notification polling)
+hooks/            # React hooks (notification Realtime, prefetch cache 등)
 app/globals.css   # Global styles (500+ lines)
 ```
 
@@ -237,3 +257,4 @@ User communicates in **Korean**. Respond in Korean when addressed in Korean. Gra
 | Consulting notification duplicate | `notifications` 테이블 조회 시 `.neq("type", "consulting")` 필수 — inquiries 쿼리에서 별도 처리 |
 | Gallery like 하트 사라짐 | IntersectionObserver GET 응답이 클릭 후 도착해 상태 덮어씀 → `userInteractedRef`로 차단 (`gallery-card.tsx`) |
 | 지난 알림 클릭 시 flash 미동작 | 같은 URL 재방문 시 Next.js 재렌더 안 함 → `gallery_like` 링크에 `&t=Date.now()` 추가 |
+| 갤러리 알림 재클릭 시 댓글창 안 열림 | 이미 갤러리 페이지에 있으면 `autoOpenComments`가 `true→true`로 유지되어 effect 재실행 안 됨 → `openTimestamp` prop을 의존성에 추가해 `t` 값 변경으로 재실행 유도 |

@@ -16,6 +16,10 @@ type GeneralSettingsFormProps = {
   createdAt: string;
 };
 
+function getGeneralCacheKey(email?: string | null) {
+  return email ? `general_${email.toLowerCase()}` : "general";
+}
+
 export function GeneralSettingsForm({
   email,
   fullName: initialFullName,
@@ -140,7 +144,7 @@ export function GeneralSettingsForm({
     const nextEnabled = data.notificationEnabled ?? enabled;
     setNotificationEnabled(nextEnabled);
     setNotificationMessage(nextEnabled ? "알림 ON" : "알림 OFF");
-    clearCached("general");
+    clearCached(getGeneralCacheKey(email));
     window.dispatchEvent(new CustomEvent("notification-setting-updated", { detail: { enabled: nextEnabled } }));
     setSavingKey(null);
   }
@@ -173,7 +177,7 @@ export function GeneralSettingsForm({
     // 팝오버 닫고 아이콘을 미리보기 이미지로 즉시 반영
     if (previewImage) {
       setIconImage(previewImage);
-      clearCached("general");
+      clearCached(getGeneralCacheKey(email));
       window.dispatchEvent(new CustomEvent("avatar-updated", { detail: { iconImage: previewImage } }));
     }
     setIsEditingAvatar(false);
