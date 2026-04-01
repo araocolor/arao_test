@@ -70,7 +70,15 @@ export function MainUserReviewPage() {
   const [page, setPage] = useState(1);
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const limit = 20;
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user-review-read-ids");
+      if (stored) setReadIds(new Set(JSON.parse(stored) as string[]));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -139,6 +147,14 @@ export function MainUserReviewPage() {
       router.push("/sign-in");
       return;
     }
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem("user-review-read-ids", JSON.stringify([...next]));
+      } catch {}
+      return next;
+    });
     router.push(`/user_content/${id}`);
   };
 
@@ -209,7 +225,10 @@ export function MainUserReviewPage() {
                 onClick={() => openReview(item.id)}
               >
                 <div className="user-review-item-main">
-                  <p className="user-review-item-title">{item.title}</p>
+                  <p className="user-review-item-title">
+                    {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
+                    {item.title}
+                  </p>
                   <p className="user-review-item-meta">
                     <span>{item.authorId}</span>
                     <span>{formatDate(item.createdAt)}</span>
@@ -246,7 +265,10 @@ export function MainUserReviewPage() {
                   )}
                 </div>
                 <div className="user-review-feed-body">
-                  <p className="user-review-item-title">{item.title}</p>
+                  <p className="user-review-item-title">
+                    {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
+                    {item.title}
+                  </p>
                   <p className="user-review-feed-text">{excerpt(item.content, 80)}</p>
                   <p className="user-review-item-meta">
                     <span>{item.authorId}</span>
@@ -276,7 +298,10 @@ export function MainUserReviewPage() {
                     <span className="user-review-item-thumb-empty" aria-hidden="true" />
                   )}
                 </div>
-                <p className="user-review-album-title">{item.title}</p>
+                <p className="user-review-album-title">
+                  {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
+                  {item.title}
+                </p>
               </button>
             );
           })}
