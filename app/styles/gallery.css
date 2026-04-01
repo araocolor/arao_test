@@ -273,7 +273,7 @@
 }
 
 .gallery-like-sheet-panel {
-  height: 60vh;
+  height: 70vh;
 }
 
 .gallery-like-sheet-list {
@@ -311,9 +311,9 @@
 }
 
 .gallery-like-sheet-profile-open-btn {
-  border: 1px solid #d1d5db;
-  background: #f3f4f6;
-  color: #111827;
+  border: 1px solid #e5a41a;
+  background: #ffb92d;
+  color: #fff;
   border-radius: 8px;
   padding: 4px 8px;
   font-size: 12px;

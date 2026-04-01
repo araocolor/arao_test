@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties, type TouchEvent } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { GalleryHeroItem } from "@/components/gallery-hero-item";
@@ -48,6 +48,9 @@ export function GalleryCard({
   const [likeLoading, setLikeLoading] = useState(false);
   const [likeAnimating, setLikeAnimating] = useState(false);
   const [likeUsersSheetOpen, setLikeUsersSheetOpen] = useState(false);
+  const [likeUsersSheetClosing, setLikeUsersSheetClosing] = useState(false);
+  const [likeUsersSheetExpanded, setLikeUsersSheetExpanded] = useState(false);
+  const [likeUsersSheetDragY, setLikeUsersSheetDragY] = useState(0);
   const [likeUsersLoading, setLikeUsersLoading] = useState(false);
   const [likeUsers, setLikeUsers] = useState<Array<{ profile_id: string; username: string | null; email: string | null; icon_image: string | null; created_at: string | null }>>([]);
   const [likeUsersSearch, setLikeUsersSearch] = useState("");
@@ -55,7 +58,10 @@ export function GalleryCard({
   const [usernamePromptOpen, setUsernamePromptOpen] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const userInteractedRef = useRef(false);
+  const likeUsersSheetDraggingRef = useRef(false);
+  const likeUsersSheetDragStartYRef = useRef(0);
   const cardCacheKey = `gallery_card_${category}_${index}_${user?.id ?? "guest"}`;
+  const generalCacheKey = `general_${(user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? "guest").toLowerCase()}`;
 
   function maskEmail(email: string): string {
     const atIndex = email.indexOf("@");
@@ -226,12 +232,22 @@ export function GalleryCard({
     }
   };
 
-  const closeLikeUsersSheet = () => {
-    setLikeUsersSheetOpen(false);
-    setLikeUsersSearch("");
+  const dismissLikeUsersSheet = () => {
+    if (likeUsersSheetClosing) return;
+    setLikeUsersSheetDragY(0);
+    setLikeUsersSheetClosing(true);
+    setTimeout(() => {
+      setLikeUsersSheetOpen(false);
+      setLikeUsersSearch("");
+      setLikeUsersSheetClosing(false);
+      setLikeUsersSheetExpanded(false);
+    }, 300);
   };
 
   const openLikeUsersSheet = async () => {
+    setLikeUsersSheetClosing(false);
+    setLikeUsersSheetExpanded(false);
+    setLikeUsersSheetDragY(0);
     setLikeUsersSheetOpen(true);
     if (likeUsers.length > 0) return;
     setLikeUsersLoading(true);
@@ -249,6 +265,43 @@ export function GalleryCard({
     }
   };
 
+  function onLikeUsersSheetDragStart(e: TouchEvent) {
+    likeUsersSheetDraggingRef.current = true;
+    likeUsersSheetDragStartYRef.current = e.touches[0].clientY;
+  }
+
+  function onLikeUsersSheetDragMove(e: TouchEvent) {
+    if (!likeUsersSheetDraggingRef.current) return;
+    const diff = e.touches[0].clientY - likeUsersSheetDragStartYRef.current;
+    if (likeUsersSheetExpanded) {
+      if (diff > 0) setLikeUsersSheetDragY(diff);
+    } else {
+      setLikeUsersSheetDragY(diff);
+    }
+  }
+
+  function onLikeUsersSheetDragEnd() {
+    likeUsersSheetDraggingRef.current = false;
+    if (likeUsersSheetExpanded) {
+      if (likeUsersSheetDragY > 100) setLikeUsersSheetExpanded(false);
+      setLikeUsersSheetDragY(0);
+      return;
+    }
+
+    if (likeUsersSheetDragY < -60) {
+      setLikeUsersSheetExpanded(true);
+      setLikeUsersSheetDragY(0);
+      return;
+    }
+
+    if (likeUsersSheetDragY > 80) {
+      dismissLikeUsersSheet();
+      return;
+    }
+
+    setLikeUsersSheetDragY(0);
+  }
+
   const openUserProfilePage = async (profileId: string, username: string | null) => {
     if (!isSignedIn) {
       router.push("/sign-in");
@@ -257,14 +310,14 @@ export function GalleryCard({
 
     setProfileCheckLoading(true);
     try {
-      const cachedGeneral = getCached<{ username?: string | null }>("general");
+      const cachedGeneral = getCached<{ username?: string | null }>(generalCacheKey);
       let myUsername = cachedGeneral?.username ?? null;
 
       if (myUsername === null) {
         const res = await fetch("/api/account/general");
         if (res.ok) {
           const generalData = await res.json();
-          setCached("general", generalData);
+          setCached(generalCacheKey, generalData);
           myUsername = generalData?.username ?? null;
         }
       }
@@ -308,6 +361,21 @@ export function GalleryCard({
     const email = (u.email ?? "").toLowerCase();
     return name.includes(q) || email.includes(q);
   });
+
+  const likeUsersPanelStyle: CSSProperties = {
+    height: likeUsersSheetExpanded ? "100dvh" : "70vh",
+    borderRadius: likeUsersSheetExpanded ? "0" : "20px 20px 0 0",
+    transform: likeUsersSheetClosing
+      ? "translateY(100%)"
+      : likeUsersSheetDragY > 0
+        ? `translateY(${likeUsersSheetDragY}px)`
+        : undefined,
+    transition: likeUsersSheetDraggingRef.current
+      ? "none"
+      : likeUsersSheetClosing
+        ? "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)"
+        : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), height 0.3s cubic-bezier(0.32, 0.72, 0, 1), border-radius 0.3s",
+  };
 
   return (
     <section className="gallery-section" ref={cardRef}>
@@ -429,9 +497,14 @@ export function GalleryCard({
       )}
 
       {likeUsersSheetOpen && (
-        <div className="gallery-sheet-overlay" onClick={closeLikeUsersSheet}>
-          <div className="gallery-sheet-panel gallery-like-sheet-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="gallery-sheet-drag-area">
+        <div className={`gallery-sheet-overlay${likeUsersSheetClosing ? " is-closing" : ""}`} onClick={dismissLikeUsersSheet}>
+          <div className="gallery-sheet-panel gallery-like-sheet-panel" style={likeUsersPanelStyle} onClick={(e) => e.stopPropagation()}>
+            <div
+              className="gallery-sheet-drag-area"
+              onTouchStart={onLikeUsersSheetDragStart}
+              onTouchMove={onLikeUsersSheetDragMove}
+              onTouchEnd={onLikeUsersSheetDragEnd}
+            >
               <div className="gallery-sheet-handle" />
               <p className="gallery-sheet-title">좋아요</p>
             </div>
