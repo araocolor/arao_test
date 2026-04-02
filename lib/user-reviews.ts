@@ -172,23 +172,6 @@ export async function createUserReview(params: {
 
 export async function incrementUserReviewViewCount(id: string): Promise<void> {
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("user_reviews")
-    .select("view_count")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error || !data) {
-    if (error) console.error("incrementUserReviewViewCount fetch error:", error);
-    return;
-  }
-
-  const nextViewCount = (data.view_count ?? 0) + 1;
-  const { error: updateError } = await supabase
-    .from("user_reviews")
-    .update({ view_count: nextViewCount })
-    .eq("id", id);
-  if (updateError) {
-    console.error("incrementUserReviewViewCount update error:", updateError);
-  }
+  const { error } = await supabase.rpc("increment_user_review_view_count", { review_id: id });
+  if (error) console.error("incrementUserReviewViewCount error:", error);
 }
