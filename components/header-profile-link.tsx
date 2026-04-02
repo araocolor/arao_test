@@ -109,14 +109,15 @@ export function HeaderProfileLink() {
   }
 
   function prefetchGalleryFirst() {
-    // 첫 번째 카드(people/0) likes + comments 미리 fetch
-    const likesKey = "gallery_likes_people_0";
+    // 첫 번째 카드(people/0) 공개 데이터 prefetch (로그인 무관)
+    const publicKey = "gallery_public_people_0";
     const commentsKey = "gallery_comments_people_0";
-    if (!getCached(likesKey)) {
+    if (!getCached(publicKey)) {
       fetch("/api/gallery/people/0/likes")
         .then((r) => r.json())
-        .then((d) => {
-          setCached(likesKey, d);
+        .then((d: { count?: number; firstLiker?: string | null; commentCount?: number }) => {
+          // liked 제외한 공개 데이터만 저장
+          setCached(publicKey, { count: d.count ?? 0, firstLiker: d.firstLiker ?? null, commentCount: d.commentCount ?? 0 });
           // likes 완료 후 comments fetch
           if (!getCached(commentsKey)) {
             fetch("/api/gallery/people/0/comments")
@@ -146,18 +147,18 @@ export function HeaderProfileLink() {
       .catch(() => {});
   }
 
-  // 마운트 시 localStorage 캐시에서 즉시 복원
+  // 마운트 시 localStorage 캐시에서 즉시 복원 + 갤러리 공개 데이터 prefetch (로그인 무관)
   useEffect(() => {
     const cached = localStorage.getItem("header-avatar");
     if (cached) setIconImage(cached);
+    prefetchGalleryFirst();
   }, []);
 
-  // 초기 로드: 아바타 먼저 → 알림 + 갤러리캐싱 동시 → 커뮤니티 순차 / 로그아웃 시 캐시 제거
+  // 초기 로드: 아바타 먼저 → 알림 + 커뮤니티 캐싱 동시 / 로그아웃 시 캐시 제거
   useEffect(() => {
     if (isSignedIn) {
       void fetchAvatar();
       void fetchNotificationItems();
-      prefetchGalleryFirst();
       prefetchUserReviewList();
     } else if (isSignedIn === false) {
       setIconImage(null);

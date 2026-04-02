@@ -75,6 +75,7 @@ export function GalleryCard({
   const likeUsersSheetDraggingRef = useRef(false);
   const likeUsersSheetDragStartYRef = useRef(0);
   const cardCacheKey = `gallery_card_${category}_${index}_${user?.id ?? "guest"}`;
+  const publicCacheKey = `gallery_public_${category}_${index}`;
   const likeUsersCacheKey = `gallery_like_users_${category}_${index}`;
   const generalCacheKey = `general_${(user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? "guest").toLowerCase()}`;
 
@@ -132,10 +133,16 @@ export function GalleryCard({
       setCommentCount(data.commentCount ?? 0);
     }
 
-    // 캐시 히트 시 즉시 표시 (비로그인이면 liked 무시)
+    // 사용자별 캐시 히트 시 즉시 표시 (비로그인이면 liked 무시)
     const cached = getCached<{ count: number; liked: boolean; firstLiker: string | null; commentCount: number }>(cardCacheKey);
     if (cached) {
       applyData(isSignedIn ? cached : { ...cached, liked: false });
+    } else {
+      // 공용 캐시 폴백 (로그인/비로그인 모두, liked=false)
+      const publicCached = getCached<{ count: number; firstLiker: string | null; commentCount: number }>(publicCacheKey);
+      if (publicCached) {
+        applyData({ ...publicCached, liked: false });
+      }
     }
 
     // Intersection Observer: 카드가 화면 300px 앞에 오면 fetch
@@ -153,6 +160,7 @@ export function GalleryCard({
               if (!userInteractedRef.current) {
                 applyData(data);
                 setCached(cardCacheKey, data);
+                setCached(publicCacheKey, { count: data.count ?? 0, firstLiker: data.firstLiker ?? null, commentCount: data.commentCount ?? 0 });
               }
               // 좋아요 시트 사용자 목록 미리 캐시 (클릭 즉시 표시용)
               if ((data.count ?? 0) > 1 && !getCached<{ users: LikeUser[] }>(likeUsersCacheKey)) {
@@ -181,7 +189,7 @@ export function GalleryCard({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [category, index, isSignedIn, cardCacheKey, likeUsersCacheKey]);
+  }, [category, index, isSignedIn, cardCacheKey, publicCacheKey, likeUsersCacheKey]);
 
   // Supabase Realtime: 다른 사용자의 좋아요 변경 실시간 반영
   useEffect(() => {
