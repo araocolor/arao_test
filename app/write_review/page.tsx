@@ -50,16 +50,21 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([array], { type: mime });
 }
 
-async function uploadImage(blob: Blob, path: string): Promise<string | null> {
+async function uploadBatch(
+  files: Array<{ blob: Blob; path: string; key: string }>
+): Promise<Record<string, string>> {
   const form = new FormData();
-  form.append("file", blob, "image.jpg");
-  form.append("path", path);
+  files.forEach((f, i) => {
+    form.append(`file_${i}`, f.blob, "image.jpg");
+    form.append(`path_${i}`, f.path);
+    form.append(`key_${i}`, f.key);
+  });
   try {
     const res = await fetch("/api/main/user-review/upload", { method: "POST", body: form });
-    if (!res.ok) { console.error("upload error:", await res.text()); return null; }
-    const data = (await res.json()) as { url: string };
-    return data.url;
-  } catch (e) { console.error("upload error:", e); return null; }
+    if (!res.ok) { console.error("upload error:", await res.text()); return {}; }
+    const data = (await res.json()) as { urls: Record<string, string> };
+    return data.urls;
+  } catch (e) { console.error("upload error:", e); return {}; }
 }
 
 function WriteReviewContent() {
@@ -219,26 +224,33 @@ function WriteReviewContent() {
         const mediumUrls: string[] = [];
         const thumbUrls: string[] = [];
 
-        await Promise.all(
+        // 모든 이미지 압축
+        const compressed = await Promise.all(
           imageFiles.map(async (file, i) => {
-            const idx = i + 1;
-            const [origDataUrl, medDataUrl, thumbDataUrl] = await Promise.all([
+            const [orig, med, thumb] = await Promise.all([
               compressToDataUrl(file, ORIGINAL_WIDTH, ORIGINAL_QUALITY),
               compressToDataUrl(file, MEDIUM_WIDTH, MEDIUM_QUALITY),
               compressToDataUrl(file, THUMB_WIDTH, THUMB_QUALITY),
             ]);
-
-            const [origUrl, medUrl, thumbUrl] = await Promise.all([
-              origDataUrl ? uploadImage(dataUrlToBlob(origDataUrl), `${postId}/${idPrefix}_original_${idx}.jpg`) : null,
-              medDataUrl ? uploadImage(dataUrlToBlob(medDataUrl), `${postId}/${idPrefix}_medium_${idx}.jpg`) : null,
-              thumbDataUrl ? uploadImage(dataUrlToBlob(thumbDataUrl), `${postId}/${idPrefix}_thumb_${idx}.jpg`) : null,
-            ]);
-
-            originalUrls[i] = origUrl ?? "";
-            mediumUrls[i] = medUrl ?? "";
-            thumbUrls[i] = thumbUrl ?? "";
+            return { i, orig, med, thumb };
           })
         );
+
+        // 한 번의 API 호출로 모든 파일 업로드
+        const batch: Array<{ blob: Blob; path: string; key: string }> = [];
+        for (const { i, orig, med, thumb } of compressed) {
+          const idx = i + 1;
+          if (orig) batch.push({ blob: dataUrlToBlob(orig), path: `${postId}/${idPrefix}_original_${idx}.jpg`, key: `orig_${i}` });
+          if (med) batch.push({ blob: dataUrlToBlob(med), path: `${postId}/${idPrefix}_medium_${idx}.jpg`, key: `med_${i}` });
+          if (thumb) batch.push({ blob: dataUrlToBlob(thumb), path: `${postId}/${idPrefix}_thumb_${idx}.jpg`, key: `thumb_${i}` });
+        }
+
+        const urls = await uploadBatch(batch);
+        for (let i = 0; i < imageFiles.length; i++) {
+          originalUrls[i] = urls[`orig_${i}`] ?? "";
+          mediumUrls[i] = urls[`med_${i}`] ?? "";
+          thumbUrls[i] = urls[`thumb_${i}`] ?? "";
+        }
 
         // 기존 URL + 새 URL 합치기
         const allOriginals = [...existingImageUrls, ...originalUrls.filter(Boolean)];

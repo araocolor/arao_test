@@ -9,25 +9,39 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData();
-  const file = formData.get("file") as File | null;
-  const path = formData.get("path") as string | null;
-
-  if (!file || !path) {
-    return NextResponse.json({ error: "파일과 경로가 필요합니다." }, { status: 400 });
-  }
-
   const supabase = createSupabaseAdminClient();
-  const buffer = Buffer.from(await file.arrayBuffer());
 
-  const { error } = await supabase.storage
-    .from("board_image")
-    .upload(path, buffer, { contentType: "image/jpeg", upsert: true });
+  // formData에서 모든 파일+경로 쌍 추출
+  const results: Record<string, string> = {};
+  const uploads: Promise<void>[] = [];
 
-  if (error) {
-    console.error("Storage upload error:", error);
-    return NextResponse.json({ error: "업로드 실패" }, { status: 500 });
+  let i = 0;
+  while (formData.has(`file_${i}`)) {
+    const file = formData.get(`file_${i}`) as File | null;
+    const path = formData.get(`path_${i}`) as string | null;
+    const key = formData.get(`key_${i}`) as string | null;
+
+    if (file && path && key) {
+      const idx = i;
+      uploads.push(
+        file.arrayBuffer().then(async (ab) => {
+          const buffer = Buffer.from(ab);
+          const { error } = await supabase.storage
+            .from("board_image")
+            .upload(path, buffer, { contentType: "image/jpeg", upsert: true });
+
+          if (error) {
+            console.error(`Storage upload error [${key}]:`, error);
+            return;
+          }
+          const { data } = supabase.storage.from("board_image").getPublicUrl(path);
+          results[formData.get(`key_${idx}`) as string] = data.publicUrl;
+        })
+      );
+    }
+    i++;
   }
 
-  const { data } = supabase.storage.from("board_image").getPublicUrl(path);
-  return NextResponse.json({ url: data.publicUrl });
+  await Promise.all(uploads);
+  return NextResponse.json({ urls: results });
 }

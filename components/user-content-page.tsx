@@ -1,13 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { UserContentHeader } from "@/components/user-content-header";
 import { UserContentInteractions } from "@/components/user-content-interactions";
 
-function LazyImage({ src, thumbnail }: { src: string; thumbnail?: string }) {
+function ContentImage({
+  src,
+  thumbnail,
+  originalSrc,
+  onClickView,
+}: {
+  src: string;
+  thumbnail?: string;
+  originalSrc?: string;
+  onClickView: (src: string) => void;
+}) {
   const [loaded, setLoaded] = useState(false);
   return (
-    <>
+    <button
+      type="button"
+      className="user-content-thumb-btn"
+      onClick={() => onClickView(originalSrc ?? src)}
+    >
       {thumbnail && !loaded && (
         <img src={thumbnail} alt="" className="user-content-thumb user-content-thumb-blur" />
       )}
@@ -18,7 +32,7 @@ function LazyImage({ src, thumbnail }: { src: string; thumbnail?: string }) {
         style={{ display: loaded ? "block" : "none" }}
         onLoad={() => setLoaded(true)}
       />
-    </>
+    </button>
   );
 }
 
@@ -57,12 +71,14 @@ function getContentCache(id: string): ReviewItem | null {
 }
 
 export function UserContentPage({ id }: { id: string }) {
-  // 첫 렌더링부터 캐시 데이터 동기적으로 읽음 (리스트와 동일 방식)
   const [item, setItem] = useState<ReviewItem | null>(() => getContentCache(id));
   const [notFound, setNotFound] = useState(false);
+  const [viewerSrc, setViewerSrc] = useState<string | null>(null);
+  const [isLandscape, setIsLandscape] = useState(false);
+  const [viewerLoaded, setViewerLoaded] = useState(false);
+  const originalCacheRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
-    // 캐시 있으면 백그라운드 갱신, 없으면 fetch
     fetch(`/api/main/user-review/${id}`)
       .then((r) => {
         if (!r.ok) { setNotFound(true); return null; }
@@ -91,7 +107,7 @@ export function UserContentPage({ id }: { id: string }) {
     }
   }
 
-  // 중간 URL 배열 (480px, 앞 3장 즉시 표시용)
+  // 중간 URL 배열 (480px)
   const mediumImages: string[] = [];
   if (item?.thumbnailSmall) {
     try {
@@ -99,6 +115,48 @@ export function UserContentPage({ id }: { id: string }) {
       if (Array.isArray(parsed)) mediumImages.push(...parsed);
     } catch {}
   }
+
+  // 본문 표시용 이미지: 480px 우선, 없으면 원본
+  const displayImages = originalImages.map((orig, i) => ({
+    display: mediumImages[i] ?? orig,
+    thumbnail: i < 3 && mediumImages[i] ? undefined : undefined,
+    original: orig,
+  }));
+
+  // 페이지 로드 완료 후 1024px 원본 백그라운드 캐싱
+  useEffect(() => {
+    if (!item || originalImages.length === 0) return;
+    const timer = setTimeout(() => {
+      originalImages.forEach((src) => {
+        if (originalCacheRef.current[src]) return;
+        const img = new Image();
+        img.onload = () => { originalCacheRef.current[src] = true; };
+        img.src = src;
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [item]);
+
+  // 이미지 클릭 → 1024px 뷰어
+  const openViewer = useCallback((src: string) => {
+    setViewerLoaded(false);
+    setIsLandscape(false);
+    setViewerSrc(src);
+    document.body.style.overflow = "hidden";
+  }, []);
+
+  const closeViewer = useCallback(() => {
+    setViewerSrc(null);
+    setViewerLoaded(false);
+    document.body.style.overflow = "";
+  }, []);
+
+  // 뷰어 이미지 로드 시 가로/세로 판단
+  const handleViewerLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setIsLandscape(img.naturalWidth > img.naturalHeight);
+    setViewerLoaded(true);
+  }, []);
 
   let attachedFile: { name: string; type: string; data: string } | null = null;
   if (item?.attachedFile) {
@@ -127,12 +185,13 @@ export function UserContentPage({ id }: { id: string }) {
               <p className="user-content-meta muted">
                 {item.authorId} · {formatDate(item.createdAt)} · 조회 {item.viewCount + 1}
               </p>
-              {originalImages.map((src, i) => (
-                i < 3 ? (
-                  <LazyImage key={i} src={src} thumbnail={mediumImages[i]} />
-                ) : (
-                  <LazyImage key={i} src={src} />
-                )
+              {displayImages.map((img, i) => (
+                <ContentImage
+                  key={i}
+                  src={img.display}
+                  originalSrc={img.original}
+                  onClickView={openViewer}
+                />
               ))}
               {attachedFile && (
                 <a
@@ -157,6 +216,22 @@ export function UserContentPage({ id }: { id: string }) {
           </>
         )}
       </div>
+
+      {/* 1024px 원본 이미지 뷰어 */}
+      {viewerSrc && (
+        <div className="user-content-viewer-overlay" onClick={closeViewer}>
+          <div className="user-content-viewer-wrap">
+            {!viewerLoaded && <div className="user-content-viewer-spinner" />}
+            <img
+              src={viewerSrc}
+              alt=""
+              className={`user-content-viewer-img${isLandscape ? " landscape" : ""}`}
+              style={{ opacity: viewerLoaded ? 1 : 0 }}
+              onLoad={handleViewerLoad}
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }
