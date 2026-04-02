@@ -4,6 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **레이아웃 수정 요청 시** → **LAYOUT_MAP.md** 를 먼저 참조. 구역명(헤더, 히어로, 계정 > 하단탭 등)으로 파일과 클래스를 즉시 찾을 수 있음.
 
+## 체크리스트
+
+- [ ] 이미지는 Supabase Storage에 업로드 후 URL만 DB에 저장 (base64 DB 직접 저장 금지)
+- [ ] 커뮤니티 이미지 저장 방식을 Supabase Storage URL 방식으로 전환
+
 ## Quick Start
 
 ```bash
