@@ -23,35 +23,40 @@ function formatDate(value: string): string {
   return `${m}.${day} ${h}:${min}`;
 }
 
+function getLikesCache(reviewId: string): { liked: boolean; likeCount: number } | null {
+  try {
+    const cached = sessionStorage.getItem(`user-review-likes-${reviewId}`);
+    if (!cached) return null;
+    const { data, ts } = JSON.parse(cached) as { data: { liked: boolean; likeCount: number }; ts: number };
+    if (Date.now() - ts < 300000) return data;
+  } catch {}
+  return null;
+}
+
+function getCommentsCache(reviewId: string): Comment[] | null {
+  try {
+    const cached = sessionStorage.getItem(`user-review-comments-${reviewId}`);
+    if (!cached) return null;
+    const { data, ts } = JSON.parse(cached) as { data: { comments: Comment[] }; ts: number };
+    if (Date.now() - ts < 300000) return data.comments ?? [];
+  } catch {}
+  return null;
+}
+
 export function UserContentInteractions({ reviewId }: { reviewId: string }) {
   const { isSignedIn } = useUser();
   const router = useRouter();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  const cachedLikes = getLikesCache(reviewId);
+  const cachedComments = getCommentsCache(reviewId);
+  const [liked, setLiked] = useState(cachedLikes?.liked ?? false);
+  const [likeCount, setLikeCount] = useState(cachedLikes?.likeCount ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<Comment[]>(cachedComments ?? []);
   const [commentInput, setCommentInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const interactedRef = useRef(false);
 
   useEffect(() => {
-    // 캐시 즉시 표시
-    try {
-      const cachedLikes = sessionStorage.getItem(`user-review-likes-${reviewId}`);
-      if (cachedLikes) {
-        const { data } = JSON.parse(cachedLikes) as { data: { liked: boolean; likeCount: number } };
-        if (!interactedRef.current) {
-          setLiked(data.liked ?? false);
-          setLikeCount(data.likeCount ?? 0);
-        }
-      }
-      const cachedComments = sessionStorage.getItem(`user-review-comments-${reviewId}`);
-      if (cachedComments) {
-        const { data } = JSON.parse(cachedComments) as { data: { comments: Comment[] } };
-        setComments(data.comments ?? []);
-      }
-    } catch {}
-
     // 백그라운드 서버 동기화
     fetch(`/api/main/user-review/${reviewId}/likes`)
       .then((r) => r.json())

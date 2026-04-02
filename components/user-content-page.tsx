@@ -26,24 +26,23 @@ function formatDate(value: string): string {
   return `${y}.${m}.${day}`;
 }
 
+function getContentCache(id: string): ReviewItem | null {
+  try {
+    const cached = sessionStorage.getItem(`user-review-content-${id}`);
+    if (!cached) return null;
+    const { data, ts } = JSON.parse(cached) as { data: ReviewItem; ts: number };
+    if (Date.now() - ts < 300000 && data) return data;
+  } catch {}
+  return null;
+}
+
 export function UserContentPage({ id }: { id: string }) {
-  const [item, setItem] = useState<ReviewItem | null>(null);
+  // 첫 렌더링부터 캐시 데이터 동기적으로 읽음 (리스트와 동일 방식)
+  const [item, setItem] = useState<ReviewItem | null>(() => getContentCache(id));
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    // sessionStorage 캐시 먼저 확인 → 즉시 표시
-    try {
-      const cached = sessionStorage.getItem(`user-review-content-${id}`);
-      if (cached) {
-        const { data, ts } = JSON.parse(cached) as { data: ReviewItem; ts: number };
-        if (Date.now() - ts < 300000 && data) {
-          setItem(data);
-          return;
-        }
-      }
-    } catch {}
-
-    // 캐시 없으면 API fetch
+    // 캐시 있으면 백그라운드 갱신, 없으면 fetch
     fetch(`/api/main/user-review/${id}`)
       .then((r) => {
         if (!r.ok) { setNotFound(true); return null; }
@@ -57,7 +56,7 @@ export function UserContentPage({ id }: { id: string }) {
           } catch {}
         }
       })
-      .catch(() => setNotFound(true));
+      .catch(() => { if (!item) setNotFound(true); });
   }, [id]);
 
   const contentImages: string[] = [];
