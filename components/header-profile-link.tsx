@@ -105,7 +105,48 @@ export function HeaderProfileLink() {
       console.error("Failed to fetch notifications:", error);
     } finally {
       setIsLoadingNotifications(false);
+      // 알림 카운트 표시 완료 후 갤러리 → 커뮤니티 순차 prefetch
+      prefetchGalleryFirst();
+      prefetchUserReviewList();
     }
+  }
+
+  function prefetchGalleryFirst() {
+    // 첫 번째 카드(people/0) likes + comments 미리 fetch
+    const likesKey = "gallery_likes_people_0";
+    const commentsKey = "gallery_comments_people_0";
+    if (!getCached(likesKey)) {
+      fetch("/api/gallery/people/0/likes")
+        .then((r) => r.json())
+        .then((d) => {
+          setCached(likesKey, d);
+          // likes 완료 후 comments fetch
+          if (!getCached(commentsKey)) {
+            fetch("/api/gallery/people/0/comments")
+              .then((r) => r.json())
+              .then((d2) => setCached(commentsKey, d2))
+              .catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
+  function prefetchUserReviewList() {
+    const cacheKey = "user-review-list-cache";
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const { ts } = JSON.parse(cached) as { ts: number };
+        if (Date.now() - ts < 60000) return; // 1분 이내 유효
+      }
+    } catch {}
+    fetch("/api/main/user-review?page=1&limit=10&sort=latest")
+      .then((r) => r.json())
+      .then((data) => {
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
+      })
+      .catch(() => {});
   }
 
   // 마운트 시 localStorage 캐시에서 즉시 복원
