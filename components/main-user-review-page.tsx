@@ -12,6 +12,7 @@ type UserReviewItem = {
   title: string;
   content: string;
   thumbnailImage: string | null;
+  thumbnailSmall: string | null;
   viewCount: number;
   likeCount: number;
   createdAt: string;
@@ -74,7 +75,12 @@ function getListCache(): { items: UserReviewItem[]; total: number } | null {
 
 function setListCache(data: { items: UserReviewItem[]; total: number }) {
   try {
-    sessionStorage.setItem(LIST_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+    // thumbnailImage(원본 base64) 제외, thumbnailSmall만 저장
+    const slim = {
+      ...data,
+      items: data.items.map(({ thumbnailImage: _omit, ...rest }) => rest),
+    };
+    sessionStorage.setItem(LIST_CACHE_KEY, JSON.stringify({ data: slim, ts: Date.now() }));
   } catch {}
 }
 

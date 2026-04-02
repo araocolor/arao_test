@@ -139,8 +139,15 @@ export function HeaderProfileLink() {
     } catch {}
     fetch("/api/main/user-review?page=1&limit=20&sort=latest")
       .then((r) => r.json())
-      .then((data) => {
-        sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
+      .then((data: { items: Array<{ thumbnailImage?: unknown; [key: string]: unknown }>; [key: string]: unknown }) => {
+        // thumbnailImage(원본 base64) 제외, thumbnailSmall만 저장
+        const slim = {
+          ...data,
+          items: Array.isArray(data.items)
+            ? data.items.map(({ thumbnailImage: _omit, ...rest }) => rest)
+            : [],
+        };
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data: slim, ts: Date.now() }));
       })
       .catch(() => {});
   }
