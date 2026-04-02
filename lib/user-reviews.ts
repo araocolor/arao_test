@@ -19,6 +19,7 @@ export type UserReviewDetail = UserReviewListItem & {
   isPublic: boolean;
   updatedAt: string;
   thumbnailSmall: string | null;
+  thumbnailFirst: string | null;
 };
 
 function maskEmail(email: string): string {
@@ -125,7 +126,7 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("user_reviews")
-    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, attached_file, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)")
+    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, thumbnail_first, attached_file, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)")
     .eq("id", id)
     .maybeSingle();
 
@@ -140,6 +141,7 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
     isPublic: data.is_public ?? true,
     updatedAt: data.updated_at ?? data.created_at ?? new Date(0).toISOString(),
     thumbnailSmall: data.thumbnail_small ?? null,
+    thumbnailFirst: data.thumbnail_first ?? null,
   };
 }
 

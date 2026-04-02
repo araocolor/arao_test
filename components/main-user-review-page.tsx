@@ -13,6 +13,7 @@ type UserReviewItem = {
   content: string;
   thumbnailImage: string | null;
   thumbnailSmall: string | null;
+  thumbnailFirst: string | null;
   viewCount: number;
   likeCount: number;
   createdAt: string;
@@ -354,7 +355,7 @@ export function MainUserReviewPage() {
       ) : viewMode === "list" ? (
         <div className="user-review-list">
           {items.map((item) => {
-            const thumb = getFirstImage(item.thumbnailImage);
+            const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
             return (
               <button
                 key={item.id}
@@ -387,7 +388,7 @@ export function MainUserReviewPage() {
       ) : viewMode === "feed" ? (
         <div className="user-review-feed">
           {items.map((item) => {
-            const thumb = getFirstImage(item.thumbnailImage);
+            const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
             return (
               <button
                 key={item.id}
@@ -421,7 +422,7 @@ export function MainUserReviewPage() {
       ) : (
         <div className="user-review-album">
           {items.map((item) => {
-            const thumb = getFirstImage(item.thumbnailImage);
+            const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
             return (
               <button
                 key={item.id}

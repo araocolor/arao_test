@@ -26,8 +26,9 @@ type ReviewItem = {
   id: string;
   title: string;
   content: string;
-  thumbnailImage: string | null;
-  thumbnailSmall: string | null;
+  thumbnailImage: string | null;   // 원본 URL 배열 (1024px)
+  thumbnailSmall: string | null;   // 중간 URL 배열 (480px, 앞 3장)
+  thumbnailFirst: string | null;   // 썸네일 URL (200px, 리스트용)
   attachedFile: string | null;
   viewCount: number;
   createdAt: string;
@@ -78,23 +79,24 @@ export function UserContentPage({ id }: { id: string }) {
       .catch(() => { if (!item) setNotFound(true); });
   }, [id]);
 
-  const contentImages: string[] = [];
+  // 원본 URL 배열 (1024px)
+  const originalImages: string[] = [];
   if (item?.thumbnailImage) {
     try {
       const parsed = JSON.parse(item.thumbnailImage);
-      if (Array.isArray(parsed)) contentImages.push(...parsed);
-      else contentImages.push(item.thumbnailImage);
+      if (Array.isArray(parsed)) originalImages.push(...parsed);
+      else originalImages.push(item.thumbnailImage);
     } catch {
-      contentImages.push(item.thumbnailImage);
+      originalImages.push(item.thumbnailImage);
     }
   }
 
-  // 2~3번째 이미지용 썸네일 (LQIP)
-  const smallThumbs: string[] = [];
+  // 중간 URL 배열 (480px, 앞 3장 즉시 표시용)
+  const mediumImages: string[] = [];
   if (item?.thumbnailSmall) {
     try {
       const parsed = JSON.parse(item.thumbnailSmall);
-      if (Array.isArray(parsed)) smallThumbs.push(...parsed);
+      if (Array.isArray(parsed)) mediumImages.push(...parsed);
     } catch {}
   }
 
@@ -125,11 +127,11 @@ export function UserContentPage({ id }: { id: string }) {
               <p className="user-content-meta muted">
                 {item.authorId} · {formatDate(item.createdAt)} · 조회 {item.viewCount + 1}
               </p>
-              {contentImages.map((src, i) => (
-                i === 0 ? (
-                  <img key={i} src={src} alt="" className="user-content-thumb" />
+              {originalImages.map((src, i) => (
+                i < 3 ? (
+                  <LazyImage key={i} src={src} thumbnail={mediumImages[i]} />
                 ) : (
-                  <LazyImage key={i} src={src} thumbnail={smallThumbs[i - 1]} />
+                  <LazyImage key={i} src={src} />
                 )
               ))}
               {attachedFile && (
