@@ -214,6 +214,8 @@ function WriteReviewContent() {
       const idPrefix = postId.replace(/-/g, "").slice(0, 3);
 
       // 2단계: 새 이미지 Storage 업로드 (3가지 버전)
+      let savedThumbFirst: string | null = null;
+      let savedOriginalImage: string | null = null;
       if (imageFiles.length > 0) {
         setSavingMsg("이미지 업로드 중...");
         const supabase = createSupabaseBrowserClient();
@@ -246,6 +248,8 @@ function WriteReviewContent() {
         const allOriginals = [...existingImageUrls, ...originalUrls.filter(Boolean)];
         const allMediums = mediumUrls.filter(Boolean);
         const firstThumb = thumbUrls[0] ?? null;
+        savedThumbFirst = firstThumb;
+        savedOriginalImage = allOriginals.length === 1 ? allOriginals[0] : JSON.stringify(allOriginals);
 
         // 3단계: 이미지 URL로 DB 업데이트
         setSavingMsg("마무리 중...");
@@ -288,9 +292,9 @@ function WriteReviewContent() {
               id: postId,
               title: title.trim(),
               content: content.trim(),
-              thumbnailImage: null,
+              thumbnailImage: savedOriginalImage,
               thumbnailSmall: null,
-              thumbnailFirst: null,
+              thumbnailFirst: savedThumbFirst,
               viewCount: 0,
               likeCount: 0,
               createdAt: new Date().toISOString(),
