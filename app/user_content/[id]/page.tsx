@@ -1,7 +1,6 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getUserReviewById, incrementUserReviewViewCount } from "@/lib/user-reviews";
-import { syncProfile } from "@/lib/profiles";
 import { UserContentHeader } from "@/components/user-content-header";
 import { UserContentInteractions } from "@/components/user-content-interactions";
 
@@ -19,13 +18,19 @@ export default async function MainUserContentPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { userId } = await auth();
+  const [{ userId }, { id }] = await Promise.all([
+    auth(),
+    params,
+  ]);
   if (!userId) {
     redirect("/sign-in");
   }
 
-  const { id } = await params;
-  const item = await getUserReviewById(id);
+  const [item] = await Promise.all([
+    getUserReviewById(id),
+    incrementUserReviewViewCount(id),
+  ]);
+
   if (!item) {
     return (
       <main className="landing-page">
@@ -39,13 +44,8 @@ export default async function MainUserContentPage({
     );
   }
 
-  await incrementUserReviewViewCount(id);
-
-  // profiles.id(UUID)와 비교하기 위해 현재 사용자의 profile을 조회
-  const clerkUser = await currentUser();
-  const email = clerkUser?.primaryEmailAddress?.emailAddress ?? clerkUser?.emailAddresses[0]?.emailAddress;
-  const profile = await syncProfile({ email });
-  const isAuthor = !!profile && profile.id === item.profileId;
+  // profiles.id = Clerk userId — currentUser() 불필요
+  const isAuthor = !!userId && userId === item.profileId;
 
   // 단일 이미지 또는 JSON 배열 파싱
   let contentImages: string[] = [];
