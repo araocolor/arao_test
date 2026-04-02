@@ -58,7 +58,7 @@ function excerpt(value: string, maxLength: number) {
 
 const LIST_CACHE_KEY = "user-review-list-cache";
 const SCROLL_KEY = "user-review-scroll";
-const CACHE_TTL = 60000; // 1분
+const CACHE_TTL = 300000; // 5분
 
 function getListCache(): { items: UserReviewItem[]; total: number } | null {
   try {
@@ -94,7 +94,7 @@ export function MainUserReviewPage() {
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const limit = 20;
+  const limit = 10;
 
   useEffect(() => {
     try {
@@ -133,6 +133,11 @@ export function MainUserReviewPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
+      // page=1, sort=latest, 검색 없을 때 신선한 캐시가 있으면 fetch 건너뜀
+      if (page === 1 && sortMode === "latest" && !query.trim()) {
+        const cached = getListCache();
+        if (cached) return;
+      }
       setLoading(true);
       try {
         const params = new URLSearchParams({
