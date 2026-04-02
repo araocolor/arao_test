@@ -35,18 +35,44 @@ export function UserContentInteractions({ reviewId }: { reviewId: string }) {
   const interactedRef = useRef(false);
 
   useEffect(() => {
+    // 캐시 즉시 표시
+    try {
+      const cachedLikes = sessionStorage.getItem(`user-review-likes-${reviewId}`);
+      if (cachedLikes) {
+        const { data } = JSON.parse(cachedLikes) as { data: { liked: boolean; likeCount: number } };
+        if (!interactedRef.current) {
+          setLiked(data.liked ?? false);
+          setLikeCount(data.likeCount ?? 0);
+        }
+      }
+      const cachedComments = sessionStorage.getItem(`user-review-comments-${reviewId}`);
+      if (cachedComments) {
+        const { data } = JSON.parse(cachedComments) as { data: { comments: Comment[] } };
+        setComments(data.comments ?? []);
+      }
+    } catch {}
+
+    // 백그라운드 서버 동기화
     fetch(`/api/main/user-review/${reviewId}/likes`)
       .then((r) => r.json())
       .then((d) => {
         if (interactedRef.current) return;
         setLiked(d.liked ?? false);
         setLikeCount(d.likeCount ?? 0);
+        try {
+          sessionStorage.setItem(`user-review-likes-${reviewId}`, JSON.stringify({ data: d, ts: Date.now() }));
+        } catch {}
       })
       .catch(() => {});
 
     fetch(`/api/main/user-review/${reviewId}/comments`)
       .then((r) => r.json())
-      .then((d) => setComments(d.comments ?? []))
+      .then((d) => {
+        setComments(d.comments ?? []);
+        try {
+          sessionStorage.setItem(`user-review-comments-${reviewId}`, JSON.stringify({ data: d, ts: Date.now() }));
+        } catch {}
+      })
       .catch(() => {});
   }, [reviewId]);
 

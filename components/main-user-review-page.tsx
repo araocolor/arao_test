@@ -105,20 +105,46 @@ export function MainUserReviewPage() {
   }, []);
 
   function prefetchContentData(id: string) {
-    const key = `user-review-content-${id}`;
-    try {
-      const cached = sessionStorage.getItem(key);
-      if (cached) {
+    const contentKey = `user-review-content-${id}`;
+    const likesKey = `user-review-likes-${id}`;
+    const commentsKey = `user-review-comments-${id}`;
+
+    const isFresh = (key: string) => {
+      try {
+        const cached = sessionStorage.getItem(key);
+        if (!cached) return false;
         const { ts } = JSON.parse(cached) as { ts: number };
-        if (Date.now() - ts < 300000) return; // 5분 유효
-      }
-    } catch {}
-    fetch(`/api/main/user-review/${id}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data) sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
-      })
-      .catch(() => {});
+        return Date.now() - ts < 300000;
+      } catch { return false; }
+    };
+
+    // 본문 캐시
+    if (!isFresh(contentKey)) {
+      fetch(`/api/main/user-review/${id}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) sessionStorage.setItem(contentKey, JSON.stringify({ data, ts: Date.now() }));
+        })
+        .catch(() => {});
+    }
+    // 좋아요 캐시
+    if (!isFresh(likesKey)) {
+      fetch(`/api/main/user-review/${id}/likes`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) sessionStorage.setItem(likesKey, JSON.stringify({ data, ts: Date.now() }));
+        })
+        .catch(() => {});
+    }
+    // 댓글 캐시
+    if (!isFresh(commentsKey)) {
+      fetch(`/api/main/user-review/${id}/comments`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) sessionStorage.setItem(commentsKey, JSON.stringify({ data, ts: Date.now() }));
+        })
+        .catch(() => {});
+    }
   }
 
   // 아이템 로드 후 상위 10개 router.prefetch + API 데이터 캐시 (새글 우선)
