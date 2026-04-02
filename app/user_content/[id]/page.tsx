@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { getUserReviewById, incrementUserReviewViewCount } from "@/lib/user-reviews";
 import { UserContentHeader } from "@/components/user-content-header";
@@ -26,10 +27,9 @@ export default async function MainUserContentPage({
     redirect("/sign-in");
   }
 
-  const [item] = await Promise.all([
-    getUserReviewById(id),
-    incrementUserReviewViewCount(id),
-  ]);
+  const item = await getUserReviewById(id);
+  // 응답 전송 후 조회수 증가 (렌더링 블로킹 없음)
+  after(() => { void incrementUserReviewViewCount(id); });
 
   if (!item) {
     return (
