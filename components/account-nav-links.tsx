@@ -3,6 +3,15 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
+import { User, MessageSquare, ShoppingBag, Settings, Sun, LogOut, type LucideIcon } from "lucide-react";
+
+const SECTION_ICONS: Record<string, LucideIcon> = {
+  mycolor: User,
+  consulting: MessageSquare,
+  orders: ShoppingBag,
+  settings: Sun,
+  logout: LogOut,
+};
 
 export const userSections = [
   {
@@ -59,27 +68,21 @@ export function AccountNavLinks({ mobile, footer }: NavLinksProps) {
     return (
       <nav className="account-footer-nav">
         <div className="account-footer-menu">
-          <Link
-            href="/"
-            prefetch={true}
-            className={`account-footer-item${pathname === "/" ? " active" : ""}`}
-            title="홈"
-          >
-            <span className="account-menu-icon account-menu-icon-home" aria-hidden="true" />
-            <span className="account-footer-label">홈</span>
-          </Link>
-          {userSections.map((section) => (
-            <Link
-              key={section.id}
-              href={`/account/${section.id}`}
-              prefetch={true}
-              className={`account-footer-item${isActive(section.id) ? " active" : ""}`}
-              title={section.menu}
-            >
-              <span className={`account-menu-icon account-menu-icon-${section.icon}`} aria-hidden="true" />
-              <span className="account-footer-label">{section.menu}</span>
-            </Link>
-          ))}
+          {userSections.map((section) => {
+            const Icon = SECTION_ICONS[section.icon];
+            return (
+              <Link
+                key={section.id}
+                href={`/account/${section.id}`}
+                prefetch={true}
+                className={`account-footer-item${isActive(section.id) ? " active" : ""}`}
+                title={section.menu}
+              >
+                {Icon && <Icon size={20} strokeWidth={1.7} aria-hidden="true" />}
+                <span className="account-footer-label">{section.menu}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
     );
@@ -88,20 +91,23 @@ export function AccountNavLinks({ mobile, footer }: NavLinksProps) {
   if (mobile) {
     return (
       <div className="account-mobile-menu">
-        {userSections.map((section) => (
-          <Link
-            key={section.id}
-            href={`/account/${section.id}`}
-            prefetch={true}
-            className={`account-mobile-menu-item${isActive(section.id) ? " active" : ""}`}
-          >
-            <span className={`account-menu-icon account-menu-icon-${section.icon}`} aria-hidden="true" />
-            <span>{section.menu}</span>
-          </Link>
-        ))}
+        {userSections.map((section) => {
+          const Icon = SECTION_ICONS[section.icon];
+          return (
+            <Link
+              key={section.id}
+              href={`/account/${section.id}`}
+              prefetch={true}
+              className={`account-mobile-menu-item${isActive(section.id) ? " active" : ""}`}
+            >
+              {Icon && <Icon size={20} strokeWidth={1.7} aria-hidden="true" />}
+              <span>{section.menu}</span>
+            </Link>
+          );
+        })}
         <SignOutButton>
           <button className="account-mobile-menu-item" type="button">
-            <span className="account-menu-icon account-menu-icon-logout" aria-hidden="true" />
+            <LogOut size={20} strokeWidth={1.7} aria-hidden="true" />
             <span>로그아웃</span>
           </button>
         </SignOutButton>
@@ -111,19 +117,22 @@ export function AccountNavLinks({ mobile, footer }: NavLinksProps) {
 
   return (
     <div className="admin-menu-list">
-      {userSections.map((section) => (
-        <Link
-          key={section.id}
-          href={`/account/${section.id}`}
-          prefetch={true}
-          className={`admin-menu-item${isActive(section.id) ? " active" : ""}`}
-        >
-          <span className="account-menu-item-content">
-            <span className={`account-menu-icon account-menu-icon-${section.icon}`} aria-hidden="true" />
-            <span>{section.menu}</span>
-          </span>
-        </Link>
-      ))}
+      {userSections.map((section) => {
+        const Icon = SECTION_ICONS[section.icon];
+        return (
+          <Link
+            key={section.id}
+            href={`/account/${section.id}`}
+            prefetch={true}
+            className={`admin-menu-item${isActive(section.id) ? " active" : ""}`}
+          >
+            <span className="account-menu-item-content">
+              {Icon && <Icon size={20} strokeWidth={1.7} aria-hidden="true" />}
+              <span>{section.menu}</span>
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
