@@ -118,15 +118,22 @@ export function HeaderProfileLink() {
         .then((d: { count?: number; firstLiker?: string | null; commentCount?: number }) => {
           // liked 제외한 공개 데이터만 저장
           setCached(publicKey, { count: d.count ?? 0, firstLiker: d.firstLiker ?? null, commentCount: d.commentCount ?? 0 });
-          // likes 완료 후 comments fetch
+          // likes 완료 후 comments fetch → 완료 후 커뮤니티 순차 prefetch
           if (!getCached(commentsKey)) {
             fetch("/api/gallery/people/0/comments")
               .then((r) => r.json())
-              .then((d2) => setCached(commentsKey, d2))
-              .catch(() => {});
+              .then((d2) => {
+                setCached(commentsKey, d2);
+                prefetchUserReviewList();
+              })
+              .catch(() => { prefetchUserReviewList(); });
+          } else {
+            prefetchUserReviewList();
           }
         })
-        .catch(() => {});
+        .catch(() => { prefetchUserReviewList(); });
+    } else {
+      prefetchUserReviewList();
     }
   }
 
@@ -154,12 +161,11 @@ export function HeaderProfileLink() {
     prefetchGalleryFirst();
   }, []);
 
-  // 초기 로드: 아바타 먼저 → 알림 + 커뮤니티 캐싱 동시 / 로그아웃 시 캐시 제거
+  // 초기 로드: 아바타 먼저 → 알림 / 로그아웃 시 캐시 제거
   useEffect(() => {
     if (isSignedIn) {
       void fetchAvatar();
       void fetchNotificationItems();
-      prefetchUserReviewList();
     } else if (isSignedIn === false) {
       setIconImage(null);
       setBadgeCount(0);
