@@ -5,7 +5,7 @@
  */
 
 const CACHE_PREFIX = "arao_prefetch_";
-const CACHE_TTL = 5 * 60 * 1000; // 5분
+const CACHE_TTL = 60 * 1000; // 1분
 
 interface CacheData<T> {
   data: T;

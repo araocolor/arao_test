@@ -134,12 +134,12 @@ export function HeaderProfileLink() {
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
         const { ts } = JSON.parse(cached) as { ts: number };
-        if (Date.now() - ts < 300000) return; // 5분 이내 유효
+        if (Date.now() - ts < 60000) return; // 1분 이내 유효
       }
     } catch {}
     fetch("/api/main/user-review?page=1&limit=20&sort=latest")
       .then((r) => r.json())
-      .then((data: { items: Array<{ thumbnailImage?: string | null; [key: string]: unknown }>; [key: string]: unknown }) => {
+      .then((data: { items: Array<{ thumbnailImage?: string | null; thumbnailFirst?: string | null; [key: string]: unknown }>; [key: string]: unknown }) => {
         const slim = {
           ...data,
           items: Array.isArray(data.items)
@@ -153,7 +153,7 @@ export function HeaderProfileLink() {
                     firstImage = item.thumbnailImage;
                   }
                 }
-                return { ...item, thumbnailImage: firstImage };
+                return { ...item, thumbnailImage: firstImage, thumbnailFirst: item.thumbnailFirst ?? null };
               })
             : [],
         };

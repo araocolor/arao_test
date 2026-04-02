@@ -60,7 +60,7 @@ function excerpt(value: string, maxLength: number) {
 
 const LIST_CACHE_KEY = "user-review-list-cache";
 const SCROLL_KEY = "user-review-scroll";
-const CACHE_TTL = 300000; // 5분
+const CACHE_TTL = 60000; // 1분
 
 function getListCache(): { items: UserReviewItem[]; total: number } | null {
   try {
@@ -124,7 +124,7 @@ export function MainUserReviewPage() {
         const cached = sessionStorage.getItem(key);
         if (!cached) return false;
         const { ts } = JSON.parse(cached) as { ts: number };
-        return Date.now() - ts < 300000;
+        return Date.now() - ts < 60000;
       } catch { return false; }
     };
 

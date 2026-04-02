@@ -58,7 +58,7 @@ export function SiteHeader({
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           const { ts } = JSON.parse(cached) as { ts: number };
-          if (Date.now() - ts < 300000) return; // 5분 이내 캐시 유효
+          if (Date.now() - ts < 60000) return; // 1분 이내 캐시 유효
         }
       } catch {}
       fetch("/api/main/user-review?page=1&limit=20&sort=latest")

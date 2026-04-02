@@ -28,7 +28,7 @@ function getLikesCache(reviewId: string): { liked: boolean; likeCount: number } 
     const cached = sessionStorage.getItem(`user-review-likes-${reviewId}`);
     if (!cached) return null;
     const { data, ts } = JSON.parse(cached) as { data: { liked: boolean; likeCount: number }; ts: number };
-    if (Date.now() - ts < 300000) return data;
+    if (Date.now() - ts < 60000) return data;
   } catch {}
   return null;
 }
@@ -38,7 +38,7 @@ function getCommentsCache(reviewId: string): Comment[] | null {
     const cached = sessionStorage.getItem(`user-review-comments-${reviewId}`);
     if (!cached) return null;
     const { data, ts } = JSON.parse(cached) as { data: { comments: Comment[] }; ts: number };
-    if (Date.now() - ts < 300000) return data.comments ?? [];
+    if (Date.now() - ts < 60000) return data.comments ?? [];
   } catch {}
   return null;
 }

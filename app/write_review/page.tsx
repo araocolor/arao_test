@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { BoardHeader } from "@/components/board-header";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Category = "일반" | "공지";
 
@@ -51,18 +50,16 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([array], { type: mime });
 }
 
-async function uploadImage(
-  supabase: ReturnType<typeof createSupabaseBrowserClient>,
-  blob: Blob,
-  path: string
-): Promise<string | null> {
-  const { error } = await supabase.storage.from("board_image").upload(path, blob, {
-    contentType: "image/jpeg",
-    upsert: true,
-  });
-  if (error) { console.error("upload error:", error); return null; }
-  const { data } = supabase.storage.from("board_image").getPublicUrl(path);
-  return data.publicUrl;
+async function uploadImage(blob: Blob, path: string): Promise<string | null> {
+  const form = new FormData();
+  form.append("file", blob, "image.jpg");
+  form.append("path", path);
+  try {
+    const res = await fetch("/api/main/user-review/upload", { method: "POST", body: form });
+    if (!res.ok) { console.error("upload error:", await res.text()); return null; }
+    const data = (await res.json()) as { url: string };
+    return data.url;
+  } catch (e) { console.error("upload error:", e); return null; }
 }
 
 function WriteReviewContent() {
@@ -218,7 +215,6 @@ function WriteReviewContent() {
       let savedOriginalImage: string | null = null;
       if (imageFiles.length > 0) {
         setSavingMsg("이미지 업로드 중...");
-        const supabase = createSupabaseBrowserClient();
         const originalUrls: string[] = [];
         const mediumUrls: string[] = [];
         const thumbUrls: string[] = [];
@@ -233,9 +229,9 @@ function WriteReviewContent() {
             ]);
 
             const [origUrl, medUrl, thumbUrl] = await Promise.all([
-              origDataUrl ? uploadImage(supabase, dataUrlToBlob(origDataUrl), `${postId}/${idPrefix}_original_${idx}.jpg`) : null,
-              medDataUrl ? uploadImage(supabase, dataUrlToBlob(medDataUrl), `${postId}/${idPrefix}_medium_${idx}.jpg`) : null,
-              thumbDataUrl ? uploadImage(supabase, dataUrlToBlob(thumbDataUrl), `${postId}/${idPrefix}_thumb_${idx}.jpg`) : null,
+              origDataUrl ? uploadImage(dataUrlToBlob(origDataUrl), `${postId}/${idPrefix}_original_${idx}.jpg`) : null,
+              medDataUrl ? uploadImage(dataUrlToBlob(medDataUrl), `${postId}/${idPrefix}_medium_${idx}.jpg`) : null,
+              thumbDataUrl ? uploadImage(dataUrlToBlob(thumbDataUrl), `${postId}/${idPrefix}_thumb_${idx}.jpg`) : null,
             ]);
 
             originalUrls[i] = origUrl ?? "";

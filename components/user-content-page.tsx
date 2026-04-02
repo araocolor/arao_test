@@ -51,7 +51,7 @@ function getContentCache(id: string): ReviewItem | null {
     const cached = sessionStorage.getItem(`user-review-content-${id}`);
     if (!cached) return null;
     const { data, ts } = JSON.parse(cached) as { data: ReviewItem; ts: number };
-    if (Date.now() - ts < 300000 && data) return data;
+    if (Date.now() - ts < 60000 && data) return data;
   } catch {}
   return null;
 }

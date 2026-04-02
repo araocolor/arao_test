@@ -7,6 +7,7 @@ export type UserReviewListItem = {
   title: string;
   content: string;
   thumbnailImage: string | null;
+  thumbnailFirst: string | null;
   attachedFile: string | null;
   viewCount: number;
   likeCount: number;
@@ -19,7 +20,6 @@ export type UserReviewDetail = UserReviewListItem & {
   isPublic: boolean;
   updatedAt: string;
   thumbnailSmall: string | null;
-  thumbnailFirst: string | null;
 };
 
 function maskEmail(email: string): string {
@@ -53,6 +53,7 @@ function mapRowToListItem(row: any): UserReviewListItem {
     title: row.title ?? "",
     content: row.content ?? "",
     thumbnailImage: row.thumbnail_image ?? null,
+    thumbnailFirst: row.thumbnail_first ?? null,
     attachedFile: row.attached_file ?? null,
     viewCount: row.view_count ?? 0,
     likeCount: row.like_count ?? 0,
@@ -88,7 +89,7 @@ export async function getUserReviewList(params: {
 
   const { data, error } = await supabase
     .from("user_reviews")
-    .select("id, profile_id, title, content, thumbnail_image, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)");
+    .select("id, profile_id, title, content, thumbnail_image, thumbnail_first, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)");
 
   if (error) {
     // user_reviews 테이블 미생성 상태를 포함해 안전하게 빈 목록 반환
@@ -141,7 +142,6 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
     isPublic: data.is_public ?? true,
     updatedAt: data.updated_at ?? data.created_at ?? new Date(0).toISOString(),
     thumbnailSmall: data.thumbnail_small ?? null,
-    thumbnailFirst: data.thumbnail_first ?? null,
   };
 }
 
