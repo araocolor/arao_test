@@ -48,18 +48,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string; attachedFile?: string };
+    const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string; thumbnailSmall?: string; attachedFile?: string };
     const title = (body.title ?? "").trim();
     const content = (body.content ?? "").trim();
     const category = (body.category ?? "일반").trim();
     const thumbnailImage = body.thumbnailImage ?? undefined;
+    const thumbnailSmall = body.thumbnailSmall ?? undefined;
     const attachedFile = body.attachedFile ?? undefined;
 
     if (!title) {
       return NextResponse.json({ message: "제목을 입력해주세요." }, { status: 400 });
     }
 
-    const result = await createUserReview({ profileId: profile.id, category, title, content, thumbnailImage, attachedFile });
+    const result = await createUserReview({ profileId: profile.id, category, title, content, thumbnailImage, thumbnailSmall: thumbnailSmall ?? undefined, attachedFile });
     if (!result) {
       return NextResponse.json({ message: "저장에 실패했습니다." }, { status: 500 });
     }

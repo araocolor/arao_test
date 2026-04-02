@@ -34,7 +34,7 @@ export async function PUT(
   if (!item) return NextResponse.json({ message: "게시글을 찾을 수 없습니다." }, { status: 404 });
   if (item.profileId !== userId) return NextResponse.json({ message: "권한이 없습니다." }, { status: 403 });
 
-  const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string | null; attachedFile?: string | null };
+  const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string | null; thumbnailSmall?: string | null; attachedFile?: string | null };
   const title = (body.title ?? "").trim();
   const content = (body.content ?? "").trim();
   const category = (body.category ?? "일반").trim();
@@ -43,6 +43,7 @@ export async function PUT(
   const supabase = createSupabaseAdminClient();
   const updateData: Record<string, unknown> = { title, content, category, updated_at: new Date().toISOString() };
   if (body.thumbnailImage !== undefined) updateData.thumbnail_image = body.thumbnailImage;
+  if (body.thumbnailSmall !== undefined) updateData.thumbnail_small = body.thumbnailSmall;
   if (body.attachedFile !== undefined) updateData.attached_file = body.attachedFile;
 
   const { error } = await supabase.from("user_reviews").update(updateData).eq("id", id);

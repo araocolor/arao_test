@@ -103,6 +103,13 @@ See **backend.md** for API route patterns.
 - **`components/landing-page-header.tsx`** — 공개 페이지용 (햄버거 + 캐릭터)
 - **`components/simple-header.tsx`** (헤더2) — `/account/*` 전용, 로고만 가운데
 - 계정 레이아웃(`app/account/layout.tsx`)은 `SimpleHeader` 사용
+- 메뉴 순서: ARAO 소개 → 갤러리 → 커뮤니티 → 설치방법 → 구매가이드 / 사용자설정
+
+## Icon Libraries
+
+- **`@heroicons/react/24/outline`** — 사이트 헤더 드로어 메뉴 아이콘 (`site-header.tsx`)
+- **`lucide-react`** — 계정 풋터 아이콘 (`account-nav-links.tsx`)
+- `/lucide` — 아이콘 레퍼런스 페이지 (검색 기능 포함)
 
 ## Notification Drawer
 
@@ -127,10 +134,66 @@ See **backend.md** for API route patterns.
 - **`components/username-required-gate.tsx`** — 아이디 미등록 사용자 접근 시 confirm → `/account/general` 리다이렉트
 - 두 페이지 모두 `category`, `index`, `likesSheet` 쿼리를 유지해 "돌아가기" 버튼으로 갤러리 좋아요 시트 복원
 
+## Community (커뮤니티) 시스템
+
+- **`/user_review`** — 리스트 페이지 (`components/main-user-review-page.tsx`)
+- **`/user_content/[id]`** — 본문 페이지 (서버: auth만 → 클라이언트: `components/user-content-page.tsx`)
+- **`/write_review`** — 글 작성 페이지
+- **API:** `/api/main/user-review`, `/api/main/user-review/[id]`, `/api/main/user-review/[id]/likes`, `/api/main/user-review/[id]/comments`
+- **DB 테이블:** `user_reviews` (thumbnail_image: JSON 배열), `review_likes`, `review_replies`
+
+### Prefetch & Cache 아키텍처
+
+로그인/비로그인 무관하게 헤더 마운트 시 동시 prefetch:
+```
+갤러리 공용 캐시(likes→comments) ┐ 동시 시작
+커뮤니티 리스트 캐시              ┘
+```
+
+- **갤러리:** `getCached/setCached` (메모리 캐시, `hooks/use-prefetch-cache.ts`)
+  - 공용 키: `gallery_public_${category}_${index}` (liked 제외, 로그인 무관)
+  - 사용자별 키: `gallery_card_${category}_${index}_${userId}` (liked 포함)
+- **커뮤니티:** `sessionStorage` (5분 TTL)
+  - 리스트: `user-review-list-cache`
+  - 본문: `user-review-content-${id}`
+  - 좋아요: `user-review-likes-${id}`
+  - 댓글: `user-review-comments-${id}`
+- **핵심 패턴:** 캐시를 `useState` 초기값에서 **동기적으로** 읽어야 즉시 표시됨. `useEffect`에서 읽으면 한 사이클 딜레이 발생
+  ```typescript
+  // ✓ 올바른 패턴 — 첫 렌더링부터 데이터 표시
+  const [item, setItem] = useState(() => getCache(id));
+  // ✗ 잘못된 패턴 — 빈 화면 후 두 번째 렌더에서 표시
+  const [item, setItem] = useState(null);
+  useEffect(() => { setItem(getCache(id)); }, []);
+  ```
+- 리스트 진입 시 상위 10개 본문+좋아요+댓글 `router.prefetch()` + API 캐시 → 스크롤 하단 시 나머지 10개
+
+### 중요: profiles.id = Clerk userId
+
+`profiles.id`는 Clerk 사용자 ID(UUID)와 동일. `isAuthor` 체크 시 `currentUser()` + `syncProfile()` 불필요:
+```typescript
+const { userId } = await auth();
+const isAuthor = !!userId && userId === item.profileId; // 직접 비교
+```
+
+### 비블로킹 패턴: after()
+
+응답 후 실행할 작업(조회수 증가 등)은 Next.js `after()`를 사용:
+```typescript
+import { after } from "next/server";
+after(() => { void incrementUserReviewViewCount(id); }); // 렌더링 블로킹 없음
+```
+
+### DB RPC 함수
+
+Supabase에 등록된 RPC 함수:
+- `increment_review_likes` / `decrement_review_likes` — 리뷰 좋아요
+- `increment_user_review_view_count` — 커뮤니티 조회수 (단일 쿼리)
+
 ## Account Footer Nav
 
-5개 고정: **홈(/)** → **사용자(/account/general)** → **상담내역** → **주문내역** → **내프로파일**
-`components/account-nav-links.tsx`의 `userSections` + 하드코딩된 홈 링크
+4개 고정: **사용자(/account/general)** → **상담내역** → **주문내역** → **내프로파일**
+`components/account-nav-links.tsx` — lucide-react 아이콘 (User, MessageSquare, ShoppingBag, Sun)
 
 ## Project Structure
 
@@ -197,6 +260,7 @@ app/globals.css   # Global styles (500+ lines)
 | `app/styles/account.css` | 계정 페이지, 설정폼, 하단탭, 아이콘, 아바타 | ~1054 |
 | `app/styles/consulting.css` | 상담내역 (사용자 + 관리자) | ~920 |
 | `app/styles/notification.css` | 알림 드로어 | ~260 |
+| `app/styles/user-review.css` | 커뮤니티 리스트/본문/작성 | — |
 
 모두 `app/layout.tsx`에서 순서대로 임포트됨.
 
@@ -211,6 +275,7 @@ app/globals.css   # Global styles (500+ lines)
 | **DATABASE_SCHEMA.md** | Complete database structure (all tables) |
 | **WORK_SUMMARY_20260327.md** | Order system implementation summary |
 | **README.md** | Full project details |
+| **PLAN_1_DEV_STRATEGY.md** | RN 전환 전략, Optimistic UI, Realtime 계획 |
 | **START_CHECKLIST.md** | Completed/pending tasks |
 
 ## Before You Start

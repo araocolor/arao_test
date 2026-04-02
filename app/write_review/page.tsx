@@ -11,6 +11,8 @@ const MAX_WIDTH = 1024;
 const QUALITY = 0.7;
 const MAX_BYTES = 1 * 1024 * 1024; // 1MB
 const MAX_IMAGES = 10;
+const THUMB_WIDTH = 200;
+const THUMB_QUALITY = 0.3;
 
 function compressImage(file: File): Promise<string | null> {
   return new Promise((resolve) => {
@@ -37,6 +39,26 @@ function compressImage(file: File): Promise<string | null> {
       img.src = src;
     };
     reader.readAsDataURL(file);
+  });
+}
+
+function createThumbnail(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = img.width > THUMB_WIDTH ? THUMB_WIDTH / img.width : 1;
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", THUMB_QUALITY));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
   });
 }
 
@@ -167,11 +189,17 @@ function WriteReviewContent() {
         : images.length === 1
           ? images[0]
           : JSON.stringify(images);
+      // 2~3번째 이미지 썸네일 생성 (첫 번째는 리스트에서 브라우저 캐시됨)
+      let thumbnailSmall: string | null = null;
+      if (images.length > 1) {
+        const thumbs = await Promise.all(images.slice(1, 3).map((img) => createThumbnail(img)));
+        thumbnailSmall = JSON.stringify(thumbs);
+      }
       const attachedFileValue = attachedFile ? JSON.stringify(attachedFile) : null;
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, title: title.trim(), content: content.trim(), thumbnailImage, attachedFile: attachedFileValue }),
+        body: JSON.stringify({ category, title: title.trim(), content: content.trim(), thumbnailImage, thumbnailSmall, attachedFile: attachedFileValue }),
       });
       if (res.ok) {
         router.push(isEditMode ? `/user_content/${editId}` : "/user_review");

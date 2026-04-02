@@ -18,6 +18,7 @@ export type UserReviewDetail = UserReviewListItem & {
   profileId: string;
   isPublic: boolean;
   updatedAt: string;
+  thumbnailSmall: string | null;
 };
 
 function maskEmail(email: string): string {
@@ -124,7 +125,7 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("user_reviews")
-    .select("id, profile_id, title, content, thumbnail_image, attached_file, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)")
+    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, attached_file, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)")
     .eq("id", id)
     .maybeSingle();
 
@@ -138,6 +139,7 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
     profileId: data.profile_id,
     isPublic: data.is_public ?? true,
     updatedAt: data.updated_at ?? data.created_at ?? new Date(0).toISOString(),
+    thumbnailSmall: data.thumbnail_small ?? null,
   };
 }
 
@@ -147,6 +149,7 @@ export async function createUserReview(params: {
   title: string;
   content: string;
   thumbnailImage?: string;
+  thumbnailSmall?: string;
   attachedFile?: string;
 }): Promise<{ id: string } | null> {
   const supabase = createSupabaseAdminClient();
@@ -158,6 +161,7 @@ export async function createUserReview(params: {
       title: params.title,
       content: params.content,
       ...(params.thumbnailImage ? { thumbnail_image: params.thumbnailImage } : {}),
+      ...(params.thumbnailSmall ? { thumbnail_small: params.thumbnailSmall } : {}),
       ...(params.attachedFile ? { attached_file: params.attachedFile } : {}),
     })
     .select("id")

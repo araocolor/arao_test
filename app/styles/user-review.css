@@ -386,6 +386,11 @@
   border: 1px solid var(--line);
 }
 
+.user-content-thumb-blur {
+  filter: blur(8px);
+  transform: scale(1.02);
+}
+
 .user-content-body {
   margin: 0;
   font-size: 16px;

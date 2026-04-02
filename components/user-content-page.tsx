@@ -4,16 +4,21 @@ import { useEffect, useState } from "react";
 import { UserContentHeader } from "@/components/user-content-header";
 import { UserContentInteractions } from "@/components/user-content-interactions";
 
-function LazyImage({ src }: { src: string }) {
+function LazyImage({ src, thumbnail }: { src: string; thumbnail?: string }) {
   const [loaded, setLoaded] = useState(false);
   return (
-    <img
-      src={src}
-      alt=""
-      className="user-content-thumb"
-      style={{ display: loaded ? "block" : "none" }}
-      onLoad={() => setLoaded(true)}
-    />
+    <>
+      {thumbnail && !loaded && (
+        <img src={thumbnail} alt="" className="user-content-thumb user-content-thumb-blur" />
+      )}
+      <img
+        src={src}
+        alt=""
+        className="user-content-thumb"
+        style={{ display: loaded ? "block" : "none" }}
+        onLoad={() => setLoaded(true)}
+      />
+    </>
   );
 }
 
@@ -22,6 +27,7 @@ type ReviewItem = {
   title: string;
   content: string;
   thumbnailImage: string | null;
+  thumbnailSmall: string | null;
   attachedFile: string | null;
   viewCount: number;
   createdAt: string;
@@ -83,6 +89,15 @@ export function UserContentPage({ id }: { id: string }) {
     }
   }
 
+  // 2~3번째 이미지용 썸네일 (LQIP)
+  const smallThumbs: string[] = [];
+  if (item?.thumbnailSmall) {
+    try {
+      const parsed = JSON.parse(item.thumbnailSmall);
+      if (Array.isArray(parsed)) smallThumbs.push(...parsed);
+    } catch {}
+  }
+
   let attachedFile: { name: string; type: string; data: string } | null = null;
   if (item?.attachedFile) {
     try {
@@ -114,7 +129,7 @@ export function UserContentPage({ id }: { id: string }) {
                 i === 0 ? (
                   <img key={i} src={src} alt="" className="user-content-thumb" />
                 ) : (
-                  <LazyImage key={i} src={src} />
+                  <LazyImage key={i} src={src} thumbnail={smallThumbs[i - 1]} />
                 )
               ))}
               {attachedFile && (
