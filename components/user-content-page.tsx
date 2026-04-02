@@ -6,33 +6,168 @@ import { UserContentInteractions } from "@/components/user-content-interactions"
 
 function ContentImage({
   src,
-  thumbnail,
-  originalSrc,
+  index,
   onClickView,
 }: {
   src: string;
-  thumbnail?: string;
-  originalSrc?: string;
-  onClickView: (src: string) => void;
+  index: number;
+  onClickView: (index: number) => void;
 }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <button
       type="button"
       className="user-content-thumb-btn"
-      onClick={() => onClickView(originalSrc ?? src)}
+      onClick={() => onClickView(index)}
     >
-      {thumbnail && !loaded && (
-        <img src={thumbnail} alt="" className="user-content-thumb user-content-thumb-blur" />
-      )}
       <img
         src={src}
         alt=""
         className="user-content-thumb"
-        style={{ display: loaded ? "block" : "none" }}
+        style={{ opacity: loaded ? 1 : 0 }}
         onLoad={() => setLoaded(true)}
       />
     </button>
+  );
+}
+
+function ImageViewer({
+  images,
+  startIndex,
+  onClose,
+}: {
+  images: string[];
+  startIndex: number;
+  onClose: () => void;
+}) {
+  const [current, setCurrent] = useState(startIndex);
+  const [showUI, setShowUI] = useState(true);
+  const [loadedSet, setLoadedSet] = useState<Set<number>>(() => new Set());
+  const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const total = images.length;
+  const hasPrev = current > 0;
+  const hasNext = current < total - 1;
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  // 키보드 네비게이션
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && hasPrev) setCurrent((c) => c - 1);
+      if (e.key === "ArrowRight" && hasNext) setCurrent((c) => c + 1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [hasPrev, hasNext, onClose]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!touchStartRef.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    const dt = Date.now() - touchStartRef.current.t;
+    touchStartRef.current = null;
+
+    // 탭 (이동 적음, 시간 짧음) → UI 토글
+    if (Math.abs(dx) < 20 && Math.abs(dy) < 20 && dt < 300) {
+      setShowUI((v) => !v);
+      return;
+    }
+
+    // 스와이프 (수평 50px 이상)
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0 && hasNext) setCurrent((c) => c + 1);
+      if (dx > 0 && hasPrev) setCurrent((c) => c - 1);
+    }
+  }
+
+  function handleImageLoaded(index: number) {
+    setLoadedSet((prev) => {
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="user-content-viewer-overlay"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* X 닫기 버튼 */}
+      {showUI && (
+        <button
+          type="button"
+          className="user-content-viewer-close"
+          onClick={onClose}
+          aria-label="닫기"
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
+
+      {/* 페이지 표시 */}
+      {showUI && total > 1 && (
+        <div className="user-content-viewer-counter">
+          {current + 1} / {total}
+        </div>
+      )}
+
+      {/* 이미지 */}
+      <div className="user-content-viewer-wrap">
+        {!loadedSet.has(current) && <div className="user-content-viewer-spinner" />}
+        <img
+          key={current}
+          src={images[current]}
+          alt=""
+          className="user-content-viewer-img"
+          style={{ opacity: loadedSet.has(current) ? 1 : 0 }}
+          onLoad={() => handleImageLoaded(current)}
+        />
+      </div>
+
+      {/* 데스크탑 좌우 화살표 */}
+      {showUI && hasPrev && (
+        <button
+          type="button"
+          className="user-content-viewer-arrow left"
+          onClick={(e) => { e.stopPropagation(); setCurrent((c) => c - 1); }}
+          aria-label="이전"
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+      )}
+      {showUI && hasNext && (
+        <button
+          type="button"
+          className="user-content-viewer-arrow right"
+          onClick={(e) => { e.stopPropagation(); setCurrent((c) => c + 1); }}
+          aria-label="다음"
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 6 15 12 9 18" />
+          </svg>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -40,9 +175,9 @@ type ReviewItem = {
   id: string;
   title: string;
   content: string;
-  thumbnailImage: string | null;   // 원본 URL 배열 (1024px)
-  thumbnailSmall: string | null;   // 중간 URL 배열 (480px, 앞 3장)
-  thumbnailFirst: string | null;   // 썸네일 URL (200px, 리스트용)
+  thumbnailImage: string | null;
+  thumbnailSmall: string | null;
+  thumbnailFirst: string | null;
   attachedFile: string | null;
   viewCount: number;
   createdAt: string;
@@ -73,8 +208,7 @@ function getContentCache(id: string): ReviewItem | null {
 export function UserContentPage({ id }: { id: string }) {
   const [item, setItem] = useState<ReviewItem | null>(() => getContentCache(id));
   const [notFound, setNotFound] = useState(false);
-  const [viewerSrc, setViewerSrc] = useState<string | null>(null);
-  const [viewerLoaded, setViewerLoaded] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const originalCacheRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -115,14 +249,10 @@ export function UserContentPage({ id }: { id: string }) {
     } catch {}
   }
 
-  // 본문 표시용 이미지: 480px 우선, 없으면 원본
-  const displayImages = originalImages.map((orig, i) => ({
-    display: mediumImages[i] ?? orig,
-    thumbnail: i < 3 && mediumImages[i] ? undefined : undefined,
-    original: orig,
-  }));
+  // 본문 표시용: 480px 우선
+  const displayImages = originalImages.map((orig, i) => mediumImages[i] ?? orig);
 
-  // 페이지 로드 완료 후 1024px 원본 백그라운드 캐싱
+  // 페이지 로드 후 1024px 원본 백그라운드 캐싱
   useEffect(() => {
     if (!item || originalImages.length === 0) return;
     const timer = setTimeout(() => {
@@ -136,22 +266,12 @@ export function UserContentPage({ id }: { id: string }) {
     return () => clearTimeout(timer);
   }, [item]);
 
-  // 이미지 클릭 → 1024px 뷰어
-  const openViewer = useCallback((src: string) => {
-    setViewerLoaded(false);
-    setViewerSrc(src);
-    document.body.style.overflow = "hidden";
+  const openViewer = useCallback((index: number) => {
+    setViewerIndex(index);
   }, []);
 
   const closeViewer = useCallback(() => {
-    setViewerSrc(null);
-    setViewerLoaded(false);
-    document.body.style.overflow = "";
-  }, []);
-
-  // 뷰어 이미지 로드 시 가로/세로 판단
-  const handleViewerLoad = useCallback(() => {
-    setViewerLoaded(true);
+    setViewerIndex(null);
   }, []);
 
   let attachedFile: { name: string; type: string; data: string } | null = null;
@@ -181,13 +301,8 @@ export function UserContentPage({ id }: { id: string }) {
               <p className="user-content-meta muted">
                 {item.authorId} · {formatDate(item.createdAt)} · 조회 {item.viewCount + 1}
               </p>
-              {displayImages.map((img, i) => (
-                <ContentImage
-                  key={i}
-                  src={img.display}
-                  originalSrc={img.original}
-                  onClickView={openViewer}
-                />
+              {displayImages.map((src, i) => (
+                <ContentImage key={i} src={src} index={i} onClickView={openViewer} />
               ))}
               {attachedFile && (
                 <a
@@ -213,20 +328,13 @@ export function UserContentPage({ id }: { id: string }) {
         )}
       </div>
 
-      {/* 1024px 원본 이미지 뷰어 */}
-      {viewerSrc && (
-        <div className="user-content-viewer-overlay" onClick={closeViewer}>
-          <div className="user-content-viewer-wrap">
-            {!viewerLoaded && <div className="user-content-viewer-spinner" />}
-            <img
-              src={viewerSrc}
-              alt=""
-              className="user-content-viewer-img"
-              style={{ opacity: viewerLoaded ? 1 : 0 }}
-              onLoad={handleViewerLoad}
-            />
-          </div>
-        </div>
+      {/* 1024px 원본 이미지 슬라이드 뷰어 */}
+      {viewerIndex !== null && originalImages.length > 0 && (
+        <ImageViewer
+          images={originalImages}
+          startIndex={viewerIndex}
+          onClose={closeViewer}
+        />
       )}
     </main>
   );
