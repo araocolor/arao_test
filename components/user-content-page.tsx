@@ -4,6 +4,19 @@ import { useEffect, useState } from "react";
 import { UserContentHeader } from "@/components/user-content-header";
 import { UserContentInteractions } from "@/components/user-content-interactions";
 
+function LazyImage({ src }: { src: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <img
+      src={src}
+      alt=""
+      className="user-content-thumb"
+      style={{ display: loaded ? "block" : "none" }}
+      onLoad={() => setLoaded(true)}
+    />
+  );
+}
+
 type ReviewItem = {
   id: string;
   title: string;
@@ -97,9 +110,13 @@ export function UserContentPage({ id }: { id: string }) {
               <p className="user-content-meta muted">
                 {item.authorId} · {formatDate(item.createdAt)} · 조회 {item.viewCount + 1}
               </p>
-              {contentImages.length > 0 && (
-                <img src={contentImages[0]} alt="" className="user-content-thumb" />
-              )}
+              {contentImages.map((src, i) => (
+                i === 0 ? (
+                  <img key={i} src={src} alt="" className="user-content-thumb" />
+                ) : (
+                  <LazyImage key={i} src={src} />
+                )
+              ))}
               {attachedFile && (
                 <a
                   href={attachedFile.data}
