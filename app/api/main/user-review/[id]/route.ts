@@ -1,31 +1,26 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getUserReviewById } from "@/lib/user-reviews";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { syncProfile } from "@/lib/profiles";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const [{ id }, { userId }] = await Promise.all([params, auth()]);
     const item = await getUserReviewById(id);
     if (!item) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json(item);
+    const isAuthor = !!userId && userId === item.profileId;
+    return NextResponse.json({ ...item, isAuthor });
   } catch (error) {
     console.error("GET /api/main/user-review/[id] error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-async function getAuthorProfile(userId: string) {
-  const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
-  return syncProfile({ email });
-}
 
 export async function PUT(
   request: Request,
