@@ -116,24 +116,15 @@ export function HeaderProfileLink() {
       fetch("/api/gallery/people/0/likes")
         .then((r) => r.json())
         .then((d: { count?: number; firstLiker?: string | null; commentCount?: number }) => {
-          // liked 제외한 공개 데이터만 저장
           setCached(publicKey, { count: d.count ?? 0, firstLiker: d.firstLiker ?? null, commentCount: d.commentCount ?? 0 });
-          // likes 완료 후 comments fetch → 완료 후 커뮤니티 순차 prefetch
           if (!getCached(commentsKey)) {
             fetch("/api/gallery/people/0/comments")
               .then((r) => r.json())
-              .then((d2) => {
-                setCached(commentsKey, d2);
-                prefetchUserReviewList();
-              })
-              .catch(() => { prefetchUserReviewList(); });
-          } else {
-            prefetchUserReviewList();
+              .then((d2) => setCached(commentsKey, d2))
+              .catch(() => {});
           }
         })
-        .catch(() => { prefetchUserReviewList(); });
-    } else {
-      prefetchUserReviewList();
+        .catch(() => {});
     }
   }
 
@@ -154,11 +145,12 @@ export function HeaderProfileLink() {
       .catch(() => {});
   }
 
-  // 마운트 시 localStorage 캐시에서 즉시 복원 + 갤러리 공개 데이터 prefetch (로그인 무관)
+  // 마운트 시 localStorage 캐시에서 즉시 복원 + 갤러리/커뮤니티 동시 prefetch (로그인 무관)
   useEffect(() => {
     const cached = localStorage.getItem("header-avatar");
     if (cached) setIconImage(cached);
     prefetchGalleryFirst();
+    prefetchUserReviewList();
   }, []);
 
   // 초기 로드: 아바타 먼저 → 알림 / 로그아웃 시 캐시 제거
