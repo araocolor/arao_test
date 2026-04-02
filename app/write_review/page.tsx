@@ -277,6 +277,31 @@ function WriteReviewContent() {
         });
       }
 
+      // 새 글이면 리스트 캐시 맨 앞에 추가
+      if (!isEditMode) {
+        try {
+          const cacheKey = "user-review-list-cache";
+          const raw = sessionStorage.getItem(cacheKey);
+          if (raw) {
+            const { data, ts } = JSON.parse(raw) as { data: { items: unknown[]; total: number }; ts: number };
+            const newItem = {
+              id: postId,
+              title: title.trim(),
+              content: content.trim(),
+              thumbnailImage: null,
+              thumbnailSmall: null,
+              thumbnailFirst: null,
+              viewCount: 0,
+              likeCount: 0,
+              createdAt: new Date().toISOString(),
+              authorId: "",
+            };
+            data.items = [newItem, ...data.items];
+            data.total = data.total + 1;
+            sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts }));
+          }
+        } catch {}
+      }
       router.push(isEditMode ? `/user_content/${editId}` : "/user_review");
     } finally {
       setSaving(false);
