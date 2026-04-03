@@ -7,9 +7,10 @@ import { useState, useRef, useEffect } from "react";
 
 type BoardHeaderProps = {
   menuItems?: { label: string; onClick: () => void }[];
+  onBack?: () => void;
 };
 
-export function BoardHeader({ menuItems }: BoardHeaderProps) {
+export function BoardHeader({ menuItems, onBack }: BoardHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -36,7 +37,7 @@ export function BoardHeader({ menuItems }: BoardHeaderProps) {
         <button
           type="button"
           className="board-header-back"
-          onClick={() => router.back()}
+          onClick={() => (onBack ? onBack() : router.back())}
           aria-label="뒤로가기"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

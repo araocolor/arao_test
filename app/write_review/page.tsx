@@ -428,7 +428,7 @@ function WriteReviewContent() {
         }
       } catch {}
       // 항상 본문 페이지로 이동
-      router.push(`/user_content/${postId}`);
+      router.push(`/user_content/${postId}?from=write`);
     } finally {
       setSaving(false);
       setSavingMsg("저장 중...");

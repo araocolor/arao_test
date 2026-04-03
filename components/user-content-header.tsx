@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BoardHeader } from "@/components/board-header";
 
 type Props = {
@@ -10,6 +10,8 @@ type Props = {
 
 export function UserContentHeader({ reviewId, isAuthor }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromWrite = searchParams.get("from") === "write";
 
   function handleDelete() {
     if (!confirm("게시글을 삭제할까요?")) return;
@@ -41,5 +43,5 @@ export function UserContentHeader({ reviewId, isAuthor }: Props) {
       ]
     : [];
 
-  return <BoardHeader menuItems={menuItems} />;
+  return <BoardHeader menuItems={menuItems} onBack={fromWrite ? () => router.push("/user_review") : undefined} />;
 }
