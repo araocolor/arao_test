@@ -121,7 +121,7 @@ function ImageViewer({
     if (e.touches.length === 2 && pinchRef.current) {
       const newDist = getDistance(e.touches[0], e.touches[1]);
       const ratio = newDist / pinchRef.current.dist;
-      const newScale = Math.min(Math.max(pinchRef.current.scale * ratio, 1), 4);
+      const newScale = Math.min(Math.max(pinchRef.current.scale * ratio, 1), 2);
       setScale(newScale);
       if (newScale <= 1.05) { setPanX(0); setPanY(0); }
       return;
@@ -203,14 +203,14 @@ function ImageViewer({
       setPanX(0);
       setPanY(0);
     } else {
-      setScale(2.5);
+      setScale(1.5);
       // 클릭한 위치를 중심으로 줌
       const rect = containerRef.current?.getBoundingClientRect();
       if (rect) {
         const cx = e.clientX - rect.left - rect.width / 2;
         const cy = e.clientY - rect.top - rect.height / 2;
-        setPanX(-cx * 1.5);
-        setPanY(-cy * 1.5);
+        setPanX(-cx * 0.5);
+        setPanY(-cy * 0.5);
       }
     }
   }
@@ -242,6 +242,19 @@ function ImageViewer({
       onTouchEnd={handleTouchEnd}
       onDoubleClick={handleDoubleClick}
     >
+      <a
+        className="user-content-viewer-download"
+        href={images[current]}
+        download
+        aria-label="다운로드"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      </a>
       <button
         type="button"
         className="user-content-viewer-close"
