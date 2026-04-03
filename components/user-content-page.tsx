@@ -7,23 +7,25 @@ import { UserContentInteractions, UserContentLikeSection } from "@/components/us
 function ContentImage({
   src,
   index,
+  isUpgraded,
   onClickView,
 }: {
   src: string;
   index: number;
+  isUpgraded: boolean;
   onClickView: (index: number) => void;
 }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <button
       type="button"
-      className="user-content-thumb-btn"
+      className={`user-content-thumb-btn${isUpgraded ? " is-upgraded" : ""}`}
       onClick={() => onClickView(index)}
     >
       <img
         src={src}
         alt=""
-        className="user-content-thumb"
+        className={`user-content-thumb${isUpgraded ? " is-upgraded" : ""}`}
         style={{ opacity: loaded ? 1 : 0 }}
         onLoad={() => setLoaded(true)}
       />
@@ -528,7 +530,13 @@ export function UserContentPage({ id }: { id: string }) {
               </div>
               <div className="user-content-body-divider" aria-hidden="true" />
               {displayImages.map((src, i) => (
-                <ContentImage key={i} src={src} index={i} onClickView={openViewer} />
+                <ContentImage
+                  key={i}
+                  src={src}
+                  index={i}
+                  isUpgraded={Boolean(upgradedImages[i] || !mediumImages[i])}
+                  onClickView={openViewer}
+                />
               ))}
               {attachedFile && (
                 <button
