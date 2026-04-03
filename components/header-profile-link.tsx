@@ -12,6 +12,59 @@ import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 const REVIEW_LIST_CACHE_TTL = 300000; // 5분
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
+const NOTIFICATION_CACHE_PREFIX = "header-notifications-cache-v1";
+const NOTIFICATION_CACHE_TTL = 60000; // 60초
+
+type NotificationPayload = {
+  unreadCount: number;
+  items: NotificationItem[];
+  iconImage?: string | null;
+  username?: string | null;
+  email?: string | null;
+  notificationEnabled?: boolean;
+};
+
+type NotificationCacheSnapshot = {
+  data: NotificationPayload;
+  ts: number;
+};
+
+function getNotificationCacheKey(userId: string | null | undefined): string {
+  return `${NOTIFICATION_CACHE_PREFIX}:${userId ?? "anon"}`;
+}
+
+function readNotificationCache(cacheKey: string): NotificationPayload | null {
+  try {
+    const raw = sessionStorage.getItem(cacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as NotificationCacheSnapshot;
+    if (!parsed?.data || !Number.isFinite(parsed.ts)) return null;
+    if (Date.now() - parsed.ts > NOTIFICATION_CACHE_TTL) {
+      sessionStorage.removeItem(cacheKey);
+      return null;
+    }
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeNotificationCache(cacheKey: string, payload: NotificationPayload): void {
+  try {
+    const snapshot: NotificationCacheSnapshot = { data: payload, ts: Date.now() };
+    sessionStorage.setItem(cacheKey, JSON.stringify(snapshot));
+  } catch {}
+}
+
+function clearNotificationCacheAll(): void {
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
+      const key = sessionStorage.key(i);
+      if (!key || !key.startsWith(NOTIFICATION_CACHE_PREFIX)) continue;
+      sessionStorage.removeItem(key);
+    }
+  } catch {}
+}
 
 function canPrefetchReviewList(): boolean {
   if (typeof document !== "undefined" && document.visibilityState !== "visible") return false;
@@ -47,11 +100,12 @@ function isReviewPrefetchLocked(): boolean {
 }
 
 export function HeaderProfileLink() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  useNotificationCount(isSignedIn ?? false);
+  const realtimeUnreadCount = useNotificationCount(isSignedIn ?? false);
   useAdminPendingCount(isSignedIn ?? false);
+  const notificationCacheKey = getNotificationCacheKey(user?.id);
 
   // 드로어 상태
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -71,6 +125,35 @@ export function HeaderProfileLink() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  function applyNotificationPayload(payload: NotificationPayload, options?: { persist?: boolean }) {
+    const nextItems = Array.isArray(payload.items) ? payload.items : [];
+    const unread = Number.isFinite(payload.unreadCount)
+      ? payload.unreadCount
+      : nextItems.filter((item) => !item.is_read).length;
+    setItems(nextItems);
+    setBadgeCount(unread);
+    localStorage.setItem("header-badge-count", String(unread));
+    if (payload.iconImage !== undefined) {
+      const img = payload.iconImage ?? null;
+      setIconImage(img);
+      if (img) localStorage.setItem("header-avatar", img);
+      else localStorage.removeItem("header-avatar");
+    }
+    if (payload.username !== undefined) setUsername(payload.username ?? null);
+    if (payload.email !== undefined) setEmail(payload.email ?? null);
+    setNotificationEnabled(payload.notificationEnabled ?? true);
+    if (options?.persist !== false) {
+      writeNotificationCache(notificationCacheKey, {
+        unreadCount: unread,
+        items: nextItems,
+        iconImage: payload.iconImage,
+        username: payload.username,
+        email: payload.email,
+        notificationEnabled: payload.notificationEnabled,
+      });
+    }
+  }
 
   // 아바타만 먼저 조회 (빠른 업데이트)
   async function fetchAvatar() {
@@ -92,29 +175,17 @@ export function HeaderProfileLink() {
   }
 
   // 알림 목록 조회 (백그라운드)
-  async function fetchNotificationItems() {
-    setIsLoadingNotifications(true);
+  async function fetchNotificationItems(options?: { showLoading?: boolean }) {
+    const showLoading = options?.showLoading ?? items.length === 0;
+    if (showLoading) setIsLoadingNotifications(true);
     try {
       const response = await fetch("/api/account/notifications");
       if (response.ok) {
-        const data = (await response.json()) as {
-          unreadCount: number;
-          items: NotificationItem[];
-          iconImage?: string | null;
-          username?: string | null;
-          email?: string | null;
-          notificationEnabled?: boolean;
-        };
-        setItems(data.items);
-        const unread = data.items.filter((item) => !item.is_read).length;
-        setBadgeCount(unread);
-        localStorage.setItem("header-badge-count", String(unread));
-        if (data.username) setUsername(data.username);
-        if (data.email) setEmail(data.email);
-        setNotificationEnabled(data.notificationEnabled ?? true);
+        const data = (await response.json()) as NotificationPayload;
+        applyNotificationPayload(data);
 
         // 새 갤러리 알림의 댓글 미리 캐시
-        const unreadGallery = (data.items as NotificationItem[]).filter(
+        const unreadGallery = (data.items ?? []).filter(
           (item) =>
             !item.is_read &&
             (item.type === "gallery_like" ||
@@ -209,6 +280,14 @@ export function HeaderProfileLink() {
     prefetchUserReviewList();
   }, []);
 
+  // 로그인 사용자별 알림 캐시 즉시 복원 (첫 클릭 체감 개선)
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const cached = readNotificationCache(notificationCacheKey);
+    if (!cached) return;
+    applyNotificationPayload(cached, { persist: false });
+  }, [isSignedIn, notificationCacheKey]);
+
   // 사이트 체류 중 2분마다 리스트/갤러리 캐시 백그라운드 갱신 (탭 visible일 때만)
   useEffect(() => {
     const timer = setInterval(() => {
@@ -219,16 +298,31 @@ export function HeaderProfileLink() {
     return () => clearInterval(timer);
   }, []);
 
+  // 실시간 unread 카운트를 헤더 뱃지에 동기화
+  useEffect(() => {
+    if (!isSignedIn || !notificationEnabled) return;
+    if (drawerOpen) return;
+    setBadgeCount((prev) => {
+      if (prev === realtimeUnreadCount) return prev;
+      localStorage.setItem("header-badge-count", String(realtimeUnreadCount));
+      return realtimeUnreadCount;
+    });
+  }, [isSignedIn, notificationEnabled, realtimeUnreadCount, drawerOpen]);
+
   // 초기 로드: 아바타 먼저 → 알림 / 로그아웃 시 캐시 제거
   useEffect(() => {
     if (isSignedIn) {
       void fetchAvatar();
-      void fetchNotificationItems();
+      void fetchNotificationItems({ showLoading: false });
     } else if (isSignedIn === false) {
       setIconImage(null);
       setBadgeCount(0);
+      setItems([]);
+      setUsername(null);
+      setEmail(null);
       localStorage.removeItem("header-avatar");
       localStorage.removeItem("header-badge-count");
+      clearNotificationCacheAll();
     }
   }, [isSignedIn]);
 
@@ -273,18 +367,21 @@ export function HeaderProfileLink() {
       closeTimerRef.current = null;
     }
 
+    const cached = readNotificationCache(notificationCacheKey);
+    if (cached) {
+      applyNotificationPayload(cached, { persist: false });
+    }
     setDrawerMounted(true);
     setDrawerOpen(true);
-    void fetchNotificationItems();
+    void fetchNotificationItems({ showLoading: !cached });
   }
 
   // 드로어 닫기
   function closeDrawer() {
     setDrawerOpen(false);
-    const isTablet = window.innerWidth >= 481;
     closeTimerRef.current = setTimeout(() => {
       setDrawerMounted(false);
-    }, isTablet ? 300 : 1000);
+    }, 260);
   }
 
   // 정리
@@ -363,6 +460,29 @@ export function HeaderProfileLink() {
             const unread = next.filter((item) => !item.is_read).length;
             setBadgeCount(unread);
             localStorage.setItem("header-badge-count", String(unread));
+            writeNotificationCache(notificationCacheKey, {
+              unreadCount: unread,
+              items: next,
+              iconImage,
+              username,
+              email,
+              notificationEnabled,
+            });
+            return next;
+          })}
+          onRollbackRead={(id) => setItems((prev) => {
+            const next = prev.map((item) => item.id === id ? { ...item, is_read: false } : item);
+            const unread = next.filter((item) => !item.is_read).length;
+            setBadgeCount(unread);
+            localStorage.setItem("header-badge-count", String(unread));
+            writeNotificationCache(notificationCacheKey, {
+              unreadCount: unread,
+              items: next,
+              iconImage,
+              username,
+              email,
+              notificationEnabled,
+            });
             return next;
           })}
         />

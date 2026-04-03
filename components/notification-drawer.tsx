@@ -13,6 +13,7 @@ type NotificationDrawerProps = {
   email: string | null;
   onClose: () => void;
   onMarkRead: (id: string) => void;
+  onRollbackRead: (id: string) => void;
 };
 
 function maskEmail(email: string): string {
@@ -103,6 +104,7 @@ export function NotificationDrawer({
   email,
   onClose,
   onMarkRead,
+  onRollbackRead,
 }: NotificationDrawerProps) {
   const [optimisticReadIds, setOptimisticReadIds] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState(false);
@@ -140,11 +142,26 @@ export function NotificationDrawer({
   );
 
   const handleItemClick = (item: NotificationItem) => {
-    // settings/consulting 제외, 나머지는 즉시 읽음 처리
-    if (item.type !== "settings" && item.type !== "consulting" && !item.is_read) {
+    // settings는 제외, 나머지는 즉시 읽음 처리
+    if (item.type !== "settings" && !item.is_read) {
       setOptimisticReadIds((prev) => new Set(prev).add(item.id));
       onMarkRead(item.id);
-      fetch(`/api/account/notifications/${item.id}`, { method: "PATCH" }).catch(() => {});
+      const isPersistable = !item.id.startsWith("consulting-");
+      if (isPersistable) {
+        fetch(`/api/account/notifications/${item.id}`, { method: "PATCH" })
+          .then((res) => {
+            if (!res.ok) throw new Error("mark-read failed");
+          })
+          .catch(() => {
+            setOptimisticReadIds((prev) => {
+              const next = new Set(prev);
+              next.delete(item.id);
+              return next;
+            });
+            onRollbackRead(item.id);
+            window.dispatchEvent(new CustomEvent("notification-refresh"));
+          });
+      }
     }
     onClose();
   };

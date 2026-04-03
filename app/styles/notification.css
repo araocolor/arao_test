@@ -9,14 +9,17 @@
   z-index: 55;
   background: transparent;
   transition: background 180ms ease;
+  pointer-events: none;
 }
 
 .notif-backdrop.is-open {
   background: rgba(0, 0, 0, 0.1);
+  pointer-events: auto;
 }
 
 .notif-backdrop.is-closing {
   background: transparent;
+  pointer-events: none;
 }
 
 /* 드로어 패널 - 전체화면, 왼쪽에서 슬라이드 (인스타그램 스타일) */
@@ -32,7 +35,7 @@
   flex-direction: column;
   transform: translateX(100%);
   opacity: 1;
-  transition: transform 1000ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 240ms cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow: hidden;
 }
 
@@ -42,13 +45,14 @@
 
 .notif-drawer.is-closing {
   transform: translateX(100%);
+  pointer-events: none;
 }
 
 /* 태블릿+: 열기 페이드인, 닫기 페이드아웃 */
 @media (min-width: 481px) {
   .notif-drawer {
     opacity: 0;
-    transition: transform 1000ms cubic-bezier(0.25, 0.8, 0.25, 1), opacity 400ms ease;
+    transition: transform 240ms cubic-bezier(0.25, 0.8, 0.25, 1), opacity 180ms ease;
   }
   .notif-drawer.is-open {
     opacity: 1;
@@ -56,7 +60,8 @@
   .notif-drawer.is-closing {
     transform: translateX(0);
     opacity: 0;
-    transition: opacity 300ms ease;
+    transition: opacity 180ms ease;
+    pointer-events: none;
   }
 }
 
