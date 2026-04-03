@@ -81,15 +81,21 @@ export async function getUserReviewList(params: {
   limit: number;
   q?: string;
   sort?: UserReviewSort;
+  board?: string;
 }): Promise<{ items: UserReviewListItem[]; total: number }> {
   const { page, limit } = params;
   const q = (params.q ?? "").trim().toLowerCase();
   const sort = params.sort ?? "latest";
+  const board = params.board ?? "review";
   const supabase = createSupabaseAdminClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("user_reviews")
     .select("id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)");
+
+  query = query.eq("board", board);
+
+  const { data, error } = await query;
 
   if (error) {
     // user_reviews 테이블 미생성 상태를 포함해 안전하게 빈 목록 반환
@@ -153,6 +159,7 @@ export async function createUserReview(params: {
   thumbnailImage?: string;
   thumbnailSmall?: string;
   attachedFile?: string;
+  board?: string;
 }): Promise<{ id: string } | null> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
@@ -162,6 +169,7 @@ export async function createUserReview(params: {
       category: params.category,
       title: params.title,
       content: params.content,
+      board: params.board ?? "review",
       ...(params.thumbnailImage ? { thumbnail_image: params.thumbnailImage } : {}),
       ...(params.thumbnailSmall ? { thumbnail_small: params.thumbnailSmall } : {}),
       ...(params.attachedFile ? { attached_file: params.attachedFile } : {}),

@@ -10,13 +10,14 @@ export async function GET(request: Request) {
     const limitParam = Number(url.searchParams.get("limit") ?? "20");
     const q = (url.searchParams.get("q") ?? "").trim();
     const sortParam = (url.searchParams.get("sort") ?? "latest").trim();
+    const board = (url.searchParams.get("board") ?? "review").trim();
 
     const page = Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1;
     const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(Math.floor(limitParam), 100) : 20;
     const sort: UserReviewSort =
       sortParam === "views" || sortParam === "likes" ? sortParam : "latest";
 
-    const { items, total } = await getUserReviewList({ page, limit, q, sort });
+    const { items, total } = await getUserReviewList({ page, limit, q, sort, board });
     return NextResponse.json({
       items,
       total,
@@ -48,10 +49,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string; thumbnailSmall?: string; attachedFile?: string };
+    const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string; thumbnailSmall?: string; attachedFile?: string; board?: string };
     const title = (body.title ?? "").trim();
     const content = (body.content ?? "").trim();
     const category = (body.category ?? "일반").trim();
+    const board = (body.board ?? "review").trim();
     const thumbnailImage = body.thumbnailImage ?? undefined;
     const thumbnailSmall = body.thumbnailSmall ?? undefined;
     const attachedFile = body.attachedFile ?? undefined;
@@ -60,7 +62,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "제목을 입력해주세요." }, { status: 400 });
     }
 
-    const result = await createUserReview({ profileId: profile.id, category, title, content, thumbnailImage, thumbnailSmall: thumbnailSmall ?? undefined, attachedFile });
+    const result = await createUserReview({ profileId: profile.id, category, title, content, thumbnailImage, thumbnailSmall: thumbnailSmall ?? undefined, attachedFile, board });
     if (!result) {
       return NextResponse.json({ message: "저장에 실패했습니다." }, { status: 500 });
     }

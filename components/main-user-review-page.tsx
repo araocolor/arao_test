@@ -21,6 +21,15 @@ type UserReviewItem = {
   authorId: string;
 };
 
+type BoardType = "notice" | "review" | "qna" | "arao";
+
+const BOARD_OPTIONS: Array<{ value: BoardType; label: string }> = [
+  { value: "notice", label: "공지사항" },
+  { value: "review", label: "사용자후기" },
+  { value: "qna", label: "Q&A" },
+  { value: "arao", label: "ARAO" },
+];
+
 const VIEW_OPTIONS: Array<{ value: ViewMode; label: string }> = [
   { value: "list", label: "목록형" },
   { value: "feed", label: "피드형" },
@@ -99,6 +108,9 @@ export function MainUserReviewPage() {
 
   const [items, setItems] = useState<UserReviewItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [board, setBoard] = useState<BoardType>("review");
+  const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
+  const boardDropdownRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [sortMode, setSortMode] = useState<SortMode>("latest");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -123,6 +135,10 @@ export function MainUserReviewPage() {
     } catch {}
 
     const newId = searchParams.get("new");
+    const boardParam = searchParams.get("board");
+    if (boardParam && BOARD_OPTIONS.some((o) => o.value === boardParam)) {
+      setBoard(boardParam as BoardType);
+    }
     if (newId) {
       setNewItemId(newId);
       router.replace("/user_review");
@@ -218,6 +234,17 @@ export function MainUserReviewPage() {
     return () => window.removeEventListener("mousedown", onClickOutside);
   }, [dropdownOpen]);
 
+  useEffect(() => {
+    if (!boardDropdownOpen) return;
+    const onClickOutside = (event: MouseEvent) => {
+      if (boardDropdownRef.current && !boardDropdownRef.current.contains(event.target as Node)) {
+        setBoardDropdownOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", onClickOutside);
+    return () => window.removeEventListener("mousedown", onClickOutside);
+  }, [boardDropdownOpen]);
+
   // 스크롤 위치 복원
   useEffect(() => {
     const saved = sessionStorage.getItem(SCROLL_KEY);
@@ -238,7 +265,7 @@ export function MainUserReviewPage() {
     const controller = new AbortController();
     async function load() {
       // page=1, sort=latest, 검색 없을 때 신선한 캐시가 있으면 fetch 건너뜀
-      if (page === 1 && sortMode === "latest" && !query.trim()) {
+      if (page === 1 && sortMode === "latest" && !query.trim() && board === "review") {
         const cached = getListCache();
         if (cached) return;
       }
@@ -248,6 +275,7 @@ export function MainUserReviewPage() {
           page: String(page),
           limit: String(limit),
           sort: sortMode,
+          board,
         });
         if (query.trim()) params.set("q", query.trim());
 
@@ -262,8 +290,8 @@ export function MainUserReviewPage() {
         const newItems = Array.isArray(data.items) ? data.items : [];
         setItems(newItems);
         setTotal(data.total ?? 0);
-        // page=1, sort=latest, 검색 없을 때만 캐시 저장
-        if (page === 1 && sortMode === "latest" && !query.trim()) {
+        // page=1, sort=latest, 검색 없을 때만 캐시 저장 (review 게시판만)
+        if (page === 1 && sortMode === "latest" && !query.trim() && board === "review") {
           setListCache({ items: newItems, total: data.total ?? 0 });
         }
       } catch (error) {
@@ -280,7 +308,7 @@ export function MainUserReviewPage() {
     }
     void load();
     return () => controller.abort();
-  }, [page, limit, sortMode, query]);
+  }, [page, limit, sortMode, query, board]);
 
   const totalPages = Math.max(Math.ceil(total / limit), 1);
 
@@ -316,6 +344,36 @@ export function MainUserReviewPage() {
   return (
     <section className="user-review-page">
       <div className="user-review-top-row">
+        <div className="user-review-dropdown" ref={boardDropdownRef}>
+          <button
+            type="button"
+            className="user-review-dropdown-trigger"
+            onClick={() => setBoardDropdownOpen((v) => !v)}
+          >
+            {BOARD_OPTIONS.find((o) => o.value === board)?.label ?? "사용자후기"}
+            <span className={`user-review-dropdown-arrow${boardDropdownOpen ? " open" : ""}`}>▾</span>
+          </button>
+          {boardDropdownOpen && (
+            <div className="user-review-dropdown-menu">
+              {BOARD_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`user-review-dropdown-option${board === opt.value ? " active" : ""}`}
+                  onClick={() => {
+                    setBoard(opt.value);
+                    setBoardDropdownOpen(false);
+                    setPage(1);
+                    setQuery("");
+                    setQueryInput("");
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="user-review-dropdown" ref={dropdownRef}>
           <button
             type="button"
@@ -568,7 +626,7 @@ export function MainUserReviewPage() {
           <button
             type="button"
             className="user-review-write-btn"
-            onClick={() => router.push("/write_review")}
+            onClick={() => router.push(`/write_review?board=${board}`)}
           >
             글작성
           </button>

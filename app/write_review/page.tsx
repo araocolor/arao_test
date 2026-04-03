@@ -71,6 +71,7 @@ function WriteReviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("id");
+  const boardParam = searchParams.get("board") ?? "review";
   const isEditMode = !!editId;
   const { isSignedIn } = useUser();
   const [category, setCategory] = useState<Category>("일반");
@@ -306,6 +307,7 @@ function WriteReviewContent() {
           title: title.trim(),
           content: finalContent.trim(),
           attachedFile: attachedFile ? JSON.stringify(attachedFile) : null,
+          board: boardParam,
         }),
       });
       if (!res.ok) return;
@@ -432,7 +434,7 @@ function WriteReviewContent() {
         }
       } catch {}
       // 리스트로 이동 (replace: 뒤로가기 시 글쓰기 페이지 재진입 방지)
-      router.replace(`/user_review?new=${postId}`);
+      router.replace(`/user_review?new=${postId}&board=${boardParam}`);
     } finally {
       setSaving(false);
       setSavingMsg("저장 중...");
