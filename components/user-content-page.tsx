@@ -178,7 +178,7 @@ function ImageViewer({
     // 탭 → 카운터만 토글 (X 버튼은 항상 표시)
     if (Math.abs(dx) < 20 && Math.abs(dy) < 20 && dt < 300) {
       const target = e.target as HTMLElement;
-      if (!target.closest(".user-content-viewer-close") && !target.closest(".user-content-viewer-arrow")) {
+      if (!target.closest(".user-content-viewer-close") && !target.closest(".user-content-viewer-arrow") && !target.closest(".user-content-viewer-download")) {
         setShowUI((v) => !v);
       }
       return;
@@ -196,7 +196,7 @@ function ImageViewer({
   const lastTapRef = useRef(0);
   function handleDoubleClick(e: React.MouseEvent) {
     const target = e.target as HTMLElement;
-    if (target.closest(".user-content-viewer-close") || target.closest(".user-content-viewer-arrow")) return;
+    if (target.closest(".user-content-viewer-close") || target.closest(".user-content-viewer-arrow") || target.closest(".user-content-viewer-download")) return;
 
     if (isZoomed) {
       setScale(1);
@@ -242,19 +242,32 @@ function ImageViewer({
       onTouchEnd={handleTouchEnd}
       onDoubleClick={handleDoubleClick}
     >
-      <a
+      <button
+        type="button"
         className="user-content-viewer-download"
-        href={images[current]}
-        download
         aria-label="다운로드"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          const url = images[current];
+          fetch(url)
+            .then((r) => r.blob())
+            .then((blob) => {
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              const ext = url.split(".").pop()?.split("?")[0] ?? "jpg";
+              a.download = `image_${current + 1}.${ext}`;
+              a.click();
+              URL.revokeObjectURL(a.href);
+            })
+            .catch(() => window.open(url, "_blank"));
+        }}
       >
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-      </a>
+      </button>
       <button
         type="button"
         className="user-content-viewer-close"
