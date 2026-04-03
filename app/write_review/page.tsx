@@ -387,6 +387,27 @@ function WriteReviewContent() {
         });
       }
 
+      // 본문 페이지용 캐시 심기 (즉시 표시용)
+      const thumbnailImage = savedOriginalImage
+        ?? (existingImageUrls.length === 0 ? null : existingImageUrls.length === 1 ? existingImageUrls[0] : JSON.stringify(existingImageUrls));
+      const contentCache = {
+        id: postId,
+        title: title.trim(),
+        content: finalContent.trim(),
+        thumbnailImage,
+        thumbnailSmall: null,
+        thumbnailFirst: savedThumbFirst ?? null,
+        attachedFile: attachedFile ? JSON.stringify(attachedFile) : null,
+        viewCount: 0,
+        createdAt: new Date().toISOString(),
+        authorId: "",
+        profileId: "",
+        isAuthor: true,
+      };
+      try {
+        sessionStorage.setItem(`user-review-content-${postId}`, JSON.stringify({ data: contentCache, ts: Date.now() }));
+      } catch {}
+
       // 새 글이면 리스트 캐시 맨 앞에 추가
       if (!isEditMode) {
         try {
@@ -394,25 +415,14 @@ function WriteReviewContent() {
           const raw = sessionStorage.getItem(cacheKey);
           if (raw) {
             const { data, ts } = JSON.parse(raw) as { data: { items: unknown[]; total: number }; ts: number };
-            const newItem = {
-              id: postId,
-              title: title.trim(),
-              content: finalContent.trim(),
-              thumbnailImage: savedOriginalImage,
-              thumbnailSmall: null,
-              thumbnailFirst: savedThumbFirst,
-              viewCount: 0,
-              likeCount: 0,
-              createdAt: new Date().toISOString(),
-              authorId: "",
-            };
-            data.items = [newItem, ...data.items];
+            data.items = [contentCache, ...data.items];
             data.total = data.total + 1;
             sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts }));
           }
         } catch {}
       }
-      router.push(isEditMode ? `/user_content/${editId}` : "/user_review");
+      // 항상 본문 페이지로 이동
+      router.push(`/user_content/${postId}`);
     } finally {
       setSaving(false);
       setSavingMsg("저장 중...");
