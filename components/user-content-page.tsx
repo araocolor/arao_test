@@ -53,6 +53,7 @@ function ImageViewer({
   const [loadedSet, setLoadedSet] = useState<Set<number>>(() => new Set());
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [slideDuration, setSlideDuration] = useState(0.35);
   const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -187,6 +188,9 @@ function ImageViewer({
     // 스와이프
     const velocity = Math.abs(dx) / dt;
     if ((Math.abs(dx) > 50 || velocity > 0.3) && Math.abs(dx) > Math.abs(dy)) {
+      // 속도 비례 전환: 빠를수록 짧게 (0.2s~0.35s)
+      const duration = Math.max(0.2, Math.min(0.45, 0.55 - velocity * 0.25));
+      setSlideDuration(duration);
       if (dx < 0 && hasNext) setCurrent((c) => c + 1);
       if (dx > 0 && hasPrev) setCurrent((c) => c - 1);
     }
@@ -227,7 +231,7 @@ function ImageViewer({
     display: "flex",
     height: "100%",
     transform: `translateX(calc(${-current * 100}vw + ${dragX}px))`,
-    transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1)",
+    transition: isDragging ? "none" : `transform ${slideDuration}s cubic-bezier(0.2, 0.8, 0.3, 1)`,
   };
 
   const imageTransform = `scale(${scale}) translate(${panX / scale}px, ${panY / scale}px)`;
