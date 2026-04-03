@@ -190,6 +190,19 @@
   vertical-align: -2px;
 }
 
+.user-review-item-clip--meta {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.user-review-item-meta-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .user-review-unread-dot {
   display: inline-block;
   width: 6px;

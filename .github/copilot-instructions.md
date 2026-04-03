@@ -1,8 +1,9 @@
-# Arao — Copilot Workspace Instructions
+# test_codex — Copilot Workspace Instructions
 
 > Full specs: **CLAUDE.md** (overview) · **frontend.md** · **backend.md** · **share.md**  
 > Layout zones: **LAYOUT_MAP.md** — 구역명 → CSS 클래스 → 파일 즉시 매핑  
-> DB schema: **DATABASE_SCHEMA.md**
+> DB schema: **DATABASE_SCHEMA.md**  
+> Legacy sample docs: **test3/README.md**
 
 ## Stack
 
