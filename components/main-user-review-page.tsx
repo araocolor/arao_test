@@ -383,7 +383,7 @@ export function MainUserReviewPage() {
                 <div className="user-review-item-main">
                   <p className="user-review-item-title">
                     {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
-                    {item.title}
+                    {item.title.length > 16 ? `${item.title.slice(0, 16)}...` : item.title}
                     {(item.likeCount > 0 || item.attachedFile) && (
                       <span className="user-review-item-stats">
                         {item.attachedFile && (
