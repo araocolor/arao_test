@@ -269,6 +269,29 @@
   gap: 10px;
 }
 
+.header-profile-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-community-search-trigger {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #111;
+  cursor: pointer;
+}
+
+.header-community-search-trigger:active {
+  transform: scale(0.98);
+}
+
 .header-profile-link {
   position: relative;
   display: inline-flex;

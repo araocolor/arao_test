@@ -64,18 +64,8 @@ function mapRowToListItem(row: any): UserReviewListItem {
   };
 }
 
-function sortRows(rows: any[], sort: UserReviewSort) {
-  if (sort === "views") {
-    return rows.sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0));
-  }
-  if (sort === "likes") {
-    return rows.sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0));
-  }
-  return rows.sort((a, b) => {
-    const aTime = new Date(a.created_at ?? 0).getTime();
-    const bTime = new Date(b.created_at ?? 0).getTime();
-    return bTime - aTime;
-  });
+function normalizeSearchTerm(value: string): string {
+  return value.replace(/[(),]/g, " ").trim();
 }
 
 export async function getUserReviewList(params: {
@@ -86,49 +76,55 @@ export async function getUserReviewList(params: {
   board?: string;
 }): Promise<{ items: UserReviewListItem[]; total: number }> {
   const { page, limit } = params;
-  const q = (params.q ?? "").trim().toLowerCase();
+  const q = normalizeSearchTerm((params.q ?? "").trim());
   const sort = params.sort ?? "latest";
   const board = params.board ?? "review";
   const supabase = createSupabaseAdminClient();
+  const safePage = Math.max(page, 1);
+  const start = (safePage - 1) * limit;
+  const end = start + limit - 1;
 
   let query = supabase
     .from("user_reviews")
-    .select("id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, board, created_at, updated_at, profile:profile_id(username, email)");
+    .select(
+      "id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, board, created_at, updated_at, profile:profile_id(username, email)",
+      { count: "exact" }
+    )
+    .eq("board", board);
 
-  query = query.eq("board", board);
+  if (q) {
+    const pattern = `%${q}%`;
+    const { data: matchedProfiles } = await supabase
+      .from("profiles")
+      .select("id")
+      .or(`username.ilike.${pattern},email.ilike.${pattern}`)
+      .limit(200);
+    const profileIds = (matchedProfiles ?? [])
+      .map((profile) => profile.id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0);
+    const profileFilter = profileIds.length > 0 ? `,profile_id.in.(${profileIds.join(",")})` : "";
+    query = query.or(`title.ilike.${pattern},content.ilike.${pattern}${profileFilter}`);
+  }
 
-  const { data, error } = await query;
+  if (sort === "views") {
+    query = query.order("view_count", { ascending: false }).order("created_at", { ascending: false });
+  } else if (sort === "likes") {
+    query = query.order("like_count", { ascending: false }).order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+
+  query = query.range(start, end);
+
+  const { data, error, count } = await query;
 
   if (error) {
-    // user_reviews 테이블 미생성 상태를 포함해 안전하게 빈 목록 반환
     console.error("getUserReviewList error:", error);
     return { items: [], total: 0 };
   }
 
-  const raw = Array.isArray(data) ? data : [];
-  const searched = q
-    ? raw.filter((row) => {
-        const title = String(row.title ?? "").toLowerCase();
-        const content = String(row.content ?? "").toLowerCase();
-        const profile = getProfile(row);
-        const username = String(profile?.username ?? "").toLowerCase();
-        const email = String(profile?.email ?? "").toLowerCase();
-        return (
-          title.includes(q) ||
-          content.includes(q) ||
-          username.includes(q) ||
-          email.includes(q)
-        );
-      })
-    : raw;
-
-  const sorted = sortRows([...searched], sort);
-  const total = sorted.length;
-  const safePage = Math.max(page, 1);
-  const start = (safePage - 1) * limit;
-  const end = start + limit;
-  const items = sorted.slice(start, end).map(mapRowToListItem);
-  return { items, total };
+  const items = (Array.isArray(data) ? data : []).map(mapRowToListItem);
+  return { items, total: count ?? 0 };
 }
 
 export async function getUserReviewById(id: string): Promise<UserReviewDetail | null> {

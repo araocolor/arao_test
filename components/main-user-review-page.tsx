@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type TouchEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
@@ -80,8 +80,19 @@ function excerpt(value: string, maxLength: number) {
 
 const LIST_CACHE_KEY = "user-review-list-cache";
 const SCROLL_KEY = "user-review-scroll";
-const CACHE_TTL = 60000; // 1분
+const CACHE_TTL = 120000; // 2분
 const PAGE_CACHE_PREFIX = "user-review-page-cache-v1";
+
+function canAggressivePrefetch(): boolean {
+  if (typeof navigator === "undefined") return true;
+  const connection = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (!connection) return true;
+  if (connection.saveData) return false;
+  if (connection.effectiveType === "slow-2g" || connection.effectiveType === "2g") return false;
+  return true;
+}
 
 function getBoardListCacheKey(board: BoardType): string {
   return board === "review" ? LIST_CACHE_KEY : `${LIST_CACHE_KEY}-${board}`;
@@ -158,7 +169,6 @@ export function MainUserReviewPage() {
   const searchParams = useSearchParams();
   const { isSignedIn } = useUser();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
   const [items, setItems] = useState<UserReviewItem[]>([]);
@@ -175,6 +185,16 @@ export function MainUserReviewPage() {
   const [query, setQuery] = useState("");
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [newItemId, setNewItemId] = useState<string | null>(null);
+  const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+  const [searchSheetClosing, setSearchSheetClosing] = useState(false);
+  const [searchSheetDragY, setSearchSheetDragY] = useState(0);
+  const [searchSheetLoading, setSearchSheetLoading] = useState(false);
+  const [searchSheetResults, setSearchSheetResults] = useState<UserReviewItem[]>([]);
+  const [searchSheetTotal, setSearchSheetTotal] = useState(0);
+  const [searchSheetKeyword, setSearchSheetKeyword] = useState("");
+  const searchSheetDraggingRef = useRef(false);
+  const searchSheetDragStartYRef = useRef(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const limit = 20;
 
   // 마운트 후 캐시 데이터로 즉시 채우기 + new 파라미터 처리
@@ -203,7 +223,35 @@ export function MainUserReviewPage() {
     }
   }, []);
 
-  function prefetchContentData(id: string) {
+  useEffect(() => {
+    const openSearchSheet = () => {
+      setSearchSheetDragY(0);
+      setSearchSheetClosing(false);
+      setSearchSheetOpen(true);
+    };
+    window.addEventListener("community-search-open", openSearchSheet);
+    return () => window.removeEventListener("community-search-open", openSearchSheet);
+  }, []);
+
+  useEffect(() => {
+    if (!searchSheetOpen) return;
+    const timer = window.setTimeout(() => searchInputRef.current?.focus(), 120);
+    return () => window.clearTimeout(timer);
+  }, [searchSheetOpen]);
+
+  useEffect(() => {
+    if (!searchSheetOpen) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [searchSheetOpen]);
+
+  function prefetchContentData(id: string, includeInteractions: boolean) {
     const contentKey = `user-review-content-${id}`;
     const likesKey = `user-review-likes-${id}`;
     const commentsKey = `user-review-comments-${id}`;
@@ -226,42 +274,48 @@ export function MainUserReviewPage() {
         })
         .catch(() => {});
     }
-    // 좋아요 캐시
-    if (!isFresh(likesKey)) {
-      fetch(`/api/main/user-review/${id}/likes`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (data) sessionStorage.setItem(likesKey, JSON.stringify({ data, ts: Date.now() }));
-        })
-        .catch(() => {});
-    }
-    // 댓글 캐시
-    if (!isFresh(commentsKey)) {
-      fetch(`/api/main/user-review/${id}/comments`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (data) sessionStorage.setItem(commentsKey, JSON.stringify({ data, ts: Date.now() }));
-        })
-        .catch(() => {});
+    if (includeInteractions) {
+      // 좋아요 캐시
+      if (!isFresh(likesKey)) {
+        fetch(`/api/main/user-review/${id}/likes`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data) sessionStorage.setItem(likesKey, JSON.stringify({ data, ts: Date.now() }));
+          })
+          .catch(() => {});
+      }
+      // 댓글 캐시
+      if (!isFresh(commentsKey)) {
+        fetch(`/api/main/user-review/${id}/comments`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data) sessionStorage.setItem(commentsKey, JSON.stringify({ data, ts: Date.now() }));
+          })
+          .catch(() => {});
+      }
     }
   }
 
   // 아이템 로드 후 상위 10개 router.prefetch + API 데이터 캐시 (새글 우선)
   useEffect(() => {
     if (items.length === 0 || !isSignedIn) return;
+    const aggressive = canAggressivePrefetch();
+    const routePrefetchCount = aggressive ? 10 : 4;
+    const interactionPrefetchCount = aggressive ? 3 : 1;
     const sorted = [
       ...items.filter((item) => !readIds.has(item.id)),
       ...items.filter((item) => readIds.has(item.id)),
     ];
-    sorted.slice(0, 10).forEach((item) => {
+    sorted.slice(0, routePrefetchCount).forEach((item, index) => {
       router.prefetch(`/user_content/${item.id}`);
-      prefetchContentData(item.id);
+      prefetchContentData(item.id, index < interactionPrefetchCount);
     });
   }, [items, readIds, isSignedIn]);
 
   // 스크롤 하단 도달 시 나머지 10개 동시 prefetch + API 데이터 캐시
   useEffect(() => {
     if (items.length <= 10 || !isSignedIn) return;
+    if (!canAggressivePrefetch()) return;
     const el = bottomSentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver((entries) => {
@@ -273,7 +327,6 @@ export function MainUserReviewPage() {
         ];
         sorted.slice(10).forEach((item) => {
           router.prefetch(`/user_content/${item.id}`);
-          prefetchContentData(item.id);
         });
       }
     });
@@ -396,6 +449,7 @@ export function MainUserReviewPage() {
 
   useEffect(() => {
     if (loading || total <= page * limit) return;
+    if (!canAggressivePrefetch()) return;
     const normalizedQuery = query.trim();
     const nextPage = page + 1;
     const cacheParams = {
@@ -416,18 +470,46 @@ export function MainUserReviewPage() {
     });
     if (normalizedQuery) params.set("q", normalizedQuery);
 
-    fetch(`/api/main/user-review?${params.toString()}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { items?: UserReviewItem[]; total?: number } | null) => {
-        if (!data) return;
-        setPageCache(cacheParams, {
-          items: Array.isArray(data.items) ? data.items : [],
-          total: data.total ?? 0,
-        });
-      })
-      .catch(() => {});
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (fn: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const useIdle = typeof idleWindow.requestIdleCallback === "function";
+    const timerId = useIdle
+      ? idleWindow.requestIdleCallback?.(() => {
+          fetch(`/api/main/user-review?${params.toString()}`, { signal: controller.signal })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data: { items?: UserReviewItem[]; total?: number } | null) => {
+              if (!data) return;
+              setPageCache(cacheParams, {
+                items: Array.isArray(data.items) ? data.items : [],
+                total: data.total ?? 0,
+              });
+            })
+            .catch(() => {});
+        }, { timeout: 1200 })
+      : window.setTimeout(() => {
+          fetch(`/api/main/user-review?${params.toString()}`, { signal: controller.signal })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data: { items?: UserReviewItem[]; total?: number } | null) => {
+              if (!data) return;
+              setPageCache(cacheParams, {
+                items: Array.isArray(data.items) ? data.items : [],
+                total: data.total ?? 0,
+              });
+            })
+            .catch(() => {});
+        }, 200);
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      if (!timerId) return;
+      if (useIdle && typeof idleWindow.cancelIdleCallback === "function") {
+        idleWindow.cancelIdleCallback(timerId);
+      } else {
+        window.clearTimeout(timerId);
+      }
+    };
   }, [board, page, total, limit, sortMode, query, loading]);
 
   const totalPages = Math.max(Math.ceil(total / limit), 1);
@@ -459,6 +541,80 @@ export function MainUserReviewPage() {
     });
     saveScroll();
     router.push(`/user_content/${id}?board=${board}`);
+  };
+
+  function closeSearchSheet() {
+    if (!searchSheetOpen || searchSheetClosing) return;
+    setSearchSheetDragY(0);
+    setSearchSheetClosing(true);
+    window.setTimeout(() => {
+      setSearchSheetOpen(false);
+      setSearchSheetClosing(false);
+    }, 280);
+  }
+
+  function submitSearchFromSheet() {
+    const keyword = queryInput.trim();
+    if (!keyword) {
+      setSearchSheetResults([]);
+      setSearchSheetTotal(0);
+      setSearchSheetKeyword("");
+      return;
+    }
+    setSearchSheetLoading(true);
+    setSearchSheetKeyword(keyword);
+    const params = new URLSearchParams({
+      board,
+      page: "1",
+      limit: "20",
+      sort: "latest",
+      q: keyword,
+    });
+    fetch(`/api/main/user-review?${params.toString()}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { items?: UserReviewItem[]; total?: number } | null) => {
+        setSearchSheetResults(Array.isArray(data?.items) ? data.items : []);
+        setSearchSheetTotal(data?.total ?? 0);
+      })
+      .catch(() => {
+        setSearchSheetResults([]);
+        setSearchSheetTotal(0);
+      })
+      .finally(() => {
+        setSearchSheetLoading(false);
+      });
+  }
+
+  function onSearchSheetDragStart(e: TouchEvent<HTMLDivElement>) {
+    searchSheetDraggingRef.current = true;
+    searchSheetDragStartYRef.current = e.touches[0].clientY;
+  }
+
+  function onSearchSheetDragMove(e: TouchEvent<HTMLDivElement>) {
+    if (!searchSheetDraggingRef.current) return;
+    const diff = e.touches[0].clientY - searchSheetDragStartYRef.current;
+    if (diff > 0) setSearchSheetDragY(diff);
+  }
+
+  function onSearchSheetDragEnd() {
+    if (!searchSheetDraggingRef.current) return;
+    searchSheetDraggingRef.current = false;
+    if (searchSheetDragY > 80) {
+      closeSearchSheet();
+      return;
+    }
+    setSearchSheetDragY(0);
+  }
+
+  const searchSheetStyle: CSSProperties = {
+    transform: searchSheetClosing
+      ? "translateY(100%)"
+      : searchSheetDragY > 0
+        ? `translateY(${searchSheetDragY}px)`
+        : undefined,
+    transition: searchSheetDraggingRef.current
+      ? "none"
+      : "transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)",
   };
 
   return (
@@ -616,25 +772,6 @@ export function MainUserReviewPage() {
       <div ref={bottomSentinelRef} aria-hidden="true" />
 
       <div className="user-review-bottom">
-        <div className="user-review-search-row">
-          <input
-            value={queryInput}
-            onChange={(e) => setQueryInput(e.target.value)}
-            placeholder="아이디/제목/본문 검색"
-            className="user-review-search-input"
-          />
-          <button
-            type="button"
-            className="user-review-search-btn"
-            onClick={() => {
-              setPage(1);
-              setQuery(queryInput.trim());
-            }}
-          >
-            검색
-          </button>
-        </div>
-
         <div className="user-review-pagination-row">
           <div className="user-review-pagination">
             <button
@@ -674,6 +811,111 @@ export function MainUserReviewPage() {
           </button>
         </div>
       </div>
+
+      {searchSheetOpen && (
+        <div
+          className={`user-review-search-sheet-overlay${searchSheetClosing ? " is-closing" : ""}`}
+          onClick={closeSearchSheet}
+        >
+          <div
+            className="user-review-search-sheet-panel"
+            style={searchSheetStyle}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="user-review-search-sheet-drag-area"
+              onTouchStart={onSearchSheetDragStart}
+              onTouchMove={onSearchSheetDragMove}
+              onTouchEnd={onSearchSheetDragEnd}
+            >
+              <div className="user-review-search-sheet-handle" />
+              <form
+                className="user-review-search-sheet-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitSearchFromSheet();
+                }}
+              >
+                <button
+                  type="button"
+                  className="user-review-search-sheet-close"
+                  aria-label="검색창 닫기"
+                  onClick={closeSearchSheet}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+                <input
+                  ref={searchInputRef}
+                  value={queryInput}
+                  onChange={(e) => setQueryInput(e.target.value)}
+                  placeholder="아이디/제목/본문 검색"
+                  className="user-review-search-sheet-input"
+                />
+                <button type="submit" className="user-review-search-sheet-submit">
+                  검색
+                </button>
+              </form>
+            </div>
+            <div className="user-review-search-sheet-body">
+              <p className="user-review-search-sheet-hint">검색어를 입력하고 검색을 누르세요.</p>
+              {searchSheetLoading && <p className="user-review-search-sheet-hint">검색 중...</p>}
+              {!searchSheetLoading && searchSheetKeyword && (
+                <p className="user-review-search-sheet-hint">
+                  &quot;{searchSheetKeyword}&quot; 검색 결과 {searchSheetTotal}건
+                </p>
+              )}
+              {!searchSheetLoading && searchSheetKeyword && searchSheetResults.length > 0 && (
+                <ul className="user-review-search-sheet-result-list">
+                  {searchSheetResults.map((result) => (
+                    <li key={result.id}>
+                      <button
+                        type="button"
+                        className="user-review-search-sheet-result-item"
+                        onClick={() => {
+                          closeSearchSheet();
+                          openReview(result.id);
+                        }}
+                      >
+                        <p className="user-review-search-sheet-result-title">{result.title || "(제목 없음)"}</p>
+                        <p className="user-review-search-sheet-result-meta">
+                          <span>{result.authorId}</span>
+                          <span>{formatDate(result.createdAt)}</span>
+                          <span>ID {result.id.slice(0, 8)}</span>
+                        </p>
+                        <p className="user-review-search-sheet-result-content">
+                          {excerpt(result.content, 120)}
+                        </p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!searchSheetLoading && searchSheetKeyword && searchSheetResults.length === 0 && (
+                <p className="user-review-search-sheet-hint">검색 결과가 없습니다.</p>
+              )}
+              {(searchSheetKeyword || queryInput.trim()) && (
+                <button
+                  type="button"
+                  className="user-review-search-sheet-clear"
+                  onClick={() => {
+                    setQueryInput("");
+                    setSearchSheetKeyword("");
+                    setSearchSheetResults([]);
+                    setSearchSheetTotal(0);
+                    setQuery("");
+                    setPage(1);
+                  }}
+                >
+                  현재 검색 해제
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

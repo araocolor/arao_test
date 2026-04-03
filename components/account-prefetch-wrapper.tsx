@@ -7,11 +7,41 @@ import { useGalleryPrefetch } from "@/hooks/use-gallery-prefetch";
 import { setCached } from "@/hooks/use-prefetch-cache";
 import { GALLERY_CATEGORIES } from "@/lib/gallery-categories";
 
-/** 커뮤니티 리스트 캐시 갱신 (TTL 무시, 강제 fetch) */
+const REVIEW_LIST_CACHE_TTL = 120000; // 2분
+const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
+const REVIEW_PREFETCH_LOCK_MS = 10000;
+
+function canPrefetchReviewList(): boolean {
+  const connection = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (!connection) return true;
+  if (connection.saveData) return false;
+  if (connection.effectiveType === "slow-2g" || connection.effectiveType === "2g") return false;
+  return true;
+}
+
+function isReviewPrefetchLocked(): boolean {
+  try {
+    const raw = sessionStorage.getItem(REVIEW_PREFETCH_LOCK_KEY);
+    if (!raw) return false;
+    const ts = Number(raw);
+    return Number.isFinite(ts) && Date.now() - ts < REVIEW_PREFETCH_LOCK_MS;
+  } catch {
+    return false;
+  }
+}
+
+/** 커뮤니티 리스트 캐시 갱신 */
 function refreshUserReviewListCache() {
+  if (!canPrefetchReviewList()) return;
+  if (isReviewPrefetchLocked()) return;
+  sessionStorage.setItem(REVIEW_PREFETCH_LOCK_KEY, String(Date.now()));
+
   fetch("/api/main/user-review?page=1&limit=20&sort=latest")
-    .then((r) => r.json())
+    .then((r) => (r.ok ? r.json() : null))
     .then((data: { items: Array<{ thumbnailImage?: string | null; thumbnailFirst?: string | null; [key: string]: unknown }>; [key: string]: unknown }) => {
+      if (!data) return;
       const slim = {
         ...data,
         items: Array.isArray(data.items)
@@ -31,7 +61,10 @@ function refreshUserReviewListCache() {
       };
       sessionStorage.setItem("user-review-list-cache", JSON.stringify({ data: slim, ts: Date.now() }));
     })
-    .catch(() => {});
+    .catch(() => {})
+    .finally(() => {
+      sessionStorage.removeItem(REVIEW_PREFETCH_LOCK_KEY);
+    });
 }
 
 /** 갤러리 공용 캐시 갱신 (첫 3개 카드) */
@@ -50,8 +83,8 @@ function refreshGalleryCache() {
   });
 }
 
-/** 캐시 타임스탬프가 5초 이상 경과했는지 확인 */
-function isStale(key: string, maxAge = 5000): boolean {
+/** 캐시 타임스탬프가 만료됐는지 확인 */
+function isStale(key: string, maxAge = REVIEW_LIST_CACHE_TTL): boolean {
   try {
     const raw = sessionStorage.getItem(key);
     if (!raw) return true;
@@ -68,7 +101,7 @@ export function AccountPrefetchWrapper({ children }: { children: ReactNode }) {
   useGalleryPrefetch();
 
   useEffect(() => {
-    // 첫 페이지 도착 시, 캐시가 5초 이상 경과했으면 1회 갱신
+    // 첫 페이지 도착 시 캐시가 만료됐으면 1회 갱신
     if (isStale("user-review-list-cache")) {
       refreshUserReviewListCache();
     }

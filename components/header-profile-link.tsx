@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useNotificationCount } from "@/hooks/use-notification-count";
 import { useAdminPendingCount } from "@/hooks/use-admin-pending-count";
@@ -9,9 +9,47 @@ import { NotificationDrawer } from "@/components/notification-drawer";
 import type { NotificationItem } from "@/lib/notifications";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 
+const REVIEW_LIST_CACHE_TTL = 120000; // 2분
+const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
+const REVIEW_PREFETCH_LOCK_MS = 10000;
+
+function canPrefetchReviewList(): boolean {
+  if (typeof document !== "undefined" && document.visibilityState !== "visible") return false;
+  const connection = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (!connection) return true;
+  if (connection.saveData) return false;
+  if (connection.effectiveType === "slow-2g" || connection.effectiveType === "2g") return false;
+  return true;
+}
+
+function isReviewListCacheFresh(cacheKey: string): boolean {
+  try {
+    const raw = sessionStorage.getItem(cacheKey);
+    if (!raw) return false;
+    const { ts } = JSON.parse(raw) as { ts: number };
+    return Date.now() - ts < REVIEW_LIST_CACHE_TTL;
+  } catch {
+    return false;
+  }
+}
+
+function isReviewPrefetchLocked(): boolean {
+  try {
+    const raw = sessionStorage.getItem(REVIEW_PREFETCH_LOCK_KEY);
+    if (!raw) return false;
+    const ts = Number(raw);
+    return Number.isFinite(ts) && Date.now() - ts < REVIEW_PREFETCH_LOCK_MS;
+  } catch {
+    return false;
+  }
+}
+
 export function HeaderProfileLink() {
   const { isSignedIn } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   useNotificationCount(isSignedIn ?? false);
   useAdminPendingCount(isSignedIn ?? false);
 
@@ -25,9 +63,14 @@ export function HeaderProfileLink() {
   const [email, setEmail] = useState<string | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   // 배지 카운트: localStorage 초기값으로 즉시 표시 (Clerk 인증 대기 없음)
   const [badgeCount, setBadgeCount] = useState<number>(0);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 아바타만 먼저 조회 (빠른 업데이트)
   async function fetchAvatar() {
@@ -122,9 +165,15 @@ export function HeaderProfileLink() {
 
   function prefetchUserReviewList() {
     const cacheKey = "user-review-list-cache";
+    if (!canPrefetchReviewList()) return;
+    if (isReviewListCacheFresh(cacheKey)) return;
+    if (isReviewPrefetchLocked()) return;
+    sessionStorage.setItem(REVIEW_PREFETCH_LOCK_KEY, String(Date.now()));
+
     fetch("/api/main/user-review?page=1&limit=20&sort=latest")
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : null))
       .then((data: { items: Array<{ thumbnailImage?: string | null; thumbnailFirst?: string | null; [key: string]: unknown }>; [key: string]: unknown }) => {
+        if (!data) return;
         const slim = {
           ...data,
           items: Array.isArray(data.items)
@@ -144,7 +193,10 @@ export function HeaderProfileLink() {
         };
         sessionStorage.setItem(cacheKey, JSON.stringify({ data: slim, ts: Date.now() }));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        sessionStorage.removeItem(REVIEW_PREFETCH_LOCK_KEY);
+      });
   }
 
   // 마운트 시 localStorage 캐시에서 즉시 복원 + 갤러리/커뮤니티 동시 prefetch (로그인 무관)
@@ -254,26 +306,47 @@ export function HeaderProfileLink() {
     openDrawer();
   }
 
+  function handleCommunitySearchOpen() {
+    window.dispatchEvent(new CustomEvent("community-search-open"));
+  }
+
+  const isCommunityListPage = mounted && pathname === "/user_review";
+
   return (
     <>
-      <button
-        className={`header-profile-link ${isSignedIn ? "signed-in" : ""}`}
-        onClick={handleClick}
-        aria-label="알림"
-        type="button"
-      >
-        {iconImage ? (
-          <img src={iconImage} className="header-profile-avatar" alt="avatar" aria-hidden="true" />
-        ) : (
-          <span className="header-profile-icon" aria-hidden="true">
-            <span className="header-profile-head" />
-            <span className="header-profile-body" />
-          </span>
+      <div className="header-profile-actions">
+        {isCommunityListPage && (
+          <button
+            className="header-community-search-trigger"
+            type="button"
+            aria-label="커뮤니티 검색 열기"
+            onClick={handleCommunitySearchOpen}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7" />
+              <line x1="16.65" y1="16.65" x2="21" y2="21" />
+            </svg>
+          </button>
         )}
-        {isSignedIn && notificationEnabled && badgeCount > 0 && (
-          <span className="header-profile-badge">{badgeCount}</span>
-        )}
-      </button>
+        <button
+          className={`header-profile-link ${isSignedIn ? "signed-in" : ""}`}
+          onClick={handleClick}
+          aria-label="알림"
+          type="button"
+        >
+          {iconImage ? (
+            <img src={iconImage} className="header-profile-avatar" alt="avatar" aria-hidden="true" />
+          ) : (
+            <span className="header-profile-icon" aria-hidden="true">
+              <span className="header-profile-head" />
+              <span className="header-profile-body" />
+            </span>
+          )}
+          {isSignedIn && notificationEnabled && badgeCount > 0 && (
+            <span className="header-profile-badge">{badgeCount}</span>
+          )}
+        </button>
+      </div>
 
       {/* 알림 드로어 */}
       {drawerMounted && (

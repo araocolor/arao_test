@@ -25,6 +25,32 @@ type SiteHeaderProps = {
   menuHeader?: string;
 };
 
+const REVIEW_LIST_CACHE_TTL = 120000; // 2분
+const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
+const REVIEW_PREFETCH_LOCK_MS = 10000;
+
+function canPrefetchReviewList(): boolean {
+  if (typeof navigator === "undefined") return true;
+  const connection = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (!connection) return true;
+  if (connection.saveData) return false;
+  if (connection.effectiveType === "slow-2g" || connection.effectiveType === "2g") return false;
+  return true;
+}
+
+function isReviewPrefetchLocked(): boolean {
+  try {
+    const raw = sessionStorage.getItem(REVIEW_PREFETCH_LOCK_KEY);
+    if (!raw) return false;
+    const ts = Number(raw);
+    return Number.isFinite(ts) && Date.now() - ts < REVIEW_PREFETCH_LOCK_MS;
+  } catch {
+    return false;
+  }
+}
+
 // 메뉴 항목별 Heroicons
 const MENU_ICONS: Record<string, ReactNode> = {
   "/arao": <SparklesIcon width={20} height={20} strokeWidth={1.7} />,
@@ -58,15 +84,22 @@ export function SiteHeader({
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           const { ts } = JSON.parse(cached) as { ts: number };
-          if (Date.now() - ts < 60000) return; // 1분 이내 캐시 유효
+          if (Date.now() - ts < REVIEW_LIST_CACHE_TTL) return;
         }
       } catch {}
+      if (!canPrefetchReviewList()) return;
+      if (isReviewPrefetchLocked()) return;
+      sessionStorage.setItem(REVIEW_PREFETCH_LOCK_KEY, String(Date.now()));
       fetch("/api/main/user-review?page=1&limit=20&sort=latest")
-        .then((r) => r.json())
+        .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
+          if (!data) return;
           sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          sessionStorage.removeItem(REVIEW_PREFETCH_LOCK_KEY);
+        });
     } else {
       document.body.style.overflow = "";
     }
