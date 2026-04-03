@@ -363,6 +363,7 @@ type ReviewItem = {
   authorId: string;
   profileId: string;
   isAuthor: boolean;
+  board?: string;
 };
 
 function formatDate(value: string): string {
@@ -399,20 +400,31 @@ export function UserContentPage({ id }: { id: string }) {
 
   // 2단계: 서버에서 최신 데이터 가져오기
   useEffect(() => {
+    let cancelled = false;
     fetch(`/api/main/user-review/${id}`)
       .then((r) => {
-        if (!r.ok) { setNotFound(true); return null; }
+        if (!r.ok) {
+          if (r.status === 404) setNotFound(true);
+          return null;
+        }
         return r.json() as Promise<ReviewItem>;
       })
       .then((data) => {
-        if (data) {
-          setItem(data);
-          try {
-            sessionStorage.setItem(`user-review-content-${id}`, JSON.stringify({ data, ts: Date.now() }));
-          } catch {}
-        }
+        if (!data || cancelled) return;
+        setNotFound(false);
+        setItem(data);
+        try {
+          sessionStorage.setItem(`user-review-content-${id}`, JSON.stringify({ data, ts: Date.now() }));
+        } catch {}
       })
-      .catch(() => { if (!item) setNotFound(true); });
+      .catch(() => {
+        if (cancelled) return;
+        const cached = getContentCache(id);
+        if (!cached) setNotFound(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // 원본 URL 배열 (1024px)
@@ -428,11 +440,11 @@ export function UserContentPage({ id }: { id: string }) {
   }
 
   // 중간 URL 배열 (480px)
-  const mediumImages: string[] = [];
+  const mediumImages: Array<string | null> = [];
   if (item?.thumbnailSmall) {
     try {
       const parsed = JSON.parse(item.thumbnailSmall);
-      if (Array.isArray(parsed)) mediumImages.push(...parsed);
+      if (Array.isArray(parsed)) mediumImages.push(...parsed.map((v) => (typeof v === "string" ? v : null)));
     } catch {}
   }
 
@@ -479,7 +491,7 @@ export function UserContentPage({ id }: { id: string }) {
 
   return (
     <main className="landing-page">
-      <UserContentHeader reviewId={id} isAuthor={item?.isAuthor ?? false} />
+      <UserContentHeader reviewId={id} isAuthor={item?.isAuthor ?? false} board={item?.board} />
       <div className="landing-shell">
         {notFound ? (
           <section className="section stack">
@@ -492,7 +504,7 @@ export function UserContentPage({ id }: { id: string }) {
             <article className="user-content-article">
               <h1 className="user-content-title">{item.title}</h1>
               <p className="user-content-meta muted">
-                {item.authorId} · {formatDate(item.createdAt)} · 조회 {item.viewCount + 1}
+                {item.authorId} · {formatDate(item.createdAt)} · 조회 {item.viewCount}
               </p>
               {displayImages.map((src, i) => (
                 <ContentImage key={i} src={src} index={i} onClickView={openViewer} />

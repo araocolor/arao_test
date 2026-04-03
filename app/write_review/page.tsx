@@ -15,6 +15,21 @@ const MEDIUM_QUALITY = 0.8;
 const THUMB_WIDTH = 200;
 const THUMB_QUALITY = 0.5;
 const MAX_BYTES = 1 * 1024 * 1024; // 1MB 미리보기 제한
+const PAGE_CACHE_PREFIX = "user-review-page-cache-v1:";
+const BOARD_VALUES = new Set(["notice", "review", "qna", "arao"]);
+
+function normalizeBoard(board: string | null): string {
+  if (!board) return "review";
+  return BOARD_VALUES.has(board) ? board : "review";
+}
+
+function getBoardListCacheKey(board: string): string {
+  return board === "review" ? "user-review-list-cache" : `user-review-list-cache-${board}`;
+}
+
+function getBoardListPath(board: string, postId: string): string {
+  return board === "review" ? `/user_review?new=${postId}&board=review` : `/user_review?new=${postId}&board=${board}`;
+}
 
 function compressToDataUrl(file: File, maxWidth: number, quality: number): Promise<string | null> {
   return new Promise((resolve) => {
@@ -71,21 +86,26 @@ function WriteReviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("id");
-  const boardParam = searchParams.get("board") ?? "review";
+  const initialBoardParam = normalizeBoard(searchParams.get("board"));
   const isEditMode = !!editId;
   const { isSignedIn } = useUser();
+  const [board, setBoard] = useState(initialBoardParam);
   const [category, setCategory] = useState<Category>("일반");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [savingMsg, setSavingMsg] = useState("저장 중...");
+  const [saveError, setSaveError] = useState<string | null>(null);
   // 미리보기용 원본 File 객체 보관
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   // 미리보기용 dataUrl (원본 압축)
   const [images, setImages] = useState<string[]>([]);
   // 수정 모드에서 기존 URL 이미지
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
+  const [initialImageUrls, setInitialImageUrls] = useState<string[]>([]);
+  const [initialMediumImages, setInitialMediumImages] = useState<Array<string | null>>([]);
+  const [initialThumbFirst, setInitialThumbFirst] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; data: string } | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -100,6 +120,7 @@ function WriteReviewContent() {
       .then((r) => r.json())
       .then((d) => {
         if (d.title) setTitle(d.title);
+        if (typeof d.board === "string") setBoard(normalizeBoard(d.board));
         if (d.content) {
           setContent(d.content);
           if (editorRef.current) {
@@ -116,6 +137,7 @@ function WriteReviewContent() {
             urls = [d.thumbnailImage];
           }
           setExistingImageUrls(urls);
+          setInitialImageUrls(urls);
           // 에디터에 기존 이미지 표시
           if (editorRef.current) {
             for (const src of urls) {
@@ -144,6 +166,15 @@ function WriteReviewContent() {
             editorRef.current.appendChild(newLine);
           }
         }
+        if (d.thumbnailSmall) {
+          try {
+            const parsed = JSON.parse(d.thumbnailSmall);
+            if (Array.isArray(parsed)) {
+              setInitialMediumImages(parsed.map((v: unknown) => (typeof v === "string" ? v : null)));
+            }
+          } catch {}
+        }
+        setInitialThumbFirst(typeof d.thumbnailFirst === "string" ? d.thumbnailFirst : null);
         if (d.attachedFile) {
           try {
             const parsed = JSON.parse(d.attachedFile);
@@ -288,6 +319,7 @@ function WriteReviewContent() {
   async function handleSave() {
     if (!title.trim() || saving) return;
     if (!isSignedIn) { router.push("/sign-in"); return; }
+    setSaveError(null);
     // 저장 직전 에디터 내용 동기화
     const finalContent = getEditorText();
     setContent(finalContent);
@@ -307,10 +339,13 @@ function WriteReviewContent() {
           title: title.trim(),
           content: finalContent.trim(),
           attachedFile: attachedFile ? JSON.stringify(attachedFile) : null,
-          board: boardParam,
+          board,
         }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const message = (await res.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(message?.message ?? "저장에 실패했습니다.");
+      }
       const resData = (await res.json()) as { id: string };
       const postId = resData.id;
       const idPrefix = postId.replace(/-/g, "").slice(0, 3);
@@ -318,11 +353,17 @@ function WriteReviewContent() {
       // 2단계: 새 이미지 Storage 업로드 (3가지 버전)
       let savedThumbFirst: string | null = null;
       let savedOriginalImage: string | null = null;
+      let savedThumbnailSmall: string | null = null;
+
+      const imageOrderUnchanged =
+        existingImageUrls.length === initialImageUrls.length &&
+        existingImageUrls.every((url, idx) => url === initialImageUrls[idx]);
+
       if (imageFiles.length > 0) {
         setSavingMsg("이미지 업로드 중...");
         const originalUrls: string[] = [];
         const mediumUrls: string[] = [];
-        const thumbUrls: string[] = [];
+        const thumbUrls: Array<string | null> = [];
 
         // 모든 이미지 압축
         const compressed = await Promise.all(
@@ -349,19 +390,24 @@ function WriteReviewContent() {
         for (let i = 0; i < imageFiles.length; i++) {
           originalUrls[i] = urls[`orig_${i}`] ?? "";
           mediumUrls[i] = urls[`med_${i}`] ?? "";
-          thumbUrls[i] = urls[`thumb_${i}`] ?? "";
+          thumbUrls[i] = urls[`thumb_${i}`] ?? null;
         }
 
         // 기존 URL + 새 URL 합치기
         const allOriginals = [...existingImageUrls, ...originalUrls.filter(Boolean)];
-        const allMediums = mediumUrls.filter(Boolean);
-        const firstThumb = thumbUrls[0] ?? null;
+        const existingMediumSlots = imageOrderUnchanged
+          ? initialMediumImages.slice(0, existingImageUrls.length)
+          : Array.from({ length: existingImageUrls.length }, () => null as string | null);
+        const uploadedMediumSlots = mediumUrls.map((url) => (url || null));
+        const allMediums = [...existingMediumSlots, ...uploadedMediumSlots];
+        const firstThumb = allMediums[0] ?? allOriginals[0] ?? null;
         savedThumbFirst = firstThumb;
         savedOriginalImage = allOriginals.length === 1 ? allOriginals[0] : JSON.stringify(allOriginals);
+        savedThumbnailSmall = allMediums.some((img) => !!img) ? JSON.stringify(allMediums) : null;
 
         // 3단계: 이미지 URL로 DB 업데이트
         setSavingMsg("마무리 중...");
-        await fetch(`/api/main/user-review/${postId}`, {
+        const updateResponse = await fetch(`/api/main/user-review/${postId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -369,24 +415,54 @@ function WriteReviewContent() {
             title: title.trim(),
             content: finalContent.trim(),
             thumbnailImage: allOriginals.length === 1 ? allOriginals[0] : JSON.stringify(allOriginals),
-            thumbnailSmall: allMediums.length > 0 ? JSON.stringify(allMediums) : null,
+            thumbnailSmall: savedThumbnailSmall,
             thumbnailFirst: firstThumb,
             attachedFile: attachedFile ? JSON.stringify(attachedFile) : null,
+            board,
           }),
         });
+        if (!updateResponse.ok) {
+          const message = (await updateResponse.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(message?.message ?? "이미지 저장에 실패했습니다.");
+        }
       } else if (isEditMode && existingImageUrls.length >= 0) {
         // 수정 모드에서 이미지 변경 없이 저장
-        await fetch(`/api/main/user-review/${postId}`, {
+        const nextThumbnailImage =
+          existingImageUrls.length === 0
+            ? null
+            : existingImageUrls.length === 1
+              ? existingImageUrls[0]
+              : JSON.stringify(existingImageUrls);
+
+        const nextThumbnailSmall = imageOrderUnchanged
+          ? (initialMediumImages.some((img) => !!img) ? JSON.stringify(initialMediumImages) : null)
+          : null;
+        const nextThumbFirst = imageOrderUnchanged
+          ? (initialThumbFirst ?? initialMediumImages[0] ?? existingImageUrls[0] ?? null)
+          : (existingImageUrls[0] ?? null);
+
+        savedOriginalImage = nextThumbnailImage;
+        savedThumbnailSmall = nextThumbnailSmall;
+        savedThumbFirst = nextThumbFirst;
+
+        const updateResponse = await fetch(`/api/main/user-review/${postId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             category,
             title: title.trim(),
             content: finalContent.trim(),
-            thumbnailImage: existingImageUrls.length === 0 ? null : existingImageUrls.length === 1 ? existingImageUrls[0] : JSON.stringify(existingImageUrls),
+            thumbnailImage: nextThumbnailImage,
+            thumbnailSmall: nextThumbnailSmall,
+            thumbnailFirst: nextThumbFirst,
             attachedFile: attachedFile ? JSON.stringify(attachedFile) : null,
+            board,
           }),
         });
+        if (!updateResponse.ok) {
+          const message = (await updateResponse.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(message?.message ?? "수정 저장에 실패했습니다.");
+        }
       }
 
       // 본문 페이지용 캐시 심기 (즉시 표시용)
@@ -397,7 +473,7 @@ function WriteReviewContent() {
         title: title.trim(),
         content: finalContent.trim(),
         thumbnailImage,
-        thumbnailSmall: null,
+        thumbnailSmall: savedThumbnailSmall,
         thumbnailFirst: savedThumbFirst ?? null,
         attachedFile: attachedFile ? JSON.stringify(attachedFile) : null,
         viewCount: 0,
@@ -405,6 +481,7 @@ function WriteReviewContent() {
         authorId: "",
         profileId: "",
         isAuthor: true,
+        board,
       };
       try {
         sessionStorage.setItem(`user-review-content-${postId}`, JSON.stringify({ data: contentCache, ts: Date.now() }));
@@ -412,7 +489,7 @@ function WriteReviewContent() {
 
       // 리스트 캐시 즉시 반영
       try {
-        const cacheKey = "user-review-list-cache";
+        const cacheKey = getBoardListCacheKey(board);
         const raw = sessionStorage.getItem(cacheKey);
         if (raw) {
           const { data } = JSON.parse(raw) as { data: { items: Array<{ id: string; [key: string]: unknown }>; total: number }; ts: number };
@@ -432,9 +509,18 @@ function WriteReviewContent() {
             ts: Date.now(),
           }));
         }
+
+        for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
+          const key = sessionStorage.key(i);
+          if (!key || !key.startsWith(PAGE_CACHE_PREFIX)) continue;
+          sessionStorage.removeItem(key);
+        }
       } catch {}
       // 리스트로 이동 (replace: 뒤로가기 시 글쓰기 페이지 재진입 방지)
-      router.replace(`/user_review?new=${postId}&board=${boardParam}`);
+      router.replace(getBoardListPath(board, postId));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "저장 중 오류가 발생했습니다.";
+      setSaveError(message);
     } finally {
       setSaving(false);
       setSavingMsg("저장 중...");
@@ -531,6 +617,7 @@ function WriteReviewContent() {
           </div>
         )}
         {fileError && <p className="write-review-image-error">{fileError}</p>}
+        {saveError && <p className="write-review-image-error">{saveError}</p>}
       </div>
 
       <footer className="write-review-toolbar">

@@ -3,6 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import dynamic from "next/dynamic";
+
+const UserReviewFeed = dynamic(() => import("./user-review-feed").then((mod) => ({ default: mod.UserReviewFeed })), {
+  loading: () => <div className="user-review-feed" />,
+});
+
+const UserReviewAlbum = dynamic(() => import("./user-review-album").then((mod) => ({ default: mod.UserReviewAlbum })), {
+  loading: () => <div className="user-review-album" />,
+});
 
 type ViewMode = "list" | "feed" | "album";
 type SortMode = "latest" | "views" | "likes";
@@ -19,6 +28,7 @@ type UserReviewItem = {
   likeCount: number;
   createdAt: string;
   authorId: string;
+  board?: string;
 };
 
 type BoardType = "notice" | "review" | "qna" | "arao";
@@ -71,10 +81,15 @@ function excerpt(value: string, maxLength: number) {
 const LIST_CACHE_KEY = "user-review-list-cache";
 const SCROLL_KEY = "user-review-scroll";
 const CACHE_TTL = 60000; // 1분
+const PAGE_CACHE_PREFIX = "user-review-page-cache-v1";
 
-function getListCache(): { items: UserReviewItem[]; total: number } | null {
+function getBoardListCacheKey(board: BoardType): string {
+  return board === "review" ? LIST_CACHE_KEY : `${LIST_CACHE_KEY}-${board}`;
+}
+
+function getListCache(board: BoardType): { items: UserReviewItem[]; total: number } | null {
   try {
-    const raw = sessionStorage.getItem(LIST_CACHE_KEY);
+    const raw = sessionStorage.getItem(getBoardListCacheKey(board));
     if (!raw) return null;
     const { data, ts } = JSON.parse(raw) as { data: { items: UserReviewItem[]; total: number }; ts: number };
     if (Date.now() - ts > CACHE_TTL) return null;
@@ -84,7 +99,7 @@ function getListCache(): { items: UserReviewItem[]; total: number } | null {
   }
 }
 
-function setListCache(data: { items: UserReviewItem[]; total: number }) {
+function setListCache(board: BoardType, data: { items: UserReviewItem[]; total: number }) {
   try {
     // 첫 번째 이미지만 저장 (원본 배열 제외), thumbnailSmall 포함
     const slim = {
@@ -94,7 +109,47 @@ function setListCache(data: { items: UserReviewItem[]; total: number }) {
         thumbnailImage: getFirstImage(item.thumbnailImage),
       })),
     };
-    sessionStorage.setItem(LIST_CACHE_KEY, JSON.stringify({ data: slim, ts: Date.now() }));
+    sessionStorage.setItem(getBoardListCacheKey(board), JSON.stringify({ data: slim, ts: Date.now() }));
+    if (board === "review") {
+      sessionStorage.setItem(LIST_CACHE_KEY, JSON.stringify({ data: slim, ts: Date.now() }));
+    }
+  } catch {}
+}
+
+function getPageCacheKey(params: {
+  board: BoardType;
+  page: number;
+  limit: number;
+  sort: SortMode;
+  q: string;
+}): string {
+  return `${PAGE_CACHE_PREFIX}:${params.board}:${params.sort}:p${params.page}:l${params.limit}:q=${encodeURIComponent(params.q)}`;
+}
+
+function getPageCache(params: {
+  board: BoardType;
+  page: number;
+  limit: number;
+  sort: SortMode;
+  q: string;
+}): { items: UserReviewItem[]; total: number } | null {
+  try {
+    const raw = sessionStorage.getItem(getPageCacheKey(params));
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw) as { data: { items: UserReviewItem[]; total: number }; ts: number };
+    if (Date.now() - ts > CACHE_TTL) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setPageCache(
+  params: { board: BoardType; page: number; limit: number; sort: SortMode; q: string },
+  data: { items: UserReviewItem[]; total: number }
+) {
+  try {
+    sessionStorage.setItem(getPageCacheKey(params), JSON.stringify({ data, ts: Date.now() }));
   } catch {}
 }
 
@@ -124,7 +179,13 @@ export function MainUserReviewPage() {
 
   // 마운트 후 캐시 데이터로 즉시 채우기 + new 파라미터 처리
   useEffect(() => {
-    const cached = getListCache();
+    const boardParam = searchParams.get("board");
+    const initialBoard =
+      boardParam && BOARD_OPTIONS.some((o) => o.value === boardParam)
+        ? (boardParam as BoardType)
+        : "review";
+
+    const cached = getListCache(initialBoard);
     if (cached) {
       setItems(cached.items);
       setTotal(cached.total);
@@ -135,13 +196,10 @@ export function MainUserReviewPage() {
     } catch {}
 
     const newId = searchParams.get("new");
-    const boardParam = searchParams.get("board");
-    if (boardParam && BOARD_OPTIONS.some((o) => o.value === boardParam)) {
-      setBoard(boardParam as BoardType);
-    }
+    setBoard(initialBoard);
     if (newId) {
       setNewItemId(newId);
-      router.replace("/user_review");
+      router.replace(initialBoard === "review" ? "/user_review" : `/user_review?board=${initialBoard}`);
     }
   }, []);
 
@@ -264,10 +322,32 @@ export function MainUserReviewPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-      // page=1, sort=latest, 검색 없을 때 신선한 캐시가 있으면 fetch 건너뜀
-      if (page === 1 && sortMode === "latest" && !query.trim() && board === "review") {
-        const cached = getListCache();
-        if (cached) return;
+      const normalizedQuery = query.trim();
+      const pageCache = getPageCache({
+        board,
+        page,
+        limit,
+        sort: sortMode,
+        q: normalizedQuery,
+      });
+      if (pageCache) {
+        setItems(pageCache.items);
+        setTotal(pageCache.total);
+        return;
+      }
+
+      // page=1, sort=latest, 검색 없을 때 게시판별 메인 캐시 우선 사용
+      if (page === 1 && sortMode === "latest" && !normalizedQuery) {
+        const cached = getListCache(board);
+        if (cached) {
+          setItems(cached.items);
+          setTotal(cached.total);
+          setPageCache(
+            { board, page, limit, sort: sortMode, q: normalizedQuery },
+            { items: cached.items, total: cached.total }
+          );
+          return;
+        }
       }
       setLoading(true);
       try {
@@ -277,7 +357,7 @@ export function MainUserReviewPage() {
           sort: sortMode,
           board,
         });
-        if (query.trim()) params.set("q", query.trim());
+        if (normalizedQuery) params.set("q", normalizedQuery);
 
         const res = await fetch(`/api/main/user-review?${params.toString()}`, {
           signal: controller.signal,
@@ -290,9 +370,13 @@ export function MainUserReviewPage() {
         const newItems = Array.isArray(data.items) ? data.items : [];
         setItems(newItems);
         setTotal(data.total ?? 0);
-        // page=1, sort=latest, 검색 없을 때만 캐시 저장 (review 게시판만)
-        if (page === 1 && sortMode === "latest" && !query.trim() && board === "review") {
-          setListCache({ items: newItems, total: data.total ?? 0 });
+        setPageCache(
+          { board, page, limit, sort: sortMode, q: normalizedQuery },
+          { items: newItems, total: data.total ?? 0 }
+        );
+        // page=1, sort=latest, 검색 없을 때 게시판별 캐시 저장
+        if (page === 1 && sortMode === "latest" && !normalizedQuery) {
+          setListCache(board, { items: newItems, total: data.total ?? 0 });
         }
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
@@ -309,6 +393,42 @@ export function MainUserReviewPage() {
     void load();
     return () => controller.abort();
   }, [page, limit, sortMode, query, board]);
+
+  useEffect(() => {
+    if (loading || total <= page * limit) return;
+    const normalizedQuery = query.trim();
+    const nextPage = page + 1;
+    const cacheParams = {
+      board,
+      page: nextPage,
+      limit,
+      sort: sortMode,
+      q: normalizedQuery,
+    } as const;
+    if (getPageCache(cacheParams)) return;
+
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      page: String(nextPage),
+      limit: String(limit),
+      sort: sortMode,
+      board,
+    });
+    if (normalizedQuery) params.set("q", normalizedQuery);
+
+    fetch(`/api/main/user-review?${params.toString()}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { items?: UserReviewItem[]; total?: number } | null) => {
+        if (!data) return;
+        setPageCache(cacheParams, {
+          items: Array.isArray(data.items) ? data.items : [],
+          total: data.total ?? 0,
+        });
+      })
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, [board, page, total, limit, sortMode, query, loading]);
 
   const totalPages = Math.max(Math.ceil(total / limit), 1);
 
@@ -338,7 +458,7 @@ export function MainUserReviewPage() {
       return next;
     });
     saveScroll();
-    router.push(`/user_content/${id}`);
+    router.push(`/user_content/${id}?board=${board}`);
   };
 
   return (
@@ -366,6 +486,7 @@ export function MainUserReviewPage() {
                     setPage(1);
                     setQuery("");
                     setQueryInput("");
+                    router.replace(opt.value === "review" ? "/user_review" : `/user_review?board=${opt.value}`);
                   }}
                 >
                   {opt.label}
@@ -401,26 +522,27 @@ export function MainUserReviewPage() {
             </div>
           )}
         </div>
-      </div>
 
-      {viewMode === "list" && (
-        <div className="user-review-sort-row">
-          {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`user-review-sort-btn${sortMode === opt.value ? " active" : ""}`}
-              onClick={() => {
-                setSortMode(opt.value);
-                setPage(1);
-              }}
-            >
-              <span className="user-review-sort-icon" aria-hidden="true">{opt.icon}</span>
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
+        {viewMode === "list" && (
+          <div className="user-review-sort-row">
+            {SORT_OPTIONS.map((opt, i) => (
+              <span key={opt.value} style={{ display: "inline-flex", alignItems: "center" }}>
+                {i > 0 && <span className="user-review-sort-sep" aria-hidden="true">|</span>}
+                <button
+                  type="button"
+                  className={`user-review-sort-btn${sortMode === opt.value ? " active" : ""}`}
+                  onClick={() => {
+                    setSortMode(opt.value);
+                    setPage(1);
+                  }}
+                >
+                  {opt.label}
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {loading && items.length === 0 ? (
         <div className="user-review-list">
@@ -445,7 +567,7 @@ export function MainUserReviewPage() {
               <button
                 key={item.id}
                 type="button"
-                className="user-review-item list"
+                className={`user-review-item list${readIds.has(item.id) ? " read" : ""}`}
                 onClick={() => openReview(item.id)}
               >
                 <div className="user-review-item-main">
@@ -486,89 +608,9 @@ export function MainUserReviewPage() {
           })}
         </div>
       ) : viewMode === "feed" ? (
-        <div className="user-review-feed">
-          {items.map((item) => {
-            const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className="user-review-item feed"
-                onClick={() => openReview(item.id)}
-              >
-                <div className="user-review-feed-thumb">
-                  {thumb ? (
-                    <img src={thumb} alt="" loading="lazy" />
-                  ) : (
-                    <span className="user-review-item-thumb-empty" aria-hidden="true" />
-                  )}
-                </div>
-                <div className="user-review-feed-body">
-                  <p className="user-review-item-title">
-                    {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
-                    {item.title}
-                    {(item.likeCount > 0 || item.attachedFile) && (
-                      <span className="user-review-item-stats">
-                        {item.attachedFile && (
-                          <svg className="user-review-item-clip" aria-label="첨부파일" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        )}
-                        {item.likeCount > 0 && (
-                          <span className="user-review-item-stat">
-                            <svg className="user-review-item-heart" aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11m-4 1v8a2 2 0 0 0 2 2h12.4a2 2 0 0 0 2-1.6l1.2-8A2 2 0 0 0 18.6 9H14V4a2 2 0 0 0-2-2h-.1a2 2 0 0 0-1.9 1.4L7 11"/></svg>
-                            {item.likeCount}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </p>
-                  <p className="user-review-feed-text">{excerpt(item.content, 80)}</p>
-                  <p className="user-review-item-meta">
-                    <span>{item.authorId}</span>
-                    <span>{formatDate(item.createdAt)}</span>
-                    <span>조회 {item.viewCount}</span>
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <UserReviewFeed items={items} readIds={readIds} onOpenReview={openReview} />
       ) : (
-        <div className="user-review-album">
-          {items.map((item) => {
-            const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className="user-review-item album"
-                onClick={() => openReview(item.id)}
-              >
-                <div className="user-review-album-thumb">
-                  {thumb ? (
-                    <img src={thumb} alt="" loading="lazy" />
-                  ) : (
-                    <span className="user-review-item-thumb-empty" aria-hidden="true" />
-                  )}
-                </div>
-                <p className="user-review-album-title">
-                  {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
-                  {item.title}
-                  <span className="user-review-item-stats">
-                    {item.likeCount > 0 && (
-                      <span className="user-review-item-stat">
-                        <svg className="user-review-item-heart" aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11m-4 1v8a2 2 0 0 0 2 2h12.4a2 2 0 0 0 2-1.6l1.2-8A2 2 0 0 0 18.6 9H14V4a2 2 0 0 0-2-2h-.1a2 2 0 0 0-1.9 1.4L7 11"/></svg>
-                        {item.likeCount}
-                      </span>
-                    )}
-                    {item.attachedFile && (
-                      <svg className="user-review-item-clip" aria-label="첨부파일" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    )}
-                  </span>
-                </p>
-              </button>
-            );
-          })}
-        </div>
+        <UserReviewAlbum items={items} readIds={readIds} onOpenReview={openReview} />
       )}
 
       <div ref={bottomSentinelRef} aria-hidden="true" />
@@ -635,4 +677,3 @@ export function MainUserReviewPage() {
     </section>
   );
 }
-

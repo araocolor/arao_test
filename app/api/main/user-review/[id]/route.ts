@@ -4,6 +4,8 @@ import { getUserReviewById } from "@/lib/user-reviews";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfile } from "@/lib/profiles";
 
+const ALLOWED_BOARDS = new Set(["notice", "review", "qna", "arao"]);
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -49,7 +51,16 @@ export async function PUT(
   const profile = await syncProfile({ email, fullName });
   if (!profile || profile.id !== item.profileId) return NextResponse.json({ message: "권한이 없습니다." }, { status: 403 });
 
-  const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string | null; thumbnailSmall?: string | null; thumbnailFirst?: string | null; attachedFile?: string | null };
+  const body = (await request.json()) as {
+    category?: string;
+    title?: string;
+    content?: string;
+    thumbnailImage?: string | null;
+    thumbnailSmall?: string | null;
+    thumbnailFirst?: string | null;
+    attachedFile?: string | null;
+    board?: string;
+  };
   const title = (body.title ?? "").trim();
   const content = (body.content ?? "").trim();
   const category = (body.category ?? "일반").trim();
@@ -61,6 +72,13 @@ export async function PUT(
   if (body.thumbnailSmall !== undefined) updateData.thumbnail_small = body.thumbnailSmall;
   if (body.thumbnailFirst !== undefined) updateData.thumbnail_first = body.thumbnailFirst;
   if (body.attachedFile !== undefined) updateData.attached_file = body.attachedFile;
+  if (body.board !== undefined) {
+    const board = body.board.trim();
+    if (!ALLOWED_BOARDS.has(board)) {
+      return NextResponse.json({ message: "유효하지 않은 게시판입니다." }, { status: 400 });
+    }
+    updateData.board = board;
+  }
 
   const { error } = await supabase.from("user_reviews").update(updateData).eq("id", id);
   if (error) return NextResponse.json({ message: "수정 실패" }, { status: 500 });
@@ -91,4 +109,3 @@ export async function DELETE(
 
   return NextResponse.json({ success: true });
 }
-

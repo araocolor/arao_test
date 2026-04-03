@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const CATEGORIES = [
   { value: "general", label: "일반" },
@@ -12,13 +12,41 @@ const CATEGORIES = [
 
 export default function ReviewWritePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+  const isEditMode = !!editId;
   const [loading, setLoading] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     category: "general",
     title: "",
     content: "",
   });
+
+  useEffect(() => {
+    if (!editId) return;
+    setLoadingExisting(true);
+    fetch(`/api/account/reviews/${editId}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { review?: { category?: string; title?: string; content?: string } } | null) => {
+        if (!data?.review) return;
+        const safeCategory = CATEGORIES.some((cat) => cat.value === data.review?.category)
+          ? (data.review?.category as string)
+          : "general";
+        setFormData({
+          category: safeCategory,
+          title: data.review.title ?? "",
+          content: data.review.content ?? "",
+        });
+      })
+      .catch(() => {
+        setError("기존 글 정보를 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        setLoadingExisting(false);
+      });
+  }, [editId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -47,8 +75,8 @@ export default function ReviewWritePage() {
     }
 
     try {
-      const response = await fetch("/api/account/reviews", {
-        method: "POST",
+      const response = await fetch(isEditMode ? `/api/account/reviews/${editId}` : "/api/account/reviews", {
+        method: isEditMode ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
@@ -59,7 +87,8 @@ export default function ReviewWritePage() {
       }
 
       const review = await response.json();
-      router.push(`/account/reviews/${review.id}`);
+      const nextId = review?.id ?? editId;
+      router.push(`/account/reviews/${nextId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
     } finally {
@@ -70,9 +99,10 @@ export default function ReviewWritePage() {
   return (
     <div className="admin-panel-card stack">
       <p className="muted">Reviews</p>
-      <h2>후기 작성</h2>
+      <h2>{isEditMode ? "후기 수정" : "후기 작성"}</h2>
 
       {error && <div className="error-message">{error}</div>}
+      {loadingExisting && <div className="muted">기존 글 불러오는 중...</div>}
 
       <form onSubmit={handleSubmit} className="review-write-form">
         <div className="form-group">
@@ -122,10 +152,10 @@ export default function ReviewWritePage() {
         <div className="form-actions">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || loadingExisting}
             className="btn-primary"
           >
-            {loading ? "작성 중..." : "작성"}
+            {loading ? (isEditMode ? "수정 중..." : "작성 중...") : (isEditMode ? "수정" : "작성")}
           </button>
           <button
             type="button"

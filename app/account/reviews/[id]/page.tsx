@@ -122,7 +122,7 @@ export default function ReviewDetailPage({
         {isOwner && (
           <>
             <button
-              onClick={() => router.push(`/account/reviews/${id}/edit`)}
+              onClick={() => router.push(`/account/reviews/write?id=${id}`)}
               className="btn-secondary"
             >
               수정

@@ -56,6 +56,37 @@ export function UserContentInteractions({ reviewId }: { reviewId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const interactedRef = useRef(false);
 
+  function setLikesCache(next: { liked: boolean; likeCount: number }) {
+    try {
+      sessionStorage.setItem(`user-review-likes-${reviewId}`, JSON.stringify({ data: next, ts: Date.now() }));
+      for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
+        const key = sessionStorage.key(i);
+        if (!key || !key.startsWith("user-review-list-cache")) continue;
+        const raw = sessionStorage.getItem(key);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw) as {
+          data?: { items?: Array<{ id: string; likeCount?: number }>; [key: string]: unknown };
+          ts?: number;
+        };
+        if (!parsed.data || !Array.isArray(parsed.data.items)) continue;
+        parsed.data.items = parsed.data.items.map((item) =>
+          item.id === reviewId ? { ...item, likeCount: next.likeCount } : item
+        );
+        parsed.ts = Date.now();
+        sessionStorage.setItem(key, JSON.stringify(parsed));
+      }
+    } catch {}
+  }
+
+  function setCommentsCache(nextComments: Comment[]) {
+    try {
+      sessionStorage.setItem(
+        `user-review-comments-${reviewId}`,
+        JSON.stringify({ data: { comments: nextComments }, ts: Date.now() })
+      );
+    } catch {}
+  }
+
   useEffect(() => {
     // 백그라운드 서버 동기화
     fetch(`/api/main/user-review/${reviewId}/likes`)
@@ -94,6 +125,7 @@ export function UserContentInteractions({ reviewId }: { reviewId: string }) {
       const d = await res.json();
       setLiked(d.liked);
       setLikeCount(d.likeCount);
+      setLikesCache({ liked: d.liked, likeCount: d.likeCount });
     } catch {
       setLiked(!nextLiked);
       setLikeCount((c) => c + (nextLiked ? -1 : 1));
@@ -115,7 +147,11 @@ export function UserContentInteractions({ reviewId }: { reviewId: string }) {
       });
       if (res.ok) {
         const newComment = await res.json();
-        setComments((prev) => [...prev, newComment]);
+        setComments((prev) => {
+          const next = [...prev, newComment];
+          setCommentsCache(next);
+          return next;
+        });
         setCommentInput("");
       }
     } finally {

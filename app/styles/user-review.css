@@ -1,8 +1,4 @@
 .user-review-page {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--surface);
-  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -12,6 +8,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  gap: 12px;
 }
 
 .user-review-dropdown {
@@ -74,39 +71,27 @@
 
 .user-review-sort-row {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
 .user-review-sort-btn {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 999px;
-  height: 30px;
-  padding: 0 10px;
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  font-size: 13px;
   cursor: pointer;
 }
 
 .user-review-sort-btn.active {
-  border-color: #111;
+  color: var(--text);
   font-weight: 600;
 }
 
-.user-review-sort-icon {
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(17, 17, 17, 0.25);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8px;
-  line-height: 1;
+.user-review-sort-sep {
+  margin: 0 8px;
+  color: var(--line);
+  font-size: 12px;
 }
 
 .user-review-list,
@@ -161,6 +146,11 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.user-review-item.read .user-review-item-title {
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .user-review-item-num {
@@ -1162,4 +1152,3 @@
 .user-content-file-download:hover .user-content-file-name {
   color: #1d4ed8;
 }
-
