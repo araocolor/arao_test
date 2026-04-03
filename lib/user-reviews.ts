@@ -89,7 +89,7 @@ export async function getUserReviewList(params: {
 
   const { data, error } = await supabase
     .from("user_reviews")
-    .select("id, profile_id, title, content, thumbnail_image, thumbnail_first, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)");
+    .select("id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, created_at, updated_at, profile:profile_id(username, email)");
 
   if (error) {
     // user_reviews 테이블 미생성 상태를 포함해 안전하게 빈 목록 반환

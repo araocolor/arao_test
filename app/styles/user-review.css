@@ -181,8 +181,12 @@
 }
 
 .user-review-item-heart {
-  color: #FF2D2D;
-  font-size: 11px;
+  color: var(--muted);
+  vertical-align: -1px;
+}
+
+.user-review-item-clip {
+  font-size: 12px;
 }
 
 .user-review-unread-dot {

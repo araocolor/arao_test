@@ -14,6 +14,7 @@ type UserReviewItem = {
   thumbnailImage: string | null;
   thumbnailSmall: string | null;
   thumbnailFirst: string | null;
+  attachedFile: string | null;
   viewCount: number;
   likeCount: number;
   createdAt: string;
@@ -383,12 +384,17 @@ export function MainUserReviewPage() {
                   <p className="user-review-item-title">
                     {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
                     {item.title}
-                    {item.likeCount > 0 && (
+                    {(item.likeCount > 0 || item.attachedFile) && (
                       <span className="user-review-item-stats">
-                        <span className="user-review-item-stat">
-                          <span className="user-review-item-heart" aria-hidden="true">♥</span>
-                          {item.likeCount}
-                        </span>
+                        {item.likeCount > 0 && (
+                          <span className="user-review-item-stat">
+                            <svg className="user-review-item-heart" aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            {item.likeCount}
+                          </span>
+                        )}
+                        {item.attachedFile && (
+                          <span className="user-review-item-clip" aria-label="첨부파일" title="첨부파일">📎</span>
+                        )}
                       </span>
                     )}
                   </p>
@@ -431,12 +437,17 @@ export function MainUserReviewPage() {
                   <p className="user-review-item-title">
                     {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
                     {item.title}
-                    {item.likeCount > 0 && (
+                    {(item.likeCount > 0 || item.attachedFile) && (
                       <span className="user-review-item-stats">
-                        <span className="user-review-item-stat">
-                          <span className="user-review-item-heart" aria-hidden="true">♥</span>
-                          {item.likeCount}
-                        </span>
+                        {item.likeCount > 0 && (
+                          <span className="user-review-item-stat">
+                            <svg className="user-review-item-heart" aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            {item.likeCount}
+                          </span>
+                        )}
+                        {item.attachedFile && (
+                          <span className="user-review-item-clip" aria-label="첨부파일" title="첨부파일">📎</span>
+                        )}
                       </span>
                     )}
                   </p>
@@ -475,9 +486,12 @@ export function MainUserReviewPage() {
                   <span className="user-review-item-stats">
                     {item.likeCount > 0 && (
                       <span className="user-review-item-stat">
-                        <span className="user-review-item-heart" aria-hidden="true">♥</span>
+                        <svg className="user-review-item-heart" aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                         {item.likeCount}
                       </span>
+                    )}
+                    {item.attachedFile && (
+                      <span className="user-review-item-clip" aria-label="첨부파일" title="첨부파일">📎</span>
                     )}
                   </span>
                 </p>
