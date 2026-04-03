@@ -408,19 +408,25 @@ function WriteReviewContent() {
         sessionStorage.setItem(`user-review-content-${postId}`, JSON.stringify({ data: contentCache, ts: Date.now() }));
       } catch {}
 
-      // 새 글이면 리스트 캐시 맨 앞에 추가
-      if (!isEditMode) {
-        try {
-          const cacheKey = "user-review-list-cache";
-          const raw = sessionStorage.getItem(cacheKey);
-          if (raw) {
-            const { data, ts } = JSON.parse(raw) as { data: { items: unknown[]; total: number }; ts: number };
+      // 리스트 캐시 즉시 반영
+      try {
+        const cacheKey = "user-review-list-cache";
+        const raw = sessionStorage.getItem(cacheKey);
+        if (raw) {
+          const { data, ts } = JSON.parse(raw) as { data: { items: Array<{ id: string; [key: string]: unknown }>; total: number }; ts: number };
+          if (isEditMode) {
+            // 수정: 기존 아이템 찾아서 갱신
+            data.items = data.items.map((item) =>
+              item.id === postId ? { ...item, ...contentCache } : item
+            );
+          } else {
+            // 새 글: 맨 앞에 추가
             data.items = [contentCache, ...data.items];
             data.total = data.total + 1;
-            sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts }));
           }
-        } catch {}
-      }
+          sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
+        }
+      } catch {}
       // 항상 본문 페이지로 이동
       router.push(`/user_content/${postId}`);
     } finally {
