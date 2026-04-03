@@ -212,6 +212,29 @@
   background: #ff3b30;
 }
 
+@keyframes new-item-fade {
+  0%   { background: #fef08a; }
+  80%  { background: #fef08a; }
+  100% { background: transparent; }
+}
+
+.user-review-item--new {
+  animation: new-item-fade 2s ease forwards;
+}
+
+.user-review-item-new-badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: #f59e0b;
+  border-radius: 4px;
+  vertical-align: 1px;
+  letter-spacing: 0.03em;
+}
+
 .user-review-item-meta {
   margin: 6px 0 0;
   display: flex;

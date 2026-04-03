@@ -413,22 +413,26 @@ function WriteReviewContent() {
         const cacheKey = "user-review-list-cache";
         const raw = sessionStorage.getItem(cacheKey);
         if (raw) {
-          const { data, ts } = JSON.parse(raw) as { data: { items: Array<{ id: string; [key: string]: unknown }>; total: number }; ts: number };
+          const { data } = JSON.parse(raw) as { data: { items: Array<{ id: string; [key: string]: unknown }>; total: number }; ts: number };
           if (isEditMode) {
-            // 수정: 기존 아이템 찾아서 갱신
             data.items = data.items.map((item) =>
               item.id === postId ? { ...item, ...contentCache } : item
             );
           } else {
-            // 새 글: 맨 앞에 추가
             data.items = [contentCache, ...data.items];
             data.total = data.total + 1;
           }
           sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
+        } else if (!isEditMode) {
+          // 캐시 없을 때도 새글 1개짜리 캐시 생성 (리스트에서 즉시 표시용)
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            data: { items: [contentCache], total: 1 },
+            ts: Date.now(),
+          }));
         }
       } catch {}
-      // 항상 본문 페이지로 이동
-      router.push(`/user_content/${postId}?from=write`);
+      // 리스트로 이동 (replace: 뒤로가기 시 글쓰기 페이지 재진입 방지)
+      router.replace(`/user_review?new=${postId}`);
     } finally {
       setSaving(false);
       setSavingMsg("저장 중...");

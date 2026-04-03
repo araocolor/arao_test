@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
 type ViewMode = "list" | "feed" | "album";
@@ -91,6 +91,7 @@ function setListCache(data: { items: UserReviewItem[]; total: number }) {
 
 export function MainUserReviewPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isSignedIn } = useUser();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -106,9 +107,10 @@ export function MainUserReviewPage() {
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [newItemId, setNewItemId] = useState<string | null>(null);
   const limit = 20;
 
-  // 마운트 후 캐시 데이터로 즉시 채우기
+  // 마운트 후 캐시 데이터로 즉시 채우기 + new 파라미터 처리
   useEffect(() => {
     const cached = getListCache();
     if (cached) {
@@ -119,6 +121,16 @@ export function MainUserReviewPage() {
       const stored = localStorage.getItem("user-review-read-ids");
       if (stored) setReadIds(new Set(JSON.parse(stored) as string[]));
     } catch {}
+
+    const newId = searchParams.get("new");
+    if (newId) {
+      setNewItemId(newId);
+      // URL에서 파라미터 제거 (히스토리 오염 방지)
+      router.replace("/user_review");
+      // 2초 후 하이라이트 해제
+      const t = setTimeout(() => setNewItemId(null), 2000);
+      return () => clearTimeout(t);
+    }
   }, []);
 
   function prefetchContentData(id: string) {
@@ -377,13 +389,14 @@ export function MainUserReviewPage() {
               <button
                 key={item.id}
                 type="button"
-                className="user-review-item list"
+                className={`user-review-item list${item.id === newItemId ? " user-review-item--new" : ""}`}
                 onClick={() => openReview(item.id)}
               >
                 <div className="user-review-item-main">
                   <p className="user-review-item-title">
                     {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
                     {item.title.length > 21 ? `${item.title.slice(0, 20)}...` : item.title}
+                    {item.id === newItemId && <span className="user-review-item-new-badge">NEW</span>}
                   </p>
                   <p className="user-review-item-meta">
                     <span>{item.authorId}</span>
