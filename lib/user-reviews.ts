@@ -14,6 +14,7 @@ export type UserReviewListItem = {
   createdAt: string;
   authorId: string;
   authorIconImage: string | null;
+  isAuthor: boolean;
   board: string;
 };
 
@@ -57,7 +58,7 @@ function mapAuthorId(row: {
   return "익명";
 }
 
-function mapRowToListItem(row: any): UserReviewListItem {
+function mapRowToListItem(row: any, viewerProfileId?: string | null): UserReviewListItem {
   const profile = getProfile(row);
   return {
     id: row.id,
@@ -71,6 +72,7 @@ function mapRowToListItem(row: any): UserReviewListItem {
     createdAt: row.created_at ?? new Date(0).toISOString(),
     authorId: mapAuthorId(row),
     authorIconImage: profile?.icon_image ?? null,
+    isAuthor: !!viewerProfileId && row.profile_id === viewerProfileId,
     board: row.board ?? "review",
   };
 }
@@ -85,6 +87,7 @@ export async function getUserReviewList(params: {
   q?: string;
   sort?: UserReviewSort;
   board?: string;
+  viewerProfileId?: string | null;
 }): Promise<{ items: UserReviewListItem[]; total: number }> {
   const { page, limit } = params;
   const q = normalizeSearchTerm((params.q ?? "").trim());
@@ -134,7 +137,7 @@ export async function getUserReviewList(params: {
     return { items: [], total: 0 };
   }
 
-  const items = (Array.isArray(data) ? data : []).map(mapRowToListItem);
+  const items = (Array.isArray(data) ? data : []).map((row) => mapRowToListItem(row, params.viewerProfileId));
   return { items, total: count ?? 0 };
 }
 
@@ -152,7 +155,7 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
   }
 
   return {
-    ...mapRowToListItem(data),
+    ...mapRowToListItem(data, null),
     profileId: data.profile_id,
     isPublic: data.is_public ?? true,
     updatedAt: data.updated_at ?? data.created_at ?? new Date(0).toISOString(),

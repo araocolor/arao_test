@@ -12,6 +12,7 @@ type UserReviewItem = {
   likeCount: number;
   createdAt: string;
   authorId: string;
+  isAuthor?: boolean;
 };
 
 function getFirstImage(thumbnailImage: string | null): string | null {
@@ -42,7 +43,7 @@ export function UserReviewAlbum({
           <button
             key={item.id}
             type="button"
-            className="user-review-item album"
+            className={`user-review-item album${item.isAuthor ? " mine" : ""}`}
             onClick={() => onOpenReview(item.id)}
           >
             <div className="user-review-album-thumb">

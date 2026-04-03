@@ -28,6 +28,7 @@ type UserReviewItem = {
   likeCount: number;
   createdAt: string;
   authorId: string;
+  isAuthor?: boolean;
   board?: string;
 };
 
@@ -723,7 +724,7 @@ export function MainUserReviewPage() {
               <button
                 key={item.id}
                 type="button"
-                className={`user-review-item list${readIds.has(item.id) ? " read" : ""}`}
+                className={`user-review-item list${readIds.has(item.id) ? " read" : ""}${item.isAuthor ? " mine" : ""}`}
                 onClick={() => openReview(item.id)}
               >
                 <div className="user-review-item-main">
@@ -873,7 +874,7 @@ export function MainUserReviewPage() {
                     <li key={result.id}>
                       <button
                         type="button"
-                        className="user-review-search-sheet-result-item"
+                        className={`user-review-search-sheet-result-item${result.isAuthor ? " mine" : ""}`}
                         onClick={() => {
                           closeSearchSheet();
                           openReview(result.id);

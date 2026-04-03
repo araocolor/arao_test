@@ -117,6 +117,14 @@
   width: 100%;
 }
 
+.user-review-item.mine {
+  background: rgba(17, 17, 17, 0.05);
+}
+
+.user-review-item.album.mine {
+  border-radius: 8px;
+}
+
 .user-review-list .user-review-item + .user-review-item,
 .user-review-feed .user-review-item + .user-review-item {
   border-top: 1px solid var(--line);
@@ -321,6 +329,7 @@
   gap: 10px;
   border-top: 1px solid var(--line);
   padding-top: 10px;
+  padding-bottom: calc(62px + env(safe-area-inset-bottom));
 }
 
 .user-review-search-row {
@@ -493,6 +502,10 @@
   cursor: pointer;
 }
 
+.user-review-search-sheet-result-item.mine {
+  background: rgba(17, 17, 17, 0.05);
+}
+
 .user-review-search-sheet-result-title {
   margin: 0;
   font-size: 14px;
@@ -571,6 +584,18 @@
   text-decoration: none;
   cursor: pointer;
   padding: 0 12px;
+}
+
+.user-review-write-btn {
+  position: fixed;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(calc(100% - 32px), 448px);
+  height: 42px;
+  border-radius: 12px;
+  z-index: 45;
+  box-shadow: 0 10px 22px rgba(17, 17, 17, 0.2);
 }
 
 .user-review-empty {

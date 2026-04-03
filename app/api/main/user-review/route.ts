@@ -16,8 +16,17 @@ export async function GET(request: Request) {
     const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(Math.floor(limitParam), 100) : 20;
     const sort: UserReviewSort =
       sortParam === "views" || sortParam === "likes" ? sortParam : "latest";
+    const { userId } = await auth();
+    let viewerProfileId: string | null = null;
+    if (userId) {
+      const user = await currentUser();
+      const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
+      const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || null;
+      const profile = await syncProfile({ email, fullName });
+      viewerProfileId = profile?.id ?? null;
+    }
 
-    const { items, total } = await getUserReviewList({ page, limit, q, sort, board });
+    const { items, total } = await getUserReviewList({ page, limit, q, sort, board, viewerProfileId });
     return NextResponse.json({
       items,
       total,
@@ -73,4 +82,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "서버 오류가 발생했습니다." }, { status: 500 });
   }
 }
-

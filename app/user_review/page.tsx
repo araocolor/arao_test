@@ -1,12 +1,8 @@
 import { LandingPageHeader } from "@/components/landing-page-header";
-import { LandingPageFooter } from "@/components/landing-page-footer";
 import { MainUserReviewPage } from "@/components/main-user-review-page";
-import { getLandingContent } from "@/lib/landing-content";
 import { Suspense } from "react";
 
 export default async function MainUserReviewListPage() {
-  const landingContent = await getLandingContent();
-
   return (
     <main className="landing-page">
       <LandingPageHeader />
@@ -18,7 +14,6 @@ export default async function MainUserReviewListPage() {
             <MainUserReviewPage />
           </Suspense>
         </section>
-        <LandingPageFooter content={landingContent.footer} />
       </div>
     </main>
   );
