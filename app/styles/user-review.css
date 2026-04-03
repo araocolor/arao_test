@@ -163,6 +163,13 @@
   gap: 6px;
 }
 
+.user-review-item-num {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
 .user-review-item-stats {
   display: inline-flex;
   align-items: center;

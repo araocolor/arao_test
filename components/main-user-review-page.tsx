@@ -380,8 +380,9 @@ export function MainUserReviewPage() {
         <div className="user-review-empty">표시할 후기가 없습니다.</div>
       ) : viewMode === "list" ? (
         <div className="user-review-list">
-          {items.map((item) => {
+          {items.map((item, idx) => {
             const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
+            const rowNum = total - ((page - 1) * limit + idx);
             return (
               <button
                 key={item.id}
@@ -392,6 +393,7 @@ export function MainUserReviewPage() {
                 <div className="user-review-item-main">
                   <p className="user-review-item-title">
                     {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
+                    <span className="user-review-item-num">{rowNum}</span>
                     {item.title.length > 21 ? `${item.title.slice(0, 20)}...` : item.title}
                     {item.id === newItemId && <span className="user-review-item-new-badge">NEW</span>}
                   </p>
