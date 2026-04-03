@@ -249,20 +249,28 @@ function ImageViewer({
         onClick={(e) => {
           e.stopPropagation();
           const url = images[current];
+          const ext = url.split(".").pop()?.split("?")[0] ?? "jpg";
+          const fileName = `image_1024_${current + 1}.${ext}`;
           fetch(url)
             .then((r) => r.blob())
-            .then((blob) => {
+            .then(async (blob) => {
+              const file = new File([blob], fileName, { type: blob.type });
+              if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+                try {
+                  await navigator.share({ files: [file] });
+                  return;
+                } catch {}
+              }
               const a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
-              const ext = url.split(".").pop()?.split("?")[0] ?? "jpg";
-              a.download = `image_${current + 1}.${ext}`;
+              a.download = fileName;
               a.click();
               URL.revokeObjectURL(a.href);
             })
             .catch(() => window.open(url, "_blank"));
         }}
       >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
