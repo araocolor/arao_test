@@ -7,7 +7,7 @@ import { useGalleryPrefetch } from "@/hooks/use-gallery-prefetch";
 import { setCached } from "@/hooks/use-prefetch-cache";
 import { GALLERY_CATEGORIES } from "@/lib/gallery-categories";
 
-const REVIEW_LIST_CACHE_TTL = 120000; // 2분
+const REVIEW_LIST_CACHE_TTL = 300000; // 5분
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 

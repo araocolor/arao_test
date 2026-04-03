@@ -9,7 +9,7 @@ import { NotificationDrawer } from "@/components/notification-drawer";
 import type { NotificationItem } from "@/lib/notifications";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 
-const REVIEW_LIST_CACHE_TTL = 120000; // 2분
+const REVIEW_LIST_CACHE_TTL = 300000; // 5분
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 

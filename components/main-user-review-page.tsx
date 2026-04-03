@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type TouchEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type TouchEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
@@ -81,7 +81,8 @@ function excerpt(value: string, maxLength: number) {
 
 const LIST_CACHE_KEY = "user-review-list-cache";
 const SCROLL_KEY = "user-review-scroll";
-const CACHE_TTL = 120000; // 2분
+const CACHE_TTL = 300000; // 5분
+const BACKGROUND_REVALIDATE_COOLDOWN = 60000; // 1분
 const PAGE_CACHE_PREFIX = "user-review-page-cache-v1";
 
 function canAggressivePrefetch(): boolean {
@@ -197,7 +198,24 @@ export function MainUserReviewPage() {
   const searchSheetDragStartYRef = useRef(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [writeFabMounted, setWriteFabMounted] = useState(false);
+  const backgroundRefreshRunningRef = useRef(false);
+  const lastBackgroundRefreshRef = useRef(0);
+  const currentListStateRef = useRef<{
+    board: BoardType;
+    page: number;
+    sortMode: SortMode;
+    query: string;
+  }>({ board: "review", page: 1, sortMode: "latest", query: "" });
   const limit = 20;
+
+  useEffect(() => {
+    currentListStateRef.current = {
+      board,
+      page,
+      sortMode,
+      query: query.trim(),
+    };
+  }, [board, page, sortMode, query]);
 
   // 마운트 후 캐시 데이터로 즉시 채우기 + new 파라미터 처리
   useEffect(() => {
@@ -378,6 +396,49 @@ export function MainUserReviewPage() {
     sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
   };
 
+  const refreshListInBackground = useCallback(async () => {
+    const normalizedQuery = query.trim();
+    if (page !== 1 || sortMode !== "latest" || normalizedQuery) return;
+    if (!canAggressivePrefetch()) return;
+    if (backgroundRefreshRunningRef.current) return;
+    const now = Date.now();
+    if (now - lastBackgroundRefreshRef.current < BACKGROUND_REVALIDATE_COOLDOWN) return;
+
+    backgroundRefreshRunningRef.current = true;
+    lastBackgroundRefreshRef.current = now;
+    try {
+      const params = new URLSearchParams({
+        page: "1",
+        limit: String(limit),
+        sort: "latest",
+        board,
+      });
+      const res = await fetch(`/api/main/user-review?${params.toString()}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { items?: UserReviewItem[]; total?: number };
+      const nextItems = Array.isArray(data.items) ? data.items : [];
+      const nextTotal = data.total ?? 0;
+      const current = currentListStateRef.current;
+      if (
+        current.board === board &&
+        current.page === 1 &&
+        current.sortMode === "latest" &&
+        !current.query
+      ) {
+        setItems(nextItems);
+        setTotal(nextTotal);
+      }
+      setPageCache(
+        { board, page: 1, limit, sort: "latest", q: "" },
+        { items: nextItems, total: nextTotal }
+      );
+      setListCache(board, { items: nextItems, total: nextTotal });
+    } catch {}
+    finally {
+      backgroundRefreshRunningRef.current = false;
+    }
+  }, [board, page, query, sortMode, limit]);
+
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
@@ -392,6 +453,7 @@ export function MainUserReviewPage() {
       if (pageCache) {
         setItems(pageCache.items);
         setTotal(pageCache.total);
+        void refreshListInBackground();
         return;
       }
 
@@ -405,6 +467,7 @@ export function MainUserReviewPage() {
             { board, page, limit, sort: sortMode, q: normalizedQuery },
             { items: cached.items, total: cached.total }
           );
+          void refreshListInBackground();
           return;
         }
       }
@@ -452,6 +515,19 @@ export function MainUserReviewPage() {
     void load();
     return () => controller.abort();
   }, [page, limit, sortMode, query, board]);
+
+  useEffect(() => {
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState !== "visible") return;
+      void refreshListInBackground();
+    };
+    window.addEventListener("focus", handleVisibilityOrFocus);
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+    return () => {
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+    };
+  }, [refreshListInBackground]);
 
   useEffect(() => {
     if (loading || total <= page * limit) return;
