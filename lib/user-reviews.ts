@@ -13,6 +13,7 @@ export type UserReviewListItem = {
   likeCount: number;
   createdAt: string;
   authorId: string;
+  authorIconImage: string | null;
   board: string;
 };
 
@@ -32,15 +33,23 @@ function maskEmail(email: string): string {
 }
 
 function getProfile(
-  row: { profile?: { username?: string | null; email?: string | null } | Array<{ username?: string | null; email?: string | null }> | null }
-): { username?: string | null; email?: string | null } | null {
+  row: {
+    profile?:
+      | { username?: string | null; email?: string | null; icon_image?: string | null }
+      | Array<{ username?: string | null; email?: string | null; icon_image?: string | null }>
+      | null;
+  }
+): { username?: string | null; email?: string | null; icon_image?: string | null } | null {
   if (!row.profile) return null;
   if (Array.isArray(row.profile)) return row.profile[0] ?? null;
   return row.profile;
 }
 
 function mapAuthorId(row: {
-  profile?: { username?: string | null; email?: string | null } | Array<{ username?: string | null; email?: string | null }> | null;
+  profile?:
+    | { username?: string | null; email?: string | null; icon_image?: string | null }
+    | Array<{ username?: string | null; email?: string | null; icon_image?: string | null }>
+    | null;
 }): string {
   const profile = getProfile(row);
   if (profile?.username) return profile.username;
@@ -49,6 +58,7 @@ function mapAuthorId(row: {
 }
 
 function mapRowToListItem(row: any): UserReviewListItem {
+  const profile = getProfile(row);
   return {
     id: row.id,
     title: row.title ?? "",
@@ -60,6 +70,7 @@ function mapRowToListItem(row: any): UserReviewListItem {
     likeCount: row.like_count ?? 0,
     createdAt: row.created_at ?? new Date(0).toISOString(),
     authorId: mapAuthorId(row),
+    authorIconImage: profile?.icon_image ?? null,
     board: row.board ?? "review",
   };
 }
@@ -87,7 +98,7 @@ export async function getUserReviewList(params: {
   let query = supabase
     .from("user_reviews")
     .select(
-      "id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, board, created_at, updated_at, profile:profile_id(username, email)",
+      "id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, board, created_at, updated_at, profile:profile_id(username, email, icon_image)",
       { count: "exact" }
     )
     .eq("board", board);
@@ -131,7 +142,7 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("user_reviews")
-    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, thumbnail_first, attached_file, view_count, like_count, is_public, board, created_at, updated_at, profile:profile_id(username, email)")
+    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, thumbnail_first, attached_file, view_count, like_count, is_public, board, created_at, updated_at, profile:profile_id(username, email, icon_image)")
     .eq("id", id)
     .maybeSingle();
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { UserContentHeader } from "@/components/user-content-header";
-import { UserContentInteractions } from "@/components/user-content-interactions";
+import { UserContentInteractions, UserContentLikeSection } from "@/components/user-content-interactions";
 
 function ContentImage({
   src,
@@ -361,6 +361,7 @@ type ReviewItem = {
   viewCount: number;
   createdAt: string;
   authorId: string;
+  authorIconImage?: string | null;
   profileId: string;
   isAuthor: boolean;
   board?: string;
@@ -368,11 +369,14 @@ type ReviewItem = {
 
 function formatDate(value: string): string {
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "0000.00.00";
+  if (Number.isNaN(d.getTime())) return "0000.00.00 00:00:00";
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return `${y}.${m}.${day}`;
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const sec = String(d.getSeconds()).padStart(2, "0");
+  return `${y}.${m}.${day} ${h}:${min}:${sec}`;
 }
 
 function getContentCache(id: string): ReviewItem | null {
@@ -503,9 +507,26 @@ export function UserContentPage({ id }: { id: string }) {
           <>
             <article className="user-content-article">
               <h1 className="user-content-title">{item.title}</h1>
-              <p className="user-content-meta muted">
-                {item.authorId} · {formatDate(item.createdAt)} · 조회 {item.viewCount}
-              </p>
+              <div className="user-content-author-row">
+                <span className="user-content-author-avatar" aria-hidden="true">
+                  {item.authorIconImage ? (
+                    <img src={item.authorIconImage} alt="" className="user-content-author-avatar-img" />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 20c0-4.2 3.6-7 8-7s8 2.8 8 7" />
+                    </svg>
+                  )}
+                </span>
+                <div className="user-content-author-meta">
+                  <p className="user-content-author-id">{item.authorId}</p>
+                  <p className="user-content-author-date-line muted">
+                    <span className="user-content-author-date">{formatDate(item.createdAt)}</span>
+                    <span className="user-content-author-views">조회 {item.viewCount}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="user-content-body-divider" aria-hidden="true" />
               {displayImages.map((src, i) => (
                 <ContentImage key={i} src={src} index={i} onClickView={openViewer} />
               ))}
@@ -550,6 +571,7 @@ export function UserContentPage({ id }: { id: string }) {
                 </button>
               )}
               <p className="user-content-body">{item.content}</p>
+              <UserContentLikeSection reviewId={id} />
             </article>
             <UserContentInteractions reviewId={id} />
           </>
