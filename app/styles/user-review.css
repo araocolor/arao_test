@@ -329,7 +329,7 @@
   gap: 10px;
   border-top: 1px solid var(--line);
   padding-top: 10px;
-  padding-bottom: calc(62px + env(safe-area-inset-bottom));
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
 }
 
 .user-review-search-row {
@@ -588,14 +588,30 @@
 
 .user-review-write-btn {
   position: fixed;
-  left: 50%;
+  left: 14px;
   bottom: calc(10px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  width: min(calc(100% - 32px), 448px);
-  height: 42px;
-  border-radius: 12px;
+  transform: none;
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 999px;
+  border-color: #E02424;
+  background: #E02424;
   z-index: 45;
-  box-shadow: 0 10px 22px rgba(17, 17, 17, 0.2);
+  box-shadow: 0 8px 18px rgba(17, 17, 17, 0.18);
+}
+
+.user-review-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  white-space: nowrap;
 }
 
 .user-review-empty {
