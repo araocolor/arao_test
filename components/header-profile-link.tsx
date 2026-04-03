@@ -103,11 +103,11 @@ export function HeaderProfileLink() {
     }
   }
 
-  function prefetchGalleryFirst(force = false) {
+  function prefetchGalleryFirst() {
     // 첫 번째 카드(people/0) 공개 데이터 prefetch (로그인 무관)
     const publicKey = "gallery_public_people_0";
     const commentsKey = "gallery_comments_people_0";
-    if (!force && getCached(publicKey)) return;
+    if (getCached(publicKey)) return;
     fetch("/api/gallery/people/0/likes")
       .then((r) => r.json())
       .then((d: { count?: number; firstLiker?: string | null; commentCount?: number }) => {
@@ -162,7 +162,6 @@ export function HeaderProfileLink() {
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") {
         prefetchUserReviewList();
-        prefetchGalleryFirst(true);
       }
     }, 120000);
     return () => clearInterval(timer);
