@@ -7,7 +7,7 @@ export default async function MainUserReviewListPage() {
   const landingContent = await getLandingContent();
 
   return (
-    <main className="landing-page page-slide-in">
+    <main className="landing-page">
       <LandingPageHeader />
 
       <div className="landing-shell">
