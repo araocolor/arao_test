@@ -83,6 +83,8 @@ const LIST_CACHE_KEY = "user-review-list-cache";
 const SCROLL_KEY = "user-review-scroll";
 const CACHE_TTL = 300000; // 5분
 const BACKGROUND_REVALIDATE_COOLDOWN = 60000; // 1분
+const TOP_REFRESH_COOLDOWN = 30000; // 30초
+const TOP_REFRESH_LIMIT = 2;
 const PAGE_CACHE_PREFIX = "user-review-page-cache-v1";
 
 function canAggressivePrefetch(): boolean {
@@ -166,6 +168,18 @@ function setPageCache(
   } catch {}
 }
 
+function mergeTopItems(
+  currentItems: UserReviewItem[],
+  freshItems: UserReviewItem[],
+  targetLength: number
+): UserReviewItem[] {
+  const existingIds = new Set(currentItems.map((item) => item.id));
+  const newOnes = freshItems.filter((item) => !existingIds.has(item.id));
+  if (newOnes.length === 0) return currentItems;
+  const merged = [...newOnes, ...currentItems];
+  return merged.slice(0, Math.max(targetLength, 0));
+}
+
 export function MainUserReviewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -200,12 +214,16 @@ export function MainUserReviewPage() {
   const [writeFabMounted, setWriteFabMounted] = useState(false);
   const backgroundRefreshRunningRef = useRef(false);
   const lastBackgroundRefreshRef = useRef(0);
+  const topRefreshRunningRef = useRef(false);
+  const lastTopRefreshRef = useRef(0);
   const currentListStateRef = useRef<{
     board: BoardType;
     page: number;
     sortMode: SortMode;
     query: string;
   }>({ board: "review", page: 1, sortMode: "latest", query: "" });
+  const itemsRef = useRef<UserReviewItem[]>([]);
+  const totalRef = useRef(0);
   const limit = 20;
 
   useEffect(() => {
@@ -216,6 +234,11 @@ export function MainUserReviewPage() {
       query: query.trim(),
     };
   }, [board, page, sortMode, query]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+    totalRef.current = total;
+  }, [items, total]);
 
   // 마운트 후 캐시 데이터로 즉시 채우기 + new 파라미터 처리
   useEffect(() => {
@@ -439,6 +462,55 @@ export function MainUserReviewPage() {
     }
   }, [board, page, query, sortMode, limit]);
 
+  const refreshTopItemsInBackground = useCallback(async () => {
+    const normalizedQuery = query.trim();
+    if (page !== 1 || sortMode !== "latest" || normalizedQuery) return;
+    if (!canAggressivePrefetch()) return;
+    if (topRefreshRunningRef.current) return;
+    const now = Date.now();
+    if (now - lastTopRefreshRef.current < TOP_REFRESH_COOLDOWN) return;
+
+    topRefreshRunningRef.current = true;
+    lastTopRefreshRef.current = now;
+    try {
+      const params = new URLSearchParams({
+        page: "1",
+        limit: String(TOP_REFRESH_LIMIT),
+        sort: "latest",
+        board,
+      });
+      const res = await fetch(`/api/main/user-review?${params.toString()}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { items?: UserReviewItem[]; total?: number };
+      const freshItems = Array.isArray(data.items) ? data.items : [];
+      if (freshItems.length === 0) return;
+
+      const currentState = currentListStateRef.current;
+      if (
+        currentState.board !== board ||
+        currentState.page !== 1 ||
+        currentState.sortMode !== "latest" ||
+        currentState.query
+      ) {
+        return;
+      }
+
+      const merged = mergeTopItems(itemsRef.current, freshItems, Math.max(itemsRef.current.length, limit));
+      if (merged === itemsRef.current) return;
+      const nextTotal = Math.max(totalRef.current, data.total ?? totalRef.current);
+      setItems(merged);
+      setTotal(nextTotal);
+      setPageCache(
+        { board, page: 1, limit, sort: "latest", q: "" },
+        { items: merged, total: nextTotal }
+      );
+      setListCache(board, { items: merged, total: nextTotal });
+    } catch {}
+    finally {
+      topRefreshRunningRef.current = false;
+    }
+  }, [board, page, query, sortMode, limit]);
+
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
@@ -453,6 +525,7 @@ export function MainUserReviewPage() {
       if (pageCache) {
         setItems(pageCache.items);
         setTotal(pageCache.total);
+        void refreshTopItemsInBackground();
         void refreshListInBackground();
         return;
       }
@@ -467,6 +540,7 @@ export function MainUserReviewPage() {
             { board, page, limit, sort: sortMode, q: normalizedQuery },
             { items: cached.items, total: cached.total }
           );
+          void refreshTopItemsInBackground();
           void refreshListInBackground();
           return;
         }
