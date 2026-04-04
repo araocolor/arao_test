@@ -379,16 +379,12 @@ export function UserContentInteractions({ reviewId, reviewAuthorId }: { reviewId
                       {editingId === reply.id ? (
                         <div className="user-content-comment-edit-form">
                           <textarea
-                            ref={editTextareaRef}
                             className="user-content-comment-input"
                             value={editInput}
-                            onChange={(e) => {
-                              setEditInput(e.target.value);
-                              e.target.style.height = "auto";
-                              e.target.style.height = `${e.target.scrollHeight}px`;
-                            }}
+                            onChange={(e) => setEditInput(e.target.value)}
+                            rows={editRows(editInput)}
                             maxLength={300}
-                            style={{ height: `${(editInput.split("\n").length) * 21 + 12 + 42}px` }}
+                            ref={(el) => { if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }}
                           />
                           <div className="user-content-comment-edit-actions">
                             <button type="button" className="user-content-comment-action-btn" onClick={() => { setEditingId(null); setEditInput(""); }}>취소</button>
