@@ -56,6 +56,69 @@ function firstLine(input) {
     .find(Boolean) ?? "";
 }
 
+function parseCommitTitle(title) {
+  const match = title.match(/^([a-zA-Z]+)(\(([^)]+)\))?:\s*(.+)$/);
+  if (!match) {
+    return {
+      type: "general",
+      scope: "",
+      subject: title.trim(),
+    };
+  }
+  return {
+    type: match[1].toLowerCase(),
+    scope: (match[3] || "").trim(),
+    subject: (match[4] || title).trim(),
+  };
+}
+
+function typeToKorean(type) {
+  if (type === "feat") return "기능 추가";
+  if (type === "fix") return "오류 수정";
+  if (type === "perf") return "성능 개선";
+  if (type === "refactor") return "구조 개선";
+  if (type === "docs") return "문서 정리";
+  if (type === "test") return "테스트 보강";
+  if (type === "chore") return "운영 작업";
+  return "변경 작업";
+}
+
+function compactFiles(files, maxCount = 6) {
+  if (files.length <= maxCount) return files;
+  return [...files.slice(0, maxCount), `외 ${files.length - maxCount}개 파일`];
+}
+
+function generateKoreanSummaryAndDetails({ title, files, gitBody }) {
+  const parsed = parseCommitTitle(title);
+  const typeLabel = typeToKorean(parsed.type);
+  const scopeLabel = parsed.scope ? `${parsed.scope} 영역` : "대상 영역";
+  const summary = `${scopeLabel}의 ${typeLabel} 작업을 반영했습니다.`;
+
+  const fileList = compactFiles(files)
+    .map((file) => `- ${file}`)
+    .join("\n");
+
+  const bodyLines = gitBody
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `- ${line}`)
+    .join("\n");
+
+  const detailsLines = [
+    `적용 커밋: ${title}`,
+    `작업 분류: ${typeLabel}`,
+    bodyLines ? `커밋 본문 요약:\n${bodyLines}` : "",
+    fileList ? `주요 변경 파일:\n${fileList}` : "",
+    "결과: 보고서 페이지에서 변경사항을 확인할 수 있도록 반영했습니다.",
+  ].filter(Boolean);
+
+  return {
+    summary,
+    details: detailsLines.join("\n"),
+  };
+}
+
 async function main() {
   loadEnvFile(".env.local");
   loadEnvFile(".env");
@@ -80,14 +143,25 @@ async function main() {
   const gitTitle = git(`git log -1 --pretty=%s ${commitRef}`);
   const gitBody = git(`git log -1 --pretty=%b ${commitRef}`);
   const commitDate = git(`git log -1 --pretty=%cI ${commitRef}`);
+  const changedFilesRaw = git(`git show --name-only --pretty=format: ${commitRef}`);
+  const changedFiles = changedFilesRaw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   const title = (args.title || gitTitle || "").trim();
   if (!title) {
     throw new Error("title을 결정할 수 없습니다. --title 옵션을 지정하세요.");
   }
 
-  const summary = (args.summary || firstLine(gitBody) || gitTitle).trim();
-  const details = (args.details || gitBody || "").trim();
+  const generated = generateKoreanSummaryAndDetails({
+    title: gitTitle,
+    files: changedFiles,
+    gitBody,
+  });
+
+  const summary = (args.summary || generated.summary || firstLine(gitBody) || gitTitle).trim();
+  const details = (args.details || generated.details || gitBody || "").trim();
   const originalReview = (args.original || details || summary).trim();
   const status = args.status || "done";
   const model = (args.model || "GPT-5 Codex").trim();
