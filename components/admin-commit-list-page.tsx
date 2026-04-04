@@ -80,6 +80,19 @@ function linesToBullets(input: string): string[] {
     .filter(Boolean);
 }
 
+function textToParagraphs(input: string): string[] {
+  const normalized = input.replace(/\r\n/g, "\n").trim();
+  if (!normalized) return [];
+  const withBreaks = normalized
+    .replace(/\s+(?=\d+[).]\s)/g, "\n")
+    .replace(/\s+(?=[•\-]\s)/g, "\n")
+    .replace(/\n{3,}/g, "\n\n");
+  return withBreaks
+    .split(/\n{2,}|\n/g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 function parseDateParts(iso: string | null): { year: number; month: number; day: number } {
   if (!iso) {
     return { year: 0, month: 0, day: 0 };
@@ -180,6 +193,7 @@ export function AdminCommitListPage() {
   const [selectedDay, setSelectedDay] = useState(initialDay);
   const [openId, setOpenId] = useState<string | null>(null);
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [items, setItems] = useState<CommitReportItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -200,6 +214,27 @@ export function AdminCommitListPage() {
       setItems([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDeleteItem(item: CommitReportItem) {
+    if (deletingItemId) return;
+    if (!window.confirm(`'${item.heading}' 항목을 삭제할까요?`)) return;
+    setDeletingItemId(item.id);
+    try {
+      const response = await fetch(`/api/admin/work-logs/${item.id}`, { method: "DELETE" });
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (!response.ok) {
+        window.alert(payload?.message ?? "삭제에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+      if (openId === item.id) setOpenId(null);
+      if (detailItemId === item.id) setDetailItemId(null);
+      await loadItems();
+    } catch {
+      window.alert("삭제 중 네트워크 오류가 발생했습니다.");
+    } finally {
+      setDeletingItemId(null);
     }
   }
 
@@ -280,6 +315,7 @@ export function AdminCommitListPage() {
   }, [detailItemId, items]);
 
   const detailItem = detailItemId ? items.find((item) => item.id === detailItemId) ?? null : null;
+  const detailItemOriginalParagraphs = detailItem ? textToParagraphs(detailItem.originalReview) : [];
 
   return (
     <div className="admin-commit-report" data-theme={theme ?? undefined}>
@@ -399,6 +435,21 @@ export function AdminCommitListPage() {
                           <h2>{item.heading}</h2>
                           <div className="admin-commit-report-title-actions">
                             <span className="admin-commit-report-datetime">{item.displayDateTime}</span>
+                            <button
+                              type="button"
+                              className="admin-commit-report-detail-btn"
+                              onClick={() => setDetailItemId(item.id)}
+                            >
+                              상세보기
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-commit-report-detail-btn admin-commit-report-delete-btn"
+                              onClick={() => void handleDeleteItem(item)}
+                              disabled={deletingItemId === item.id}
+                            >
+                              {deletingItemId === item.id ? "삭제중..." : "삭제"}
+                            </button>
                           </div>
                         </div>
                         <p className="admin-commit-report-meta">작업 AI: {item.aiAgent}</p>
@@ -406,11 +457,21 @@ export function AdminCommitListPage() {
                         {item.sections.map((section) => (
                           <div key={`${item.id}-${section.title}`}>
                             <p className="admin-commit-report-section-title">{section.title}</p>
-                            <ul>
-                              {section.bullets.map((bullet) => (
-                                <li key={bullet}>{bullet}</li>
-                              ))}
-                            </ul>
+                            {section.title === "상세 리뷰" ? (
+                              <div className="admin-commit-report-paragraphs">
+                                {textToParagraphs(section.bullets.join("\n")).map((paragraph, index) => (
+                                  <p key={`${item.id}-${section.title}-${index}`} className="admin-commit-report-paragraph">
+                                    {paragraph}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : (
+                              <ul>
+                                {section.bullets.map((bullet) => (
+                                  <li key={bullet}>{bullet}</li>
+                                ))}
+                              </ul>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -438,7 +499,17 @@ export function AdminCommitListPage() {
                 <h2>{detailItem.heading}</h2>
                 <p className="admin-commit-report-meta">{detailItem.displayDateTime}</p>
                 <p className="admin-commit-report-section-title">원본 리뷰</p>
-                <pre className="admin-commit-report-original-text">{detailItem.originalReview}</pre>
+                <div className="admin-commit-report-original-text">
+                  {detailItemOriginalParagraphs.length > 0
+                    ? detailItemOriginalParagraphs.map((paragraph, index) => (
+                        <p key={`${detailItem.id}-original-${index}`} className="admin-commit-report-paragraph">
+                          {paragraph}
+                        </p>
+                      ))
+                    : (
+                      <p className="admin-commit-report-paragraph">{detailItem.originalReview}</p>
+                    )}
+                </div>
               </div>
             </section>
           ) : (

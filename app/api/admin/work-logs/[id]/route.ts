@@ -101,3 +101,26 @@ export async function PATCH(
     return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const admin = await requireAdmin();
+  if ("error" in admin) return admin.error;
+
+  const { id } = await params;
+  if (!id) {
+    return NextResponse.json({ message: "id is required" }, { status: 400 });
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("work_logs").delete().eq("id", id);
+
+  if (error) {
+    console.error("DELETE /api/admin/work-logs/[id] error:", error);
+    return NextResponse.json({ message: "Failed to delete work log" }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

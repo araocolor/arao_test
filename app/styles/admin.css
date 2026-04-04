@@ -959,6 +959,16 @@
   cursor: pointer;
 }
 
+.admin-commit-report-delete-btn {
+  border-color: rgba(220, 38, 38, 0.28);
+  color: #dc2626;
+}
+
+.admin-commit-report-detail-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .admin-commit-report-detail-view {
   display: flex;
   flex-direction: column;
@@ -985,11 +995,23 @@
 
 .admin-commit-report-original-text {
   margin: 0;
-  white-space: pre-wrap;
-  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-commit-report-paragraphs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-commit-report-paragraph {
+  margin: 0;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--report-fg);
+  white-space: pre-wrap;
 }
 
 .admin-commit-report-detail-placeholder {
