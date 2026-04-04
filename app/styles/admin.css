@@ -405,6 +405,182 @@
   background: #fafafa;
 }
 
+.admin-worklog-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-worklog-create-line,
+.admin-worklog-filter-line {
+  display: grid;
+  grid-template-columns: 170px 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-worklog-filter-line {
+  grid-template-columns: 130px 1fr auto auto;
+}
+
+.admin-worklog-message {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.admin-worklog-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 520px;
+}
+
+.admin-worklog-list {
+  border-right: 1px solid var(--line);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-worklog-list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-worklog-list-body {
+  overflow-y: auto;
+}
+
+.admin-worklog-item {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.admin-worklog-item.active {
+  background: rgba(17, 17, 17, 0.06);
+}
+
+.admin-worklog-item-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.admin-worklog-item-meta {
+  margin: 4px 0 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.admin-worklog-item-time {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.admin-worklog-detail {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-worklog-detail-line {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-worklog-detail-line label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.admin-worklog-detail-line .admin-textarea {
+  min-height: 84px;
+}
+
+.admin-worklog-detail-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-worklog-detail-actions {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-worklog-memo-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-worklog-memo-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.admin-worklog-memo-item {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 12px;
+}
+
+.admin-worklog-memo-item p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.admin-worklog-memo-meta {
+  margin-top: 4px !important;
+  display: flex;
+  gap: 8px;
+  font-size: 11px !important;
+  color: var(--muted);
+}
+
+.admin-worklog-memo-write {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-worklog-empty {
+  margin: 0;
+  padding: 14px 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .admin-mobile-menu-toggle,
 .admin-mobile-drawer-backdrop {
   display: none;
@@ -418,6 +594,26 @@
 
   .admin-layout {
     grid-template-columns: 1fr;
+  }
+
+  .admin-worklog-create-line,
+  .admin-worklog-filter-line {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-worklog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-worklog-list {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    max-height: 260px;
+  }
+
+  .admin-worklog-detail-line {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .admin-form-grid {

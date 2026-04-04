@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>work_List_withgpt</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #111111;
+        --muted: #666666;
+        --line: #dddddd;
+        --panel: #fafafa;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f0f10;
+          --fg: #efefef;
+          --muted: #b4b4b4;
+          --line: #2f2f33;
+          --panel: #17171a;
+        }
+      }
+
+      body[data-theme="light"] {
+        --bg: #ffffff;
+        --fg: #111111;
+        --muted: #666666;
+        --line: #dddddd;
+        --panel: #fafafa;
+      }
+
+      body[data-theme="dark"] {
+        --bg: #0f0f10;
+        --fg: #efefef;
+        --muted: #b4b4b4;
+        --line: #2f2f33;
+        --panel: #17171a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+      }
+
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: var(--bg);
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+
+      .search {
+        width: 100%;
+        height: 36px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--fg);
+        border-radius: 8px;
+        padding: 0 10px;
+        font-size: 14px;
+      }
+
+      .theme-btn {
+        height: 36px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--fg);
+        border-radius: 8px;
+        padding: 0 10px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 270px 1fr;
+        min-height: calc(100vh - 58px);
+      }
+
+      .menu {
+        border-right: 1px solid var(--line);
+        padding: 12px;
+        background: var(--panel);
+      }
+
+      .menu h1 {
+        margin: 0 0 10px;
+        font-size: 15px;
+      }
+
+      .menu-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .menu-btn {
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--fg);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1.35;
+        cursor: pointer;
+      }
+
+      .menu-btn.active {
+        background: var(--bg);
+        font-weight: 600;
+      }
+
+      .content {
+        padding: 14px;
+      }
+
+      .panel {
+        display: none;
+      }
+
+      .panel.active {
+        display: block;
+      }
+
+      .panel h2 {
+        margin: 0 0 6px;
+        font-size: 18px;
+      }
+
+      .meta {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .section-title {
+        margin: 14px 0 6px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      li {
+        margin: 4px 0;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 1px 5px;
+      }
+
+      .empty {
+        color: var(--muted);
+        font-size: 14px;
+        padding: 12px 0;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .menu {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <input id="searchInput" class="search" type="search" placeholder="검색어: 커밋명, 해시, 작업내용" />
+      <button id="themeBtn" class="theme-btn" type="button">테마</button>
+    </div>
+
+    <div class="layout">
+      <aside class="menu">
+        <h1>작업 목록 (오늘)</h1>
+        <ul id="menuList" class="menu-list">
+          <li><button class="menu-btn active" data-target="overview">개요 / 연동 방식</button></li>
+          <li><button class="menu-btn" data-target="c1e74b8e">1e74b8e - 이미지 CDN 준비</button></li>
+          <li><button class="menu-btn" data-target="c13d4597">13d4597 - 커뮤니티 캐시 실무형</button></li>
+          <li><button class="menu-btn" data-target="cb02b976">b02b976 - 본문 태블릿 레이아웃 1차</button></li>
+          <li><button class="menu-btn" data-target="c56833d7">56833d7 - 본문 태블릿/최종 이미지 600</button></li>
+          <li><button class="menu-btn" data-target="c557dbc6">557dbc6 - 알림 드로어 체감개선</button></li>
+        </ul>
+        <p id="emptyText" class="empty" style="display: none;">검색 결과가 없습니다.</p>
+      </aside>
+
+      <main class="content">
+        <section id="overview" class="panel active" data-keywords="개요 모바일 다크모드 검색어 기능 구조">
+          <h2>개요 / 연동 방식</h2>
+          <p class="meta">문서: <code>/my/work_List_withgpt.html</code></p>
+          <p class="section-title">모바일 연동 방식</p>
+          <ul>
+            <li>기본은 좌측 메뉴 + 우측 본문 2단 구조입니다.</li>
+            <li>폭이 좁아지면(<code>max-width: 900px</code>) 상하 1단 구조로 자동 전환됩니다.</li>
+          </ul>
+          <p class="section-title">다크모드 연동</p>
+          <ul>
+            <li><code>prefers-color-scheme</code>를 기본 반영합니다.</li>
+            <li>우측 상단 <code>테마</code> 버튼으로 수동 전환도 가능합니다.</li>
+          </ul>
+          <p class="section-title">검색어 기능</p>
+          <ul>
+            <li>좌측 메뉴 항목(커밋명/해시/내용 키워드)을 실시간 필터링합니다.</li>
+            <li>검색 후 항목 선택 시 우측에 해당 작업 결과 보고가 표시됩니다.</li>
+          </ul>
+        </section>
+
+        <section id="c1e74b8e" class="panel" data-keywords="1e74b8e 이미지 CDN cache-control 버저닝 업로드 속도">
+          <h2>1e74b8e - 이미지 CDN 준비</h2>
+          <p class="meta">커밋: <code>perf(images): add cache-control and versioned upload paths for CDN</code></p>
+          <p class="section-title">직전 결과 보고 요약</p>
+          <ul>
+            <li>업로드 API에 <code>cacheControl: 31536000</code> 적용, CDN 캐시 효율 확보.</li>
+            <li>파일명 버저닝으로 이미지 변경 시 캐시 충돌 없이 즉시 반영되게 구성.</li>
+            <li>빌드/타입 검증 통과 후 푸시 진행.</li>
+          </ul>
+        </section>
+
+        <section id="c13d4597" class="panel" data-keywords="13d4597 리스트 캐시 5분 포커스 background revalidate swr">
+          <h2>13d4597 - 커뮤니티 캐시 실무형</h2>
+          <p class="meta">커밋: <code>perf(community): adopt 5m cache TTL with focus-based background revalidation</code></p>
+          <p class="section-title">직전 결과 보고 요약</p>
+          <ul>
+            <li>리스트 캐시 TTL을 5분으로 통일해 복귀 체감 속도 개선.</li>
+            <li>캐시 즉시 표시 후 <code>focus/visibilitychange</code> 시 백그라운드 최신화 추가.</li>
+            <li>쿨다운/덮어쓰기 보호로 불필요한 재요청과 UI 충돌 방지.</li>
+          </ul>
+        </section>
+
+        <section id="cb02b976" class="panel" data-keywords="b02b976 본문 태블릿 레이아웃 폭 조정 1차">
+          <h2>b02b976 - 본문 태블릿 레이아웃 1차</h2>
+          <p class="meta">커밋: <code>fix(content): improve tablet layout width for user content page</code></p>
+          <p class="section-title">직전 결과 보고 요약</p>
+          <ul>
+            <li>본문 페이지에 전용 클래스를 붙여 태블릿 폭으로 확장되도록 1차 적용.</li>
+            <li>이미지 480 고정폭 해제 등 기본 정리 포함.</li>
+            <li>이후 실제 기기 확인에서 추가 보정 필요점이 발견되어 후속 커밋 반영.</li>
+          </ul>
+        </section>
+
+        <section id="c56833d7" class="panel" data-keywords="56833d7 태블릿 수정 최종 이미지 1024 표시폭 600">
+          <h2>56833d7 - 본문 태블릿/최종 이미지 600</h2>
+          <p class="meta">커밋: <code>fix(content): tablet layout and final image display width 600</code></p>
+          <p class="section-title">직전 결과 보고 요약</p>
+          <ul>
+            <li>태블릿에서 본문/댓글이 모바일 폭으로 보이던 충돌 CSS를 정리.</li>
+            <li>최종 로드(1024) 이미지는 표시 폭만 <code>600px</code>으로 제한.</li>
+            <li>중간 단계(480) → 최종 단계(1024 표시폭 600) 전환 방식 유지.</li>
+          </ul>
+        </section>
+
+        <section id="c557dbc6" class="panel" data-keywords="557dbc6 알림드로어 캐시 first swr 빠른열림 quota exceeded">
+          <h2>557dbc6 - 알림 드로어 체감개선</h2>
+          <p class="meta">커밋: <code>perf(notifications): instant drawer via cache-first swr with quota recovery</code></p>
+          <p class="section-title">직전 결과 보고 요약</p>
+          <ul>
+            <li>첫 클릭 시 캐시 우선 렌더 + 백그라운드 최신화(SWR)로 로딩 공백 축소.</li>
+            <li>닫힘 상태 터치 차단/애니메이션 지연 이슈를 줄여 빠른 체감 확보.</li>
+            <li><code>QuotaExceededError</code> 발생 시 오래된 캐시 정리 후 재시도 로직 추가.</li>
+          </ul>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        const menuButtons = Array.from(document.querySelectorAll(".menu-btn"));
+        const panels = Array.from(document.querySelectorAll(".panel"));
+        const searchInput = document.getElementById("searchInput");
+        const emptyText = document.getElementById("emptyText");
+        const themeBtn = document.getElementById("themeBtn");
+
+        function activate(targetId) {
+          menuButtons.forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.target === targetId);
+          });
+          panels.forEach((panel) => {
+            panel.classList.toggle("active", panel.id === targetId);
+          });
+        }
+
+        menuButtons.forEach((btn) => {
+          btn.addEventListener("click", function () {
+            activate(btn.dataset.target);
+          });
+        });
+
+        searchInput.addEventListener("input", function () {
+          const q = searchInput.value.trim().toLowerCase();
+          let visibleCount = 0;
+
+          menuButtons.forEach((btn) => {
+            const targetId = btn.dataset.target;
+            const panel = document.getElementById(targetId);
+            const text = (btn.textContent + " " + (panel ? panel.dataset.keywords || "" : "")).toLowerCase();
+            const visible = !q || text.indexOf(q) >= 0;
+            btn.parentElement.style.display = visible ? "" : "none";
+            if (visible) visibleCount += 1;
+          });
+
+          emptyText.style.display = visibleCount === 0 ? "" : "none";
+
+          const activeBtn = menuButtons.find((btn) => btn.classList.contains("active") && btn.parentElement.style.display !== "none");
+          if (!activeBtn && visibleCount > 0) {
+            const firstVisible = menuButtons.find((btn) => btn.parentElement.style.display !== "none");
+            if (firstVisible) activate(firstVisible.dataset.target);
+          }
+        });
+
+        const savedTheme = localStorage.getItem("work_list_theme");
+        if (savedTheme === "light" || savedTheme === "dark") {
+          document.body.setAttribute("data-theme", savedTheme);
+        }
+
+        themeBtn.addEventListener("click", function () {
+          const current = document.body.getAttribute("data-theme");
+          const next = current === "dark" ? "light" : "dark";
+          document.body.setAttribute("data-theme", next);
+          localStorage.setItem("work_list_theme", next);
+        });
+      })();
+    </script>
+  </body>
+</html>

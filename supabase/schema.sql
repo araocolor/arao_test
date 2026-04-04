@@ -210,3 +210,34 @@ create table if not exists gallery_comment_likes (
 
 alter table profiles add column if not exists icon_image text;
 alter table profiles alter column icon_image type text using icon_image::text;
+
+-- 작업 로그/보고서 (관리자 전용 운영 기록)
+create table if not exists work_logs (
+  id                    uuid primary key default gen_random_uuid(),
+  commit_hash           text not null unique,
+  title                 text not null,
+  summary               text not null default '',
+  details               text,
+  status                text not null default 'done' check (status in ('draft', 'done', 'rollback')),
+  report_url            text,
+  deployed_at           timestamptz,
+  author_profile_id     uuid references profiles(id) on delete set null,
+  author_name_snapshot  text not null default '',
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+create index if not exists work_logs_created_at_idx on work_logs (created_at desc);
+create index if not exists work_logs_status_created_at_idx on work_logs (status, created_at desc);
+create index if not exists work_logs_author_created_at_idx on work_logs (author_profile_id, created_at desc);
+
+create table if not exists work_log_memos (
+  id                       uuid primary key default gen_random_uuid(),
+  work_log_id              uuid not null references work_logs(id) on delete cascade,
+  memo                     text not null,
+  created_by_profile_id    uuid references profiles(id) on delete set null,
+  created_by_name_snapshot text not null default '',
+  created_at               timestamptz not null default now()
+);
+
+create index if not exists work_log_memos_work_log_created_idx on work_log_memos (work_log_id, created_at desc);

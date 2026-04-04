@@ -7,6 +7,7 @@ import type { LandingContent } from "@/lib/landing-content";
 import { AdminContentManager } from "@/components/admin-content-manager";
 import { AdminPricingManager } from "@/components/admin-pricing-manager";
 import { AdminConsultingManager } from "@/components/admin-consulting-manager";
+import { AdminWorkLogsManager } from "@/components/admin-work-logs-manager";
 import { AdminSignOut } from "@/components/admin-sign-out";
 
 const adminSections = [
@@ -37,6 +38,13 @@ const adminSections = [
     eyebrow: "Consulting",
     title: "상담 및 문의 관리",
     description: "사용자가 제출한 1:1 상담과 일반 문의를 확인하고 답변을 관리합니다.",
+  },
+  {
+    id: "worklogs",
+    menu: "작업이력",
+    eyebrow: "Work Logs",
+    title: "작업 이력 및 메모",
+    description: "커밋별 작업 결과를 정리하고, 관리자 메모를 누적 기록합니다.",
   },
   {
     id: "members",
@@ -164,6 +172,15 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
                   로그아웃
                 </button>
               </SignOutButton>
+              <Link
+                className="admin-menu-link"
+                href="/my/work_List_withgpt.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => closeMenu()}
+              >
+                커밋리스트
+              </Link>
             </div>
           </aside>
         </div>
@@ -192,6 +209,14 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
           ))}
         </div>
         <div className="admin-sidebar-bottom">
+          <Link
+            className="admin-menu-link"
+            href="/my/work_List_withgpt.html"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            커밋리스트
+          </Link>
           <AdminSignOut />
         </div>
       </aside>
@@ -211,6 +236,8 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
             <AdminPricingManager key="pricing" initialContent={landingContent} />
           ) : activeSection.id === "consulting" ? (
             <AdminConsultingManager key="consulting" />
+          ) : activeSection.id === "worklogs" ? (
+            <AdminWorkLogsManager key="worklogs" />
           ) : (
             <div className="admin-checklist">
               {activeSection.items?.map((item) => (
