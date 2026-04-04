@@ -58,6 +58,8 @@ function ImageViewer({
   const [slideDuration, setSlideDuration] = useState(0.35);
   const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRefs = useRef<Record<number, HTMLImageElement | null>>({});
+  const [controlPos, setControlPos] = useState({ top: 12, left: 12, right: 12 });
 
   // 줌 상태
   const [scale, setScale] = useState(1);
@@ -72,6 +74,30 @@ function ImageViewer({
   const hasNext = current < total - 1;
   const isZoomed = scale > 1.05;
 
+  const placeControls = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    if (window.innerWidth > window.innerHeight) {
+      setControlPos((prev) => (prev.top === 12 && prev.left === 12 && prev.right === 12 ? prev : { top: 12, left: 12, right: 12 }));
+      return;
+    }
+
+    const target = imageRefs.current[current];
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    if (rect.right <= 0 || rect.left >= window.innerWidth || rect.bottom <= 0 || rect.top >= window.innerHeight) return;
+
+    const maxInset = Math.max(8, window.innerWidth - 48);
+
+    const next = {
+      top: Math.max(8, Math.round(rect.top - 48)),
+      left: Math.min(maxInset, Math.max(8, Math.round(rect.left))),
+      right: Math.min(maxInset, Math.max(8, Math.round(window.innerWidth - rect.right))),
+    };
+    setControlPos((prev) => (prev.top === next.top && prev.left === next.left && prev.right === next.right ? prev : next));
+  }, [current]);
+
   // 이미지 전환 시 줌 리셋
   useEffect(() => {
     setScale(1);
@@ -83,6 +109,17 @@ function ImageViewer({
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
+
+  useEffect(() => {
+    placeControls();
+    const onResize = () => placeControls();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [placeControls]);
+
+  useEffect(() => {
+    placeControls();
+  }, [current, placeControls]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -227,6 +264,7 @@ function ImageViewer({
       next.add(index);
       return next;
     });
+    if (index === current) requestAnimationFrame(() => placeControls());
   }
 
   const trackStyle: React.CSSProperties = {
@@ -252,6 +290,7 @@ function ImageViewer({
         type="button"
         className="user-content-viewer-download"
         aria-label="다운로드"
+        style={{ top: `${controlPos.top}px`, left: `${controlPos.left}px` }}
         onClick={(e) => {
           e.stopPropagation();
           const url = images[current];
@@ -285,6 +324,7 @@ function ImageViewer({
       <button
         type="button"
         className="user-content-viewer-close"
+        style={{ top: `${controlPos.top}px`, right: `${controlPos.right}px` }}
         onClick={onClose}
         aria-label="닫기"
       >
@@ -308,6 +348,9 @@ function ImageViewer({
               <>
                 {!loadedSet.has(i) && <div className="user-content-viewer-spinner" />}
                 <img
+                  ref={(node) => {
+                    imageRefs.current[i] = node;
+                  }}
                   src={src}
                   alt=""
                   className="user-content-viewer-img"
