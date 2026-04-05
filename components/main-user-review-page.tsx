@@ -211,10 +211,12 @@ export function MainUserReviewPage() {
   const [searchSheetResults, setSearchSheetResults] = useState<UserReviewItem[]>([]);
   const [searchSheetTotal, setSearchSheetTotal] = useState(0);
   const [searchSheetKeyword, setSearchSheetKeyword] = useState("");
+  const [flashItemId, setFlashItemId] = useState<string | null>(null);
   const [activeContentId, setActiveContentId] = useState<string | null>(null);
   const activeContentIdRef = useRef<string | null>(null);
   const listScrollYRef = useRef(0);
   const backgroundApplyResumeAtRef = useRef(0);
+  const flashClearTimerRef = useRef<number | null>(null);
   const searchSheetDraggingRef = useRef(false);
   const searchSheetDragStartYRef = useRef(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -277,6 +279,14 @@ export function MainUserReviewPage() {
     itemsRef.current = items;
     totalRef.current = total;
   }, [items, total]);
+
+  useEffect(() => {
+    return () => {
+      if (flashClearTimerRef.current !== null) {
+        window.clearTimeout(flashClearTimerRef.current);
+      }
+    };
+  }, []);
 
   // 마운트 후 캐시 데이터로 즉시 채우기 + new 파라미터 처리
   useEffect(() => {
@@ -758,10 +768,27 @@ export function MainUserReviewPage() {
     setActiveContentId(id);
   };
 
+  function triggerReturnFlash(id: string) {
+    if (flashClearTimerRef.current !== null) {
+      window.clearTimeout(flashClearTimerRef.current);
+      flashClearTimerRef.current = null;
+    }
+    setFlashItemId(null);
+    window.requestAnimationFrame(() => {
+      setFlashItemId(id);
+      flashClearTimerRef.current = window.setTimeout(() => {
+        setFlashItemId((prev) => (prev === id ? null : prev));
+        flashClearTimerRef.current = null;
+      }, 2000);
+    });
+  }
+
   function closeActiveContent() {
+    const closingId = activeContentIdRef.current;
     const targetY = listScrollYRef.current;
     backgroundApplyResumeAtRef.current = Date.now() + 1200;
     setActiveContentId(null);
+    if (closingId) triggerReturnFlash(closingId);
     window.requestAnimationFrame(() => {
       window.scrollTo(0, targetY);
       window.requestAnimationFrame(() => {
@@ -949,7 +976,7 @@ export function MainUserReviewPage() {
               <button
                 key={item.id}
                 type="button"
-                className={`user-review-item list${readIds.has(item.id) ? " read" : ""}${item.isAuthor ? " mine" : ""}`}
+                className={`user-review-item list${readIds.has(item.id) ? " read" : ""}${item.isAuthor ? " mine" : ""}${item.id === flashItemId ? " return-flash" : ""}`}
                 onClick={() => openReview(item.id)}
               >
                 <div className="user-review-item-main">
