@@ -13,8 +13,6 @@ const UserReviewAlbum = dynamic(() => import("./user-review-album").then((mod) =
   loading: () => <div className="user-review-album" />,
 });
 
-const UserContentPage = dynamic(() => import("./user-content-page").then((mod) => ({ default: mod.UserContentPage })));
-
 type ViewMode = "list" | "feed" | "album";
 type SortMode = "latest" | "views" | "likes";
 
@@ -84,6 +82,8 @@ function excerpt(value: string, maxLength: number) {
 
 const LIST_CACHE_KEY = "user-review-list-cache";
 const SCROLL_KEY = "user-review-scroll";
+const LIST_STATE_KEY = "user-review-list-state-v1";
+const LIST_RETURN_FLAG_KEY = "user-review-return-once";
 const CACHE_TTL = 300000; // 5분
 const BACKGROUND_REVALIDATE_COOLDOWN = 60000; // 1분
 const TOP_REFRESH_COOLDOWN = 30000; // 30초
@@ -211,12 +211,10 @@ export function MainUserReviewPage() {
   const [searchSheetResults, setSearchSheetResults] = useState<UserReviewItem[]>([]);
   const [searchSheetTotal, setSearchSheetTotal] = useState(0);
   const [searchSheetKeyword, setSearchSheetKeyword] = useState("");
-  const [flashItemId, setFlashItemId] = useState<string | null>(null);
-  const [activeContentId, setActiveContentId] = useState<string | null>(null);
-  const activeContentIdRef = useRef<string | null>(null);
-  const listScrollYRef = useRef(0);
+  const [isRouteClosing, setIsRouteClosing] = useState(false);
   const backgroundApplyResumeAtRef = useRef(0);
-  const flashClearTimerRef = useRef<number | null>(null);
+  const routeCloseTimerRef = useRef<number | null>(null);
+  const didRestoreScrollRef = useRef(false);
   const searchSheetDraggingRef = useRef(false);
   const searchSheetDragStartYRef = useRef(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -235,33 +233,6 @@ export function MainUserReviewPage() {
   const totalRef = useRef(0);
   const limit = 20;
 
-  const handleReviewCountsChange = useCallback(
-    (next: { reviewId: string; likeCount?: number; commentCount?: number }) => {
-      setItems((prev) => {
-        let changed = false;
-        const patched = prev.map((item) => {
-          if (item.id !== next.reviewId) return item;
-          const nextLikeCount =
-            typeof next.likeCount === "number" && !Number.isNaN(next.likeCount)
-              ? Math.max(Math.trunc(next.likeCount), 0)
-              : item.likeCount;
-          const nextCommentCount =
-            typeof next.commentCount === "number" && !Number.isNaN(next.commentCount)
-              ? Math.max(Math.trunc(next.commentCount), 0)
-              : item.commentCount;
-
-          if (nextLikeCount === item.likeCount && nextCommentCount === item.commentCount) {
-            return item;
-          }
-          changed = true;
-          return { ...item, likeCount: nextLikeCount, commentCount: nextCommentCount };
-        });
-        return changed ? patched : prev;
-      });
-    },
-    []
-  );
-
   useEffect(() => {
     currentListStateRef.current = {
       board,
@@ -272,18 +243,14 @@ export function MainUserReviewPage() {
   }, [board, page, sortMode, query]);
 
   useEffect(() => {
-    activeContentIdRef.current = activeContentId;
-  }, [activeContentId]);
-
-  useEffect(() => {
     itemsRef.current = items;
     totalRef.current = total;
   }, [items, total]);
 
   useEffect(() => {
     return () => {
-      if (flashClearTimerRef.current !== null) {
-        window.clearTimeout(flashClearTimerRef.current);
+      if (routeCloseTimerRef.current !== null) {
+        window.clearTimeout(routeCloseTimerRef.current);
       }
     };
   }, []);
@@ -291,15 +258,82 @@ export function MainUserReviewPage() {
   // 마운트 후 캐시 데이터로 즉시 채우기 + new 파라미터 처리
   useEffect(() => {
     const boardParam = searchParams.get("board");
+    const restoreFlag = sessionStorage.getItem(LIST_RETURN_FLAG_KEY) === "1";
+    const restoredRaw = restoreFlag ? sessionStorage.getItem(LIST_STATE_KEY) : null;
+    let restoredState: {
+      board?: BoardType;
+      page?: number;
+      sortMode?: SortMode;
+      query?: string;
+      viewMode?: ViewMode;
+    } | null = null;
+    if (restoredRaw) {
+      try {
+        const parsed = JSON.parse(restoredRaw) as {
+          board?: BoardType;
+          page?: number;
+          sortMode?: SortMode;
+          query?: string;
+          viewMode?: ViewMode;
+          ts?: number;
+        };
+        const isFresh = Number.isFinite(parsed.ts) ? Date.now() - Number(parsed.ts) < CACHE_TTL : true;
+        if (isFresh) {
+          restoredState = {
+            board: parsed.board,
+            page: Number.isFinite(parsed.page) ? Math.max(1, Math.trunc(parsed.page as number)) : 1,
+            sortMode: parsed.sortMode,
+            query: typeof parsed.query === "string" ? parsed.query : "",
+            viewMode: parsed.viewMode,
+          };
+        }
+      } catch {}
+    }
+    if (restoreFlag) {
+      sessionStorage.removeItem(LIST_RETURN_FLAG_KEY);
+    }
+
     const initialBoard =
-      boardParam && BOARD_OPTIONS.some((o) => o.value === boardParam)
+      restoredState?.board && BOARD_OPTIONS.some((o) => o.value === restoredState.board)
+        ? restoredState.board
+        : boardParam && BOARD_OPTIONS.some((o) => o.value === boardParam)
         ? (boardParam as BoardType)
         : "review";
+    const initialPage =
+      restoredState?.page && Number.isFinite(restoredState.page) ? Math.max(1, Math.trunc(restoredState.page)) : 1;
+    const initialSort =
+      restoredState?.sortMode && SORT_OPTIONS.some((opt) => opt.value === restoredState.sortMode)
+        ? restoredState.sortMode
+        : "latest";
+    const initialQuery = restoredState?.query ?? "";
+    const initialViewMode =
+      restoredState?.viewMode && VIEW_OPTIONS.some((opt) => opt.value === restoredState.viewMode)
+        ? restoredState.viewMode
+        : "list";
 
-    const cached = getListCache(initialBoard);
-    if (cached) {
-      setItems(cached.items);
-      setTotal(cached.total);
+    setBoard(initialBoard);
+    setPage(initialPage);
+    setSortMode(initialSort);
+    setQuery(initialQuery);
+    setQueryInput(initialQuery);
+    setViewMode(initialViewMode);
+
+    const pageCached = getPageCache({
+      board: initialBoard,
+      page: initialPage,
+      limit,
+      sort: initialSort,
+      q: initialQuery.trim(),
+    });
+    if (pageCached) {
+      setItems(pageCached.items);
+      setTotal(pageCached.total);
+    } else {
+      const cached = getListCache(initialBoard);
+      if (cached) {
+        setItems(cached.items);
+        setTotal(cached.total);
+      }
     }
     try {
       const stored = localStorage.getItem("user-review-read-ids");
@@ -307,7 +341,6 @@ export function MainUserReviewPage() {
     } catch {}
 
     const newId = searchParams.get("new");
-    setBoard(initialBoard);
     if (newId) {
       setNewItemId(newId);
       router.replace(initialBoard === "review" ? "/user_review" : `/user_review?board=${initialBoard}`);
@@ -333,18 +366,6 @@ export function MainUserReviewPage() {
     const timer = window.setTimeout(() => searchInputRef.current?.focus(), 120);
     return () => window.clearTimeout(timer);
   }, [searchSheetOpen]);
-
-  useEffect(() => {
-    if (!activeContentId) return;
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevHtmlOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevHtmlOverflow;
-    };
-  }, [activeContentId]);
 
   useEffect(() => {
     if (!searchSheetOpen) return;
@@ -463,16 +484,18 @@ export function MainUserReviewPage() {
     return () => window.removeEventListener("mousedown", onClickOutside);
   }, [boardDropdownOpen]);
 
-  // 스크롤 위치 복원
+  // 페이지 이동 복귀 시 스크롤 위치 복원
   useEffect(() => {
+    if (didRestoreScrollRef.current) return;
     const saved = sessionStorage.getItem(SCROLL_KEY);
     if (saved && items.length > 0) {
+      didRestoreScrollRef.current = true;
       requestAnimationFrame(() => {
         window.scrollTo(0, Number(saved));
         sessionStorage.removeItem(SCROLL_KEY);
       });
     }
-  }, []);
+  }, [items.length]);
 
   // 스크롤 위치 저장 (글 클릭 시)
   const saveScroll = () => {
@@ -508,7 +531,6 @@ export function MainUserReviewPage() {
         current.page === 1 &&
         current.sortMode === "latest" &&
         !current.query &&
-        !activeContentIdRef.current &&
         Date.now() >= backgroundApplyResumeAtRef.current
       ) {
         setItems(nextItems);
@@ -555,7 +577,6 @@ export function MainUserReviewPage() {
         currentState.page !== 1 ||
         currentState.sortMode !== "latest" ||
         currentState.query ||
-        activeContentIdRef.current ||
         Date.now() < backgroundApplyResumeAtRef.current
       ) {
         return;
@@ -748,14 +769,28 @@ export function MainUserReviewPage() {
     VIEW_OPTIONS.find((opt) => opt.value === viewMode)?.label ?? "목록형";
 
   const openReview = (id: string) => {
+    if (isRouteClosing) return;
     if (!isSignedIn) {
       router.push("/sign-in");
       return;
     }
     if (id === newItemId) setNewItemId(null);
     backgroundApplyResumeAtRef.current = Number.POSITIVE_INFINITY;
-    listScrollYRef.current = window.scrollY;
     saveScroll();
+    try {
+      sessionStorage.setItem(
+        LIST_STATE_KEY,
+        JSON.stringify({
+          board,
+          page,
+          sortMode,
+          query: query.trim(),
+          viewMode,
+          ts: Date.now(),
+        })
+      );
+      sessionStorage.setItem(LIST_RETURN_FLAG_KEY, "1");
+    } catch {}
     setReadIds((prev) => {
       const next = new Set(prev);
       next.add(id);
@@ -765,37 +800,12 @@ export function MainUserReviewPage() {
       return next;
     });
     void fetch(`/api/main/user-review/${id}/views`, { method: "POST" }).catch(() => {});
-    setActiveContentId(id);
+    setIsRouteClosing(true);
+    routeCloseTimerRef.current = window.setTimeout(() => {
+      const targetPath = `/user_content/${id}?board=${encodeURIComponent(board)}`;
+      router.push(targetPath, { scroll: false });
+    }, 220);
   };
-
-  function triggerReturnFlash(id: string) {
-    if (flashClearTimerRef.current !== null) {
-      window.clearTimeout(flashClearTimerRef.current);
-      flashClearTimerRef.current = null;
-    }
-    setFlashItemId(null);
-    window.requestAnimationFrame(() => {
-      setFlashItemId(id);
-      flashClearTimerRef.current = window.setTimeout(() => {
-        setFlashItemId((prev) => (prev === id ? null : prev));
-        flashClearTimerRef.current = null;
-      }, 2000);
-    });
-  }
-
-  function closeActiveContent() {
-    const closingId = activeContentIdRef.current;
-    const targetY = listScrollYRef.current;
-    backgroundApplyResumeAtRef.current = Date.now() + 1200;
-    setActiveContentId(null);
-    if (closingId) triggerReturnFlash(closingId);
-    window.requestAnimationFrame(() => {
-      window.scrollTo(0, targetY);
-      window.requestAnimationFrame(() => {
-        window.scrollTo(0, targetY);
-      });
-    });
-  }
 
   function closeSearchSheet() {
     if (!searchSheetOpen || searchSheetClosing) return;
@@ -872,7 +882,7 @@ export function MainUserReviewPage() {
   };
 
   return (
-    <section className="user-review-page">
+    <section className={`user-review-page${isRouteClosing ? " is-route-closing" : ""}`}>
       <div className="user-review-top-row">
         <div className="user-review-dropdown" ref={boardDropdownRef}>
           <button
@@ -973,12 +983,12 @@ export function MainUserReviewPage() {
           {items.map((item) => {
             const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
             return (
-              <button
-                key={item.id}
-                type="button"
-                className={`user-review-item list${readIds.has(item.id) ? " read" : ""}${item.isAuthor ? " mine" : ""}${item.id === flashItemId ? " return-flash" : ""}`}
-                onClick={() => openReview(item.id)}
-              >
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`user-review-item list${readIds.has(item.id) ? " read" : ""}${item.isAuthor ? " mine" : ""}`}
+                  onClick={() => openReview(item.id)}
+                >
                 <div className="user-review-item-main">
                   <p className="user-review-item-title">
                     {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
@@ -1189,17 +1199,6 @@ export function MainUserReviewPage() {
         </div>
       )}
 
-      {activeContentId && (
-        <div className="user-review-content-overlay" role="dialog" aria-modal="true">
-          <div className="user-review-content-overlay-panel">
-            <UserContentPage
-              id={activeContentId}
-              onRequestClose={closeActiveContent}
-              onReviewCountsChange={handleReviewCountsChange}
-            />
-          </div>
-        </div>
-      )}
     </section>
   );
 }

@@ -4,6 +4,28 @@
   gap: 12px;
 }
 
+.user-review-page.is-route-closing {
+  pointer-events: none;
+  animation: user-review-route-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes user-review-route-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-10%);
+    opacity: 0.96;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-review-page.is-route-closing {
+    animation: none;
+  }
+}
+
 .user-review-top-row {
   display: flex;
   align-items: center;
