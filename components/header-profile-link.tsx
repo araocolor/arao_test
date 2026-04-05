@@ -105,6 +105,7 @@ export function HeaderProfileLink() {
   const { isSignedIn, user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const realtimeUnreadCount = useNotificationCount(user?.id);
   useAdminPendingCount(isSignedIn ?? false);
   const notificationCacheKey = getNotificationCacheKey(user?.id);
   const badgeCount = useHeaderSessionStore((state) => state.badgeCount);
@@ -123,7 +124,6 @@ export function HeaderProfileLink() {
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
-  const realtimeUnreadCount = useNotificationCount(user?.id, notificationEnabled);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -142,7 +142,7 @@ export function HeaderProfileLink() {
       : nextItems.filter((item) => !item.is_read).length;
     const nextNotificationEnabled = payload.notificationEnabled ?? true;
     setItems(nextItems);
-    setHeaderBadgeCount(nextNotificationEnabled ? unread : 0);
+    setHeaderBadgeCount(unread);
     if (payload.iconImage !== undefined) {
       const img = payload.iconImage ?? null;
       setHeaderAvatar(img);
@@ -177,11 +177,7 @@ export function HeaderProfileLink() {
   }
 
   // 알림 목록 조회 (백그라운드)
-  async function fetchNotificationItems(options?: { showLoading?: boolean; force?: boolean }) {
-    if (!options?.force && !notificationEnabled) {
-      setIsLoadingNotifications(false);
-      return;
-    }
+  async function fetchNotificationItems(options?: { showLoading?: boolean }) {
     const showLoading = options?.showLoading ?? items.length === 0;
     if (showLoading) setIsLoadingNotifications(true);
     try {
@@ -317,7 +313,7 @@ export function HeaderProfileLink() {
     }
     setDrawerMounted(true);
     setDrawerOpen(true);
-    void fetchNotificationItems({ showLoading: !cached, force: true });
+    void fetchNotificationItems({ showLoading: !cached });
   }, [isSignedIn, pathname, notificationCacheKey]);
 
   // 사이트 체류 중 2분마다 리스트/갤러리 캐시 백그라운드 갱신 (탭 visible일 때만)
@@ -332,18 +328,18 @@ export function HeaderProfileLink() {
 
   // 실시간 unread 카운트를 헤더 뱃지에 동기화
   useEffect(() => {
-    if (!isSignedIn || !notificationEnabled) return;
+    if (!isSignedIn) return;
     if (drawerOpen) return;
     if (badgeCount !== realtimeUnreadCount) {
       setHeaderBadgeCount(realtimeUnreadCount);
     }
-  }, [isSignedIn, notificationEnabled, realtimeUnreadCount, drawerOpen, badgeCount, setHeaderBadgeCount]);
+  }, [isSignedIn, realtimeUnreadCount, drawerOpen, badgeCount, setHeaderBadgeCount]);
 
   // 초기 로드: 아바타 먼저 → 알림 / 로그아웃 시 캐시 제거
   useEffect(() => {
     if (isSignedIn) {
       void fetchAvatar();
-      void fetchNotificationItems({ showLoading: false, force: true });
+      void fetchNotificationItems({ showLoading: false });
     } else if (isSignedIn === false) {
       clearActiveHeaderSession();
       setItems([]);
@@ -369,25 +365,12 @@ export function HeaderProfileLink() {
       const detail = (e as CustomEvent<{ enabled: boolean }>).detail;
       if (typeof detail?.enabled === "boolean") {
         setNotificationEnabled(detail.enabled);
-        if (detail.enabled) {
-          void fetchNotificationItems({ showLoading: false, force: true });
-        } else {
-          setItems([]);
-          setHeaderBadgeCount(0);
-          writeNotificationCache(notificationCacheKey, {
-            unreadCount: 0,
-            items: [],
-            iconImage,
-            username,
-            email,
-            notificationEnabled: false,
-          });
-        }
+        void fetchNotificationItems({ showLoading: false });
       }
     }
     window.addEventListener("notification-setting-updated", handleNotificationSettingUpdated);
     return () => window.removeEventListener("notification-setting-updated", handleNotificationSettingUpdated);
-  }, [setHeaderBadgeCount, notificationCacheKey, iconImage, username, email]);
+  }, [notificationCacheKey]);
 
   // 드로어 오픈
   function openDrawer() {
@@ -402,9 +385,7 @@ export function HeaderProfileLink() {
     }
     setDrawerMounted(true);
     setDrawerOpen(true);
-    if (notificationEnabled) {
-      void fetchNotificationItems({ showLoading: !cached });
-    }
+    void fetchNotificationItems({ showLoading: !cached });
   }
 
   // 드로어 닫기
@@ -497,7 +478,6 @@ export function HeaderProfileLink() {
         <NotificationDrawer
           isOpen={drawerOpen}
           isMounted={drawerMounted}
-          notificationEnabled={notificationEnabled}
           items={items}
           isLoading={isLoadingNotifications}
           username={username}

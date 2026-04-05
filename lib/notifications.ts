@@ -80,10 +80,6 @@ export async function getNotificationsForProfile(
   profileId: string,
   profile: { username: string | null; password_hash: string | null; phone: string | null; notification_enabled?: boolean }
 ): Promise<{ items: NotificationItem[]; unreadCount: number }> {
-  if (profile.notification_enabled === false) {
-    return { items: [], unreadCount: 0 };
-  }
-
   const supabase = createSupabaseAdminClient();
   const items: NotificationItem[] = [];
   let unreadCount = 0;
@@ -299,21 +295,6 @@ export async function createNotification(
   senderIcon?: string | null
 ): Promise<void> {
   const supabase = createSupabaseAdminClient();
-
-  const { data: recipientProfile, error: recipientError } = await supabase
-    .from("profiles")
-    .select("notification_enabled")
-    .eq("id", profileId)
-    .maybeSingle();
-
-  if (recipientError) {
-    console.error("createNotification recipient check error:", recipientError);
-    return;
-  }
-
-  if (!recipientProfile || recipientProfile.notification_enabled === false) {
-    return;
-  }
 
   // 중복 체크 (source_id + type)
   if (sourceId) {

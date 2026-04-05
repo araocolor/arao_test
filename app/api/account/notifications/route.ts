@@ -24,17 +24,6 @@ export async function GET() {
       return NextResponse.json({ unreadCount: 0, items: [] });
     }
 
-    if (profile.notification_enabled === false) {
-      return NextResponse.json({
-        unreadCount: 0,
-        items: [],
-        iconImage: profile.icon_image ?? null,
-        username: profile.username ?? null,
-        email: profile.email ?? null,
-        notificationEnabled: false,
-      });
-    }
-
     // 모든 알림 소스 집계 (settings, consulting, notifications 테이블)
     const { items, unreadCount } = await getNotificationsForProfile(profile.id, {
       username: profile.username,
