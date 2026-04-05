@@ -8,6 +8,7 @@ import { type NotificationItem } from "@/lib/notifications";
 type NotificationDrawerProps = {
   isOpen: boolean;
   isMounted: boolean;
+  notificationEnabled: boolean;
   items: NotificationItem[];
   isLoading?: boolean;
   username: string | null;
@@ -131,6 +132,7 @@ const TYPE_ICON: Record<string, string> = {
 export function NotificationDrawer({
   isOpen,
   isMounted,
+  notificationEnabled,
   items,
   isLoading = false,
   username,
@@ -251,7 +253,9 @@ export function NotificationDrawer({
         </div>
 
         {/* 알림 목록 */}
-        {isLoading && items.length === 0 ? (
+        {!notificationEnabled ? (
+          <div className="notif-empty">알림 수신이 꺼져 있습니다. 설정에서 다시 켜주세요.</div>
+        ) : isLoading && items.length === 0 ? (
           <div className="notif-empty">불러오는 중...</div>
         ) : items.length === 0 ? (
           <div className="notif-empty">알림이 없습니다.</div>

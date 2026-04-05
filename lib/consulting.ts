@@ -228,6 +228,30 @@ export async function createReply(
 ) {
   const supabase = createSupabaseAdminClient();
 
+  const { data: inquiry, error: inquiryError } = await supabase
+    .from("inquiries")
+    .select("id, profile_id")
+    .eq("id", inquiryId)
+    .single();
+
+  if (inquiryError || !inquiry) {
+    console.error("createReply inquiry lookup error:", inquiryError);
+    return null;
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("notification_enabled")
+    .eq("id", inquiry.profile_id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("createReply profile lookup error:", profileError);
+    return null;
+  }
+
+  const shouldMarkUnread = profile?.notification_enabled !== false;
+
   const [replyRes] = await Promise.all([
     supabase
       .from("inquiry_replies")
@@ -241,7 +265,7 @@ export async function createReply(
     supabase
       .from("inquiries")
       .update({
-        has_unread_reply: true,
+        has_unread_reply: shouldMarkUnread,
         status: "in_progress",
         updated_at: new Date().toISOString(),
       })

@@ -163,6 +163,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "알림 설정 저장 중 오류가 발생했습니다." }, { status: 400 });
     }
 
+    if (!enabled) {
+      const [{ error: markReadError }, { error: clearInquiryUnreadError }] = await Promise.all([
+        supabase
+          .from("notifications")
+          .update({ is_read: true })
+          .eq("profile_id", profile.id)
+          .eq("is_read", false),
+        supabase
+          .from("inquiries")
+          .update({ has_unread_reply: false })
+          .eq("profile_id", profile.id)
+          .eq("has_unread_reply", true),
+      ]);
+
+      if (markReadError) {
+        console.error("notification off mark-read cleanup error:", markReadError);
+      }
+      if (clearInquiryUnreadError) {
+        console.error("notification off inquiry cleanup error:", clearInquiryUnreadError);
+      }
+    }
+
     return NextResponse.json({ notificationEnabled: enabled });
   }
 

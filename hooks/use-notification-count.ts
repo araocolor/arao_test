@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export function useNotificationCount(userId: string | null | undefined) {
+export function useNotificationCount(userId: string | null | undefined, enabled: boolean = true) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const normalizedUserId = typeof userId === "string" && userId.length > 0 ? userId : null;
-    if (!normalizedUserId) {
+    if (!normalizedUserId || !enabled) {
       setUnreadCount(0);
       return;
     }
@@ -56,7 +56,7 @@ export function useNotificationCount(userId: string | null | undefined) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("notification-refresh", handleRefreshNotification);
     };
-  }, [userId]);
+  }, [userId, enabled]);
 
   return unreadCount;
 }

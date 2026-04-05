@@ -105,7 +105,6 @@ export function HeaderProfileLink() {
   const { isSignedIn, user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const realtimeUnreadCount = useNotificationCount(user?.id);
   useAdminPendingCount(isSignedIn ?? false);
   const notificationCacheKey = getNotificationCacheKey(user?.id);
   const badgeCount = useHeaderSessionStore((state) => state.badgeCount);
@@ -124,6 +123,7 @@ export function HeaderProfileLink() {
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
+  const realtimeUnreadCount = useNotificationCount(user?.id, notificationEnabled);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -140,15 +140,16 @@ export function HeaderProfileLink() {
     const unread = Number.isFinite(payload.unreadCount)
       ? payload.unreadCount
       : nextItems.filter((item) => !item.is_read).length;
+    const nextNotificationEnabled = payload.notificationEnabled ?? true;
     setItems(nextItems);
-    setHeaderBadgeCount(unread);
+    setHeaderBadgeCount(nextNotificationEnabled ? unread : 0);
     if (payload.iconImage !== undefined) {
       const img = payload.iconImage ?? null;
       setHeaderAvatar(img);
     }
     if (payload.username !== undefined) setUsername(payload.username ?? null);
     if (payload.email !== undefined) setEmail(payload.email ?? null);
-    setNotificationEnabled(payload.notificationEnabled ?? true);
+    setNotificationEnabled(nextNotificationEnabled);
     if (options?.persist !== false) {
       writeNotificationCache(notificationCacheKey, {
         unreadCount: unread,
@@ -156,7 +157,7 @@ export function HeaderProfileLink() {
         iconImage: payload.iconImage,
         username: payload.username,
         email: payload.email,
-        notificationEnabled: payload.notificationEnabled,
+        notificationEnabled: nextNotificationEnabled,
       });
     }
   }
@@ -176,7 +177,11 @@ export function HeaderProfileLink() {
   }
 
   // 알림 목록 조회 (백그라운드)
-  async function fetchNotificationItems(options?: { showLoading?: boolean }) {
+  async function fetchNotificationItems(options?: { showLoading?: boolean; force?: boolean }) {
+    if (!options?.force && !notificationEnabled) {
+      setIsLoadingNotifications(false);
+      return;
+    }
     const showLoading = options?.showLoading ?? items.length === 0;
     if (showLoading) setIsLoadingNotifications(true);
     try {
@@ -312,7 +317,7 @@ export function HeaderProfileLink() {
     }
     setDrawerMounted(true);
     setDrawerOpen(true);
-    void fetchNotificationItems({ showLoading: !cached });
+    void fetchNotificationItems({ showLoading: !cached, force: true });
   }, [isSignedIn, pathname, notificationCacheKey]);
 
   // 사이트 체류 중 2분마다 리스트/갤러리 캐시 백그라운드 갱신 (탭 visible일 때만)
@@ -338,7 +343,7 @@ export function HeaderProfileLink() {
   useEffect(() => {
     if (isSignedIn) {
       void fetchAvatar();
-      void fetchNotificationItems({ showLoading: false });
+      void fetchNotificationItems({ showLoading: false, force: true });
     } else if (isSignedIn === false) {
       clearActiveHeaderSession();
       setItems([]);
@@ -365,15 +370,24 @@ export function HeaderProfileLink() {
       if (typeof detail?.enabled === "boolean") {
         setNotificationEnabled(detail.enabled);
         if (detail.enabled) {
-          setHeaderBadgeCount(badgeCount);
+          void fetchNotificationItems({ showLoading: false, force: true });
         } else {
+          setItems([]);
           setHeaderBadgeCount(0);
+          writeNotificationCache(notificationCacheKey, {
+            unreadCount: 0,
+            items: [],
+            iconImage,
+            username,
+            email,
+            notificationEnabled: false,
+          });
         }
       }
     }
     window.addEventListener("notification-setting-updated", handleNotificationSettingUpdated);
     return () => window.removeEventListener("notification-setting-updated", handleNotificationSettingUpdated);
-  }, [badgeCount, setHeaderBadgeCount]);
+  }, [setHeaderBadgeCount, notificationCacheKey, iconImage, username, email]);
 
   // 드로어 오픈
   function openDrawer() {
@@ -388,7 +402,9 @@ export function HeaderProfileLink() {
     }
     setDrawerMounted(true);
     setDrawerOpen(true);
-    void fetchNotificationItems({ showLoading: !cached });
+    if (notificationEnabled) {
+      void fetchNotificationItems({ showLoading: !cached });
+    }
   }
 
   // 드로어 닫기
@@ -481,6 +497,7 @@ export function HeaderProfileLink() {
         <NotificationDrawer
           isOpen={drawerOpen}
           isMounted={drawerMounted}
+          notificationEnabled={notificationEnabled}
           items={items}
           isLoading={isLoadingNotifications}
           username={username}
