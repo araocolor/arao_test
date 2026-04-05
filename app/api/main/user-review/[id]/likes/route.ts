@@ -2,6 +2,13 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfile } from "@/lib/profiles";
+import { createNotification } from "@/lib/notifications";
+
+function maskEmail(email: string): string {
+  const at = email.indexOf("@");
+  if (at < 0) return email;
+  return `${email.slice(0, 2)}***${email.slice(at)}`;
+}
 
 export async function GET(
   _request: Request,
@@ -66,6 +73,33 @@ export async function POST(
     await supabase.from("user_review_likes").insert({ review_id: id, profile_id: profile.id });
     const { count } = await supabase.from("user_review_likes").select("*", { count: "exact", head: true }).eq("review_id", id);
     await supabase.from("user_reviews").update({ like_count: count ?? 0 }).eq("id", id);
+
+    const [{ data: review }, { data: liker }] = await Promise.all([
+      supabase
+        .from("user_reviews")
+        .select("profile_id")
+        .eq("id", id)
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("username, email, icon_image")
+        .eq("id", profile.id)
+        .maybeSingle(),
+    ]);
+
+    if (review?.profile_id && review.profile_id !== profile.id) {
+      const likerName =
+        liker?.username || (liker?.email ? maskEmail(liker.email) : null) || "누군가";
+      await createNotification(
+        review.profile_id,
+        "review_like",
+        `${likerName}님이 좋아요를 남겼습니다`,
+        `/user_content/${id}`,
+        `review-like:${id}:${profile.id}`,
+        liker?.icon_image ?? null
+      );
+    }
+
     return NextResponse.json({ liked: true, likeCount: count ?? 0 });
   }
 }

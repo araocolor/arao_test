@@ -8,12 +8,14 @@ import { useAdminPendingCount } from "@/hooks/use-admin-pending-count";
 import { NotificationDrawer } from "@/components/notification-drawer";
 import type { NotificationItem } from "@/lib/notifications";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
+import { useHeaderSessionStore } from "@/stores/header-session-store";
 
 const REVIEW_LIST_CACHE_TTL = 300000; // 5분
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 const NOTIFICATION_CACHE_PREFIX = "header-notifications-cache-v1";
 const NOTIFICATION_CACHE_TTL = 60000; // 60초
+const NOTIFICATION_REOPEN_ONCE_KEY = "header-notification-reopen-once";
 
 type NotificationPayload = {
   unreadCount: number;
@@ -103,28 +105,35 @@ export function HeaderProfileLink() {
   const { isSignedIn, user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const realtimeUnreadCount = useNotificationCount(isSignedIn ?? false);
+  const realtimeUnreadCount = useNotificationCount(user?.id);
   useAdminPendingCount(isSignedIn ?? false);
   const notificationCacheKey = getNotificationCacheKey(user?.id);
+  const badgeCount = useHeaderSessionStore((state) => state.badgeCount);
+  const iconImage = useHeaderSessionStore((state) => state.avatar);
+  const hydrateHeaderSession = useHeaderSessionStore((state) => state.hydrateForUser);
+  const setHeaderBadgeCount = useHeaderSessionStore((state) => state.setBadgeCount);
+  const setHeaderAvatar = useHeaderSessionStore((state) => state.setAvatar);
+  const clearActiveHeaderSession = useHeaderSessionStore((state) => state.clearActiveUserCache);
 
   // 드로어 상태
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMounted, setDrawerMounted] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
+  const itemsRef = useRef<NotificationItem[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
-  const [iconImage, setIconImage] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // 배지 카운트: localStorage 초기값으로 즉시 표시 (Clerk 인증 대기 없음)
-  const [badgeCount, setBadgeCount] = useState<number>(0);
-
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   function applyNotificationPayload(payload: NotificationPayload, options?: { persist?: boolean }) {
     const nextItems = Array.isArray(payload.items) ? payload.items : [];
@@ -132,13 +141,10 @@ export function HeaderProfileLink() {
       ? payload.unreadCount
       : nextItems.filter((item) => !item.is_read).length;
     setItems(nextItems);
-    setBadgeCount(unread);
-    localStorage.setItem("header-badge-count", String(unread));
+    setHeaderBadgeCount(unread);
     if (payload.iconImage !== undefined) {
       const img = payload.iconImage ?? null;
-      setIconImage(img);
-      if (img) localStorage.setItem("header-avatar", img);
-      else localStorage.removeItem("header-avatar");
+      setHeaderAvatar(img);
     }
     if (payload.username !== undefined) setUsername(payload.username ?? null);
     if (payload.email !== undefined) setEmail(payload.email ?? null);
@@ -162,12 +168,7 @@ export function HeaderProfileLink() {
       if (response.ok) {
         const data = (await response.json()) as { iconImage?: string | null };
         const img = data.iconImage ?? null;
-        setIconImage(img);
-        if (img) {
-          localStorage.setItem("header-avatar", img);
-        } else {
-          localStorage.removeItem("header-avatar");
-        }
+        setHeaderAvatar(img);
       }
     } catch (error) {
       console.error("Failed to fetch avatar:", error);
@@ -270,15 +271,22 @@ export function HeaderProfileLink() {
       });
   }
 
-  // 마운트 시 localStorage 캐시에서 즉시 복원 + 갤러리/커뮤니티 동시 prefetch (로그인 무관)
+  // 마운트 시 갤러리/커뮤니티 동시 prefetch (로그인 무관)
   useEffect(() => {
-    const cached = localStorage.getItem("header-avatar");
-    if (cached) setIconImage(cached);
-    const savedBadge = Number(localStorage.getItem("header-badge-count") ?? 0);
-    if (savedBadge > 0) setBadgeCount(savedBadge);
     prefetchGalleryFirst();
     prefetchUserReviewList();
   }, []);
+
+  // 로그인 사용자별 헤더 상태(배지/아바타) 즉시 복원
+  useEffect(() => {
+    if (isSignedIn && user?.id) {
+      hydrateHeaderSession(user.id);
+      return;
+    }
+    if (isSignedIn === false) {
+      hydrateHeaderSession(null);
+    }
+  }, [isSignedIn, user?.id, hydrateHeaderSession]);
 
   // 로그인 사용자별 알림 캐시 즉시 복원 (첫 클릭 체감 개선)
   useEffect(() => {
@@ -287,6 +295,25 @@ export function HeaderProfileLink() {
     if (!cached) return;
     applyNotificationPayload(cached, { persist: false });
   }, [isSignedIn, notificationCacheKey]);
+
+  // 알림 경유 본문에서 리스트로 복귀했을 때 알림창 자동 재오픈
+  useEffect(() => {
+    if (!isSignedIn) return;
+    if (pathname !== "/user_review") return;
+    let shouldReopen = false;
+    try {
+      shouldReopen = sessionStorage.getItem(NOTIFICATION_REOPEN_ONCE_KEY) === "1";
+      if (shouldReopen) sessionStorage.removeItem(NOTIFICATION_REOPEN_ONCE_KEY);
+    } catch {}
+    if (!shouldReopen) return;
+    const cached = readNotificationCache(notificationCacheKey);
+    if (cached) {
+      applyNotificationPayload(cached, { persist: false });
+    }
+    setDrawerMounted(true);
+    setDrawerOpen(true);
+    void fetchNotificationItems({ showLoading: !cached });
+  }, [isSignedIn, pathname, notificationCacheKey]);
 
   // 사이트 체류 중 2분마다 리스트/갤러리 캐시 백그라운드 갱신 (탭 visible일 때만)
   useEffect(() => {
@@ -302,12 +329,10 @@ export function HeaderProfileLink() {
   useEffect(() => {
     if (!isSignedIn || !notificationEnabled) return;
     if (drawerOpen) return;
-    setBadgeCount((prev) => {
-      if (prev === realtimeUnreadCount) return prev;
-      localStorage.setItem("header-badge-count", String(realtimeUnreadCount));
-      return realtimeUnreadCount;
-    });
-  }, [isSignedIn, notificationEnabled, realtimeUnreadCount, drawerOpen]);
+    if (badgeCount !== realtimeUnreadCount) {
+      setHeaderBadgeCount(realtimeUnreadCount);
+    }
+  }, [isSignedIn, notificationEnabled, realtimeUnreadCount, drawerOpen, badgeCount, setHeaderBadgeCount]);
 
   // 초기 로드: 아바타 먼저 → 알림 / 로그아웃 시 캐시 제거
   useEffect(() => {
@@ -315,27 +340,23 @@ export function HeaderProfileLink() {
       void fetchAvatar();
       void fetchNotificationItems({ showLoading: false });
     } else if (isSignedIn === false) {
-      setIconImage(null);
-      setBadgeCount(0);
+      clearActiveHeaderSession();
       setItems([]);
       setUsername(null);
       setEmail(null);
-      localStorage.removeItem("header-avatar");
-      localStorage.removeItem("header-badge-count");
       clearNotificationCacheAll();
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, clearActiveHeaderSession]);
 
   // 아바타 업데이트 이벤트 수신
   useEffect(() => {
     function handleAvatarUpdated(e: Event) {
       const detail = (e as CustomEvent<{ iconImage: string }>).detail;
-      setIconImage(detail.iconImage);
-      localStorage.setItem("header-avatar", detail.iconImage);
+      setHeaderAvatar(detail.iconImage);
     }
     window.addEventListener("avatar-updated", handleAvatarUpdated);
     return () => window.removeEventListener("avatar-updated", handleAvatarUpdated);
-  }, []);
+  }, [setHeaderAvatar]);
 
   // general 페이지 알림 토글 상태 즉시 반영
   useEffect(() => {
@@ -344,21 +365,15 @@ export function HeaderProfileLink() {
       if (typeof detail?.enabled === "boolean") {
         setNotificationEnabled(detail.enabled);
         if (detail.enabled) {
-          // 켜면 현재 badgeCount를 localStorage에 반영
-          setBadgeCount((prev) => {
-            localStorage.setItem("header-badge-count", String(prev));
-            return prev;
-          });
+          setHeaderBadgeCount(badgeCount);
         } else {
-          // 끄면 배지 0으로 즉시 반영
-          setBadgeCount(0);
-          localStorage.setItem("header-badge-count", "0");
+          setHeaderBadgeCount(0);
         }
       }
     }
     window.addEventListener("notification-setting-updated", handleNotificationSettingUpdated);
     return () => window.removeEventListener("notification-setting-updated", handleNotificationSettingUpdated);
-  }, []);
+  }, [badgeCount, setHeaderBadgeCount]);
 
   // 드로어 오픈
   function openDrawer() {
@@ -405,6 +420,22 @@ export function HeaderProfileLink() {
 
   function handleCommunitySearchOpen() {
     window.dispatchEvent(new CustomEvent("community-search-open"));
+  }
+
+  function applyReadStateToNotificationItem(id: string, isRead: boolean) {
+    const nextItems = itemsRef.current.map((item) => (item.id === id ? { ...item, is_read: isRead } : item));
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+    const unread = nextItems.filter((item) => !item.is_read).length;
+    setHeaderBadgeCount(unread);
+    writeNotificationCache(notificationCacheKey, {
+      unreadCount: unread,
+      items: nextItems,
+      iconImage,
+      username,
+      email,
+      notificationEnabled,
+    });
   }
 
   const isCommunityListPage = mounted && pathname === "/user_review";
@@ -455,36 +486,8 @@ export function HeaderProfileLink() {
           username={username}
           email={email}
           onClose={closeDrawer}
-          onMarkRead={(id) => setItems((prev) => {
-            const next = prev.map((item) => item.id === id ? { ...item, is_read: true } : item);
-            const unread = next.filter((item) => !item.is_read).length;
-            setBadgeCount(unread);
-            localStorage.setItem("header-badge-count", String(unread));
-            writeNotificationCache(notificationCacheKey, {
-              unreadCount: unread,
-              items: next,
-              iconImage,
-              username,
-              email,
-              notificationEnabled,
-            });
-            return next;
-          })}
-          onRollbackRead={(id) => setItems((prev) => {
-            const next = prev.map((item) => item.id === id ? { ...item, is_read: false } : item);
-            const unread = next.filter((item) => !item.is_read).length;
-            setBadgeCount(unread);
-            localStorage.setItem("header-badge-count", String(unread));
-            writeNotificationCache(notificationCacheKey, {
-              unreadCount: unread,
-              items: next,
-              iconImage,
-              username,
-              email,
-              notificationEnabled,
-            });
-            return next;
-          })}
+          onMarkRead={(id) => applyReadStateToNotificationItem(id, true)}
+          onRollbackRead={(id) => applyReadStateToNotificationItem(id, false)}
         />
       )}
     </>

@@ -28,6 +28,11 @@ type ReviewCountPatch = {
   commentCount?: number;
 };
 
+function dispatchNotificationRefresh() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("notification-refresh"));
+}
+
 function sanitizeCount(value: number | undefined): number | undefined {
   if (typeof value !== "number" || Number.isNaN(value)) return undefined;
   return Math.max(Math.trunc(value), 0);
@@ -172,6 +177,7 @@ export function UserContentLikeSection({
       setLikeCount(nextLikeCount);
       setLikesCache(reviewId, { liked: d.liked, likeCount: nextLikeCount });
       onLikeCountChange?.(nextLikeCount);
+      if (d.liked) dispatchNotificationRefresh();
     } catch {
       setLiked(prevLiked);
       setLikeCount(prevLikeCount);
@@ -202,10 +208,12 @@ export function UserContentLikeSection({
 export function UserContentInteractions({
   reviewId,
   reviewAuthorId,
+  targetCommentId,
   onCommentCountChange,
 }: {
   reviewId: string;
   reviewAuthorId?: string | null;
+  targetCommentId?: string | null;
   onCommentCountChange?: (nextCommentCount: number) => void;
 }) {
   const { isSignedIn } = useUser();
@@ -223,6 +231,10 @@ export function UserContentInteractions({
   const [menuParentId, setMenuParentId] = useState<string | null>(null);
   const [pendingLikeCommentIds, setPendingLikeCommentIds] = useState<Set<string>>(new Set());
   const lastCommentCountRef = useRef<number | null>(null);
+  const highlightedCommentDoneRef = useRef<string | null>(null);
+  const highlightTimerRef = useRef<number | null>(null);
+  const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
+  const COMMENT_HIGHLIGHT_DURATION_MS = 1000;
 
   function setCommentsCache(nextComments: Comment[]) {
     try {
@@ -246,6 +258,14 @@ export function UserContentInteractions({
   }, [comments]);
 
   useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current !== null) {
+        window.clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     syncCommentCount(comments);
   }, [comments, syncCommentCount]);
 
@@ -253,6 +273,29 @@ export function UserContentInteractions({
     lastCommentCountRef.current = null;
     syncCommentCount(commentsRef.current);
   }, [reviewId, syncCommentCount]);
+
+  useEffect(() => {
+    const normalizedTargetId =
+      typeof targetCommentId === "string" && targetCommentId.trim().length > 0
+        ? targetCommentId.trim()
+        : null;
+    if (!normalizedTargetId) return;
+    if (highlightedCommentDoneRef.current === normalizedTargetId) return;
+    const targetEl = document.getElementById(`user-review-comment-${normalizedTargetId}`);
+    if (!targetEl) return;
+
+    highlightedCommentDoneRef.current = normalizedTargetId;
+    window.requestAnimationFrame(() => {
+      targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    setHighlightedCommentId(normalizedTargetId);
+    if (highlightTimerRef.current !== null) {
+      window.clearTimeout(highlightTimerRef.current);
+    }
+    highlightTimerRef.current = window.setTimeout(() => {
+      setHighlightedCommentId((prev) => (prev === normalizedTargetId ? null : prev));
+    }, COMMENT_HIGHLIGHT_DURATION_MS);
+  }, [targetCommentId, comments, COMMENT_HIGHLIGHT_DURATION_MS]);
 
   function setCommentLikePending(commentId: string, pending: boolean) {
     setPendingLikeCommentIds((prev) => {
@@ -302,6 +345,7 @@ export function UserContentInteractions({
         setCommentsCache(next);
         return next;
       });
+      if (data.liked) dispatchNotificationRefresh();
     },
     onError: (_error, _commentId, context) => {
       if (!context) return;
@@ -366,6 +410,7 @@ export function UserContentInteractions({
         });
         setCommentInput("");
         setReplyTo(null);
+        dispatchNotificationRefresh();
       }
     } finally {
       setSubmitting(false);
@@ -436,7 +481,10 @@ export function UserContentInteractions({
         <div className="user-content-comment-thread-list">
           {rootComments.map((comment) => (
             <div key={comment.id} className="user-content-comment-thread">
-              <div className={`user-content-comment-item${comment.isMine ? " is-mine" : ""}`}>
+              <div
+                id={`user-review-comment-${comment.id}`}
+                className={`user-content-comment-item${comment.isMine ? " is-mine" : ""}${highlightedCommentId === comment.id ? " is-highlighted" : ""}`}
+              >
                 <span className="user-content-comment-avatar">
                   {comment.iconImage
                     ? <img src={comment.iconImage} alt="" className="user-content-comment-avatar-img" />
@@ -506,7 +554,11 @@ export function UserContentInteractions({
 
               <div className="user-content-comment-replies">
                 {getReplies(comment.id).map((reply) => (
-                  <div key={reply.id} className={`user-content-comment-item is-reply${reply.isMine ? " is-mine" : ""}`}>
+                  <div
+                    key={reply.id}
+                    id={`user-review-comment-${reply.id}`}
+                    className={`user-content-comment-item is-reply${reply.isMine ? " is-mine" : ""}${highlightedCommentId === reply.id ? " is-highlighted" : ""}`}
+                  >
                     <span className="user-content-comment-avatar">
                       {reply.iconImage
                         ? <img src={reply.iconImage} alt="" className="user-content-comment-avatar-img" />

@@ -434,8 +434,12 @@ export function UserContentPage({
   const closeTimerRef = useRef<number | null>(null);
 
   const routeBoard = searchParams.get("board");
+  const routeCommentId = searchParams.get("commentId");
+  const routeSource = searchParams.get("from");
   const normalizedBoard = getNormalizedBoard(routeBoard ?? item?.board ?? null);
   const boardListPath = getBoardListPath(normalizedBoard);
+  const cameFromNotification = routeSource === "notification";
+  const targetCommentId = routeCommentId && routeCommentId.trim().length > 0 ? routeCommentId : null;
 
   useEffect(() => {
     const raf = window.requestAnimationFrame(() => {
@@ -454,13 +458,18 @@ export function UserContentPage({
     if (isClosing) return;
     setIsClosing(true);
     closeTimerRef.current = window.setTimeout(() => {
+      if (cameFromNotification) {
+        try {
+          sessionStorage.setItem("header-notification-reopen-once", "1");
+        } catch {}
+      }
       if (onRequestClose) {
         onRequestClose();
         return;
       }
       router.push(boardListPath, { scroll: false });
     }, 260);
-  }, [isClosing, onRequestClose, router, boardListPath]);
+  }, [isClosing, onRequestClose, router, boardListPath, cameFromNotification]);
 
   // 1단계: 마운트 후 캐시 데이터로 즉시 채우기
   useEffect(() => {
@@ -662,6 +671,7 @@ export function UserContentPage({
             <UserContentInteractions
               reviewId={id}
               reviewAuthorId={item.authorId}
+              targetCommentId={targetCommentId}
               onCommentCountChange={(nextCommentCount) => {
                 onReviewCountsChange?.({ reviewId: id, commentCount: nextCommentCount });
               }}

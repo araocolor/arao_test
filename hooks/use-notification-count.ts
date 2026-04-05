@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export function useNotificationCount(isSignedIn: boolean) {
+export function useNotificationCount(userId: string | null | undefined) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!isSignedIn) {
+    const normalizedUserId = typeof userId === "string" && userId.length > 0 ? userId : null;
+    if (!normalizedUserId) {
+      setUnreadCount(0);
       return;
     }
 
@@ -40,7 +42,7 @@ export function useNotificationCount(isSignedIn: boolean) {
     // Supabase Realtime 구독 (notifications + inquiries 테이블)
     const supabase = createSupabaseBrowserClient();
     const channel = supabase
-      .channel("notification-count")
+      .channel(`notification-count:${normalizedUserId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => {
         void fetchUnreadCount();
       })
@@ -54,7 +56,7 @@ export function useNotificationCount(isSignedIn: boolean) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("notification-refresh", handleRefreshNotification);
     };
-  }, [isSignedIn]);
+  }, [userId]);
 
   return unreadCount;
 }

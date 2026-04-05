@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { type NotificationItem } from "@/lib/notifications";
 
 type NotificationDrawerProps = {
@@ -15,6 +16,32 @@ type NotificationDrawerProps = {
   onMarkRead: (id: string) => void;
   onRollbackRead: (id: string) => void;
 };
+
+function appendQueryParam(link: string, key: string, value: string): string {
+  const [beforeHash, hash = ""] = link.split("#", 2);
+  const separator = beforeHash.includes("?") ? "&" : "?";
+  const next = `${beforeHash}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  return hash ? `${next}#${hash}` : next;
+}
+
+function hasQueryParam(link: string, key: string): boolean {
+  try {
+    const url = new URL(link, "https://arao.local");
+    return url.searchParams.has(key);
+  } catch {
+    return link.includes(`${key}=`);
+  }
+}
+
+function getCommentIdFromSourceId(item: NotificationItem): string | null {
+  if (item.type !== "review_comment" && item.type !== "review_comment_like") return null;
+  const sourceId = typeof item.source_id === "string" ? item.source_id.trim() : "";
+  if (!sourceId) return null;
+  const parts = sourceId.split(":");
+  if (parts.length < 2) return null;
+  const candidate = parts[1]?.trim();
+  return candidate && candidate.length > 0 ? candidate : null;
+}
 
 function maskEmail(email: string): string {
   const atIndex = email.indexOf("@");
@@ -78,6 +105,9 @@ const TYPE_LABEL: Record<string, string> = {
   order_cancelled: "결제 취소",
   consulting: "1:1 상담",
   review_reply: "사용자 후기",
+  review_like: "사용자 후기",
+  review_comment: "사용자 후기",
+  review_comment_like: "사용자 후기",
   gallery_like: "갤러리",
   gallery_reply: "갤러리",
   gallery_comment_deleted: "갤러리",
@@ -90,6 +120,9 @@ const TYPE_ICON: Record<string, string> = {
   order_cancelled: "⚠️",
   consulting: "💬",
   review_reply: "📝",
+  review_like: "❤️",
+  review_comment: "💬",
+  review_comment_like: "❤️",
   gallery_like: "❤️",
   gallery_reply: "💬",
   gallery_comment_deleted: "🗑️",
@@ -109,6 +142,12 @@ export function NotificationDrawer({
   const [optimisticReadIds, setOptimisticReadIds] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+    return () => setPortalTarget(null);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -135,7 +174,7 @@ export function NotificationDrawer({
     };
   }, [isOpen, onClose]);
 
-  if (!isMounted) return null;
+  if (!isMounted || !portalTarget) return null;
   const headerDisplayName = username || (email ? maskEmail(email) : "");
   const sortedItems = [...items].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -166,7 +205,7 @@ export function NotificationDrawer({
     onClose();
   };
 
-  return (
+  return createPortal((
     <>
       {/* 백드롭 */}
       <div
@@ -227,10 +266,21 @@ export function NotificationDrawer({
                 (item.type === "gallery_like" ||
                   item.type === "gallery_reply" ||
                   item.type === "gallery_comment_deleted");
+              let href = item.link;
+              if (href.startsWith("/user_content/")) {
+                if (!hasQueryParam(href, "commentId")) {
+                  const commentId = getCommentIdFromSourceId(item);
+                  if (commentId) href = appendQueryParam(href, "commentId", commentId);
+                }
+                href = appendQueryParam(href, "from", "notification");
+              }
+              if (shouldAppendTimestamp) {
+                href = appendQueryParam(href, "t", String(Date.now()));
+              }
               return (
               <Link
                 key={item.id}
-                href={shouldAppendTimestamp ? `${item.link}&t=${Date.now()}` : item.link}
+                href={href}
                 className={`notif-item ${!isRead ? "is-unread" : ""}`}
                 onClick={() => handleItemClick(item)}
               >
@@ -242,16 +292,25 @@ export function NotificationDrawer({
                   </span>
                 )}
                 <div className="notif-item-body">
-                  <p className="notif-item-title">{formatTitle(item.title)}</p>
-                  <p className="notif-item-time">
-                    {formatRelativeTime(item.created_at)}
+                  <p className="notif-item-title">
+                    {item.type === "settings" ? item.title : formatTitle(item.title)}
                   </p>
+                  {item.type !== "settings" && (
+                    <p className="notif-item-time">
+                      {formatRelativeTime(item.created_at)}
+                    </p>
+                  )}
                 </div>
                 {item.related_image ? (
                   <img src={item.related_image} className="notif-related-thumb" alt="" loading="lazy" />
                 ) : (
-                  <span className="notif-related-thumb notif-related-thumb-empty" aria-hidden="true">
-                    {TYPE_ICON[item.type] || "🔔"}
+                  <span
+                    className={`notif-related-thumb notif-related-thumb-empty${
+                      item.type === "settings" ? " is-settings" : ""
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {item.type === "settings" ? "A" : (TYPE_ICON[item.type] || "🔔")}
                   </span>
                 )}
               </Link>
@@ -277,5 +336,5 @@ export function NotificationDrawer({
         </div>
       </div>
     </>
-  );
+  ), portalTarget);
 }

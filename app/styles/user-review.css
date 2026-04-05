@@ -1086,6 +1086,22 @@
   align-items: flex-start;
 }
 
+.user-content-comment-item.is-highlighted {
+  animation: user-content-comment-highlight-once 1s ease-in-out 1;
+}
+
+@keyframes user-content-comment-highlight-once {
+  0% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(17, 17, 17, 0.05);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 .user-content-comment-item.is-mine {
   background: rgba(0, 0, 0, 0.05);
   border-radius: 12px;

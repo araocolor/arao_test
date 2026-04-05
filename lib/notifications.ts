@@ -10,6 +10,9 @@ export type NotificationItem = {
     | "order_cancelled"
     | "consulting"
     | "review_reply"
+    | "review_like"
+    | "review_comment"
+    | "review_comment_like"
     | "gallery_like"
     | "gallery_reply"
     | "gallery_comment_deleted";
@@ -40,6 +43,35 @@ function parseGalleryCategoryFromLink(link: string): string | null {
   return null;
 }
 
+function parseReviewIdFromLink(link: string): string | null {
+  try {
+    const url = new URL(link, "https://arao.local");
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) return null;
+    if (parts[0] === "user_content") return parts[1] ?? null;
+    if (parts[0] === "account" && parts[1] === "reviews" && parts[2]) return parts[2];
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function getFirstReviewThumb(
+  thumbnailFirst: string | null | undefined,
+  thumbnailImage: string | null | undefined
+): string | null {
+  if (thumbnailFirst && thumbnailFirst.trim().length > 0) return thumbnailFirst;
+  if (!thumbnailImage) return null;
+  try {
+    const parsed = JSON.parse(thumbnailImage);
+    if (Array.isArray(parsed)) {
+      const first = parsed.find((v) => typeof v === "string" && v.trim().length > 0);
+      return typeof first === "string" ? first : null;
+    }
+  } catch {}
+  return thumbnailImage.trim().length > 0 ? thumbnailImage : null;
+}
+
 /**
  * 모든 알림 소스에서 집계 (settings, consulting, notifications 테이블)
  * 반환: 합쳐진 items (최신순) + unreadCount
@@ -57,7 +89,7 @@ export async function getNotificationsForProfile(
     items.push({
       id: "settings-notif",
       type: "settings",
-      title: "사용자 아이디와 비밀번호를 등록하세요",
+      title: "사용자 아이디를 등록하세요 🙂",
       link: "/account/general",
       is_read: false,
       created_at: new Date().toISOString(),
@@ -182,6 +214,61 @@ export async function getNotificationsForProfile(
       }
     } catch (error) {
       console.error("getNotificationsForProfile gallery thumb resolve error:", error);
+    }
+  }
+
+  // 5. 커뮤니티(사용자 후기) 관련 알림 우측 썸네일 연결 (해당 글의 첫 이미지)
+  const hasCommunityNotifications = items.some(
+    (item) =>
+      item.type === "review_like" ||
+      item.type === "review_comment" ||
+      item.type === "review_comment_like"
+  );
+
+  if (hasCommunityNotifications) {
+    try {
+      const reviewIds = Array.from(
+        new Set(
+          items
+            .filter(
+              (item) =>
+                item.type === "review_like" ||
+                item.type === "review_comment" ||
+                item.type === "review_comment_like"
+            )
+            .map((item) => parseReviewIdFromLink(item.link))
+            .filter((id): id is string => Boolean(id))
+        )
+      );
+
+      const reviewThumbMap: Record<string, string | null> = {};
+      if (reviewIds.length > 0) {
+        const { data: reviews } = await supabase
+          .from("user_reviews")
+          .select("id, thumbnail_first, thumbnail_image")
+          .in("id", reviewIds);
+
+        for (const review of reviews ?? []) {
+          reviewThumbMap[review.id] = getFirstReviewThumb(
+            review.thumbnail_first,
+            review.thumbnail_image
+          );
+        }
+      }
+
+      for (const item of items) {
+        if (
+          item.type !== "review_like" &&
+          item.type !== "review_comment" &&
+          item.type !== "review_comment_like"
+        ) {
+          continue;
+        }
+        const reviewId = parseReviewIdFromLink(item.link);
+        item.related_image = reviewId ? (reviewThumbMap[reviewId] ?? null) : null;
+      }
+    } catch (error) {
+      console.error("getNotificationsForProfile community thumb resolve error:", error);
     }
   }
 

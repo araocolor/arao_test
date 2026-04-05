@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfile } from "@/lib/profiles";
+import { createNotification } from "@/lib/notifications";
 
 function maskEmail(email: string): string {
   const at = email.indexOf("@");
@@ -82,11 +83,12 @@ export async function POST(
   const supabase = createSupabaseAdminClient();
   const rawParentId = typeof body.parentId === "string" ? body.parentId.trim() : "";
   let parentId: string | null = rawParentId || null;
+  let parentCommentAuthorProfileId: string | null = null;
 
   if (parentId) {
     const { data: parentComment, error: parentError } = await supabase
       .from("user_review_comments")
-      .select("id, review_id, parent_id")
+      .select("id, review_id, parent_id, profile_id")
       .eq("id", parentId)
       .eq("review_id", id)
       .maybeSingle();
@@ -97,6 +99,7 @@ export async function POST(
 
     // 대댓글의 대댓글 요청은 1단계로 정규화
     parentId = parentComment.parent_id ?? parentComment.id;
+    parentCommentAuthorProfileId = parentComment.profile_id ?? null;
   }
 
   const { data, error } = await supabase
@@ -108,6 +111,39 @@ export async function POST(
   if (error) return NextResponse.json({ message: "댓글 저장 실패" }, { status: 500 });
 
   const authorId = profile.username || (profile.email ? maskEmail(profile.email) : "익명");
+  const commenterName = profile.username || (profile.email ? maskEmail(profile.email) : null) || "누군가";
+  const { data: review } = await supabase
+    .from("user_reviews")
+    .select("profile_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (review?.profile_id && review.profile_id !== profile.id) {
+    await createNotification(
+      review.profile_id,
+      "review_comment",
+      `${commenterName}님이 댓글을 남겼습니다`,
+      `/user_content/${id}?commentId=${data.id}`,
+      `review-comment:${data.id}:owner`,
+      profile.icon_image ?? null
+    );
+  }
+
+  if (
+    parentCommentAuthorProfileId &&
+    parentCommentAuthorProfileId !== profile.id &&
+    parentCommentAuthorProfileId !== review?.profile_id
+  ) {
+    await createNotification(
+      parentCommentAuthorProfileId,
+      "review_comment",
+      `${commenterName}님이 답글을 남겼습니다`,
+      `/user_content/${id}?commentId=${data.id}`,
+      `review-comment:${data.id}:parent`,
+      profile.icon_image ?? null
+    );
+  }
+
   return NextResponse.json({
     id: data.id,
     content: data.content,

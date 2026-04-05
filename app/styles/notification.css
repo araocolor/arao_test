@@ -25,9 +25,8 @@
 /* 드로어 패널 - 전체화면, 왼쪽에서 슬라이드 (인스타그램 스타일) */
 .notif-drawer {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
+  inset: 0;
+  width: 100vw;
   height: 100dvh;
   background: var(--surface);
   z-index: 60;
@@ -46,33 +45,6 @@
 .notif-drawer.is-closing {
   transform: translateX(100%);
   pointer-events: none;
-}
-
-/* 태블릿+: 열기 페이드인, 닫기 페이드아웃 */
-@media (min-width: 481px) {
-  .notif-drawer {
-    opacity: 0;
-    transition: transform 240ms cubic-bezier(0.25, 0.8, 0.25, 1), opacity 180ms ease;
-  }
-  .notif-drawer.is-open {
-    opacity: 1;
-  }
-  .notif-drawer.is-closing {
-    transform: translateX(0);
-    opacity: 0;
-    transition: opacity 180ms ease;
-    pointer-events: none;
-  }
-}
-
-/* 태블릿/데스크톱: 컨테이너 기준 오른쪽 50% */
-@media (min-width: 481px) {
-  .notif-drawer {
-    width: 500px;
-    left: auto;
-    right: max(0px, calc((100vw - var(--tablet-width, 820px)) / 2));
-    margin: 0;
-  }
 }
 
 /* 상단 헤더 */
@@ -286,7 +258,7 @@
 .notif-related-thumb {
   flex-shrink: 0;
   width: 46px;
-  height: 30px;
+  height: 46px;
   border-radius: 8px;
   object-fit: cover;
   border: 1px solid var(--line);
@@ -298,6 +270,14 @@
   align-items: center;
   justify-content: center;
   font-size: 14px;
+}
+
+.notif-related-thumb-empty.is-settings {
+  background: #fcd34d;
+  border-color: #fbbf24;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
 }
 
 /* 더보기 버튼 */
