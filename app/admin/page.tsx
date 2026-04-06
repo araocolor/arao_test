@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { getLandingContent } from "@/lib/landing-content";
 import { syncProfile } from "@/lib/profiles";
@@ -68,7 +69,9 @@ export default async function AdminPage() {
 
   return (
     <main className="admin-page">
-      <AdminDashboard email={profile.email} role={profile.role} landingContent={landingContent} />
+      <Suspense>
+        <AdminDashboard email={profile.email} role={profile.role} landingContent={landingContent} />
+      </Suspense>
     </main>
   );
 }

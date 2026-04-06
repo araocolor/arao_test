@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 import type { LandingContent } from "@/lib/landing-content";
 import { AdminContentManager } from "@/components/admin-content-manager";
@@ -90,6 +91,7 @@ type AdminDashboardProps = {
 };
 
 export function AdminDashboard({ email, role, landingContent }: AdminDashboardProps) {
+  const searchParams = useSearchParams();
   const [activeSectionId, setActiveSectionId] = useState(adminSections[0].id);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
@@ -104,6 +106,13 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("menu") === "open") {
+      setMenuMounted(true);
+      setMenuOpen(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (menuOpen) {

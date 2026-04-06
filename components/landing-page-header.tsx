@@ -54,7 +54,7 @@ export function LandingPageHeader({ brandHref = "/", scrollTopOnLogoClick = fals
   }, [isSignedIn]);
 
   const links = useMemo(
-    () => (isAdmin ? [...BASE_LINKS, { href: "/admin", label: "admin" }] : [...BASE_LINKS]),
+    () => (isAdmin ? [...BASE_LINKS, { href: "/admin?menu=open", label: "admin" }] : [...BASE_LINKS]),
     [isAdmin]
   );
 
