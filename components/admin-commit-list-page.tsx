@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
 type CommitReportSection = {
   title: string;
@@ -20,6 +20,7 @@ type CommitReportItem = {
   day: number;
   aiAgent: string;
   originalReview: string;
+  status: "draft" | "done" | "rollback";
   meta?: string;
   keywords: string[];
   sections: CommitReportSection[];
@@ -40,9 +41,27 @@ type WorkLogApiRow = {
   updated_at: string;
 };
 
+type MemoRow = {
+  id: string;
+  work_log_id: string;
+  memo: string;
+  created_by_name_snapshot: string;
+  created_at: string;
+};
+
+type StatusFilter = "all" | "done" | "draft" | "rollback";
+type DateMode = "day" | "range";
+
 const YEAR_OPTIONS = [2026, 2027] as const;
-const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
-const DAY_OPTIONS = Array.from({ length: 31 }, (_, index) => index + 1);
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1);
+
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  all: "전체",
+  done: "완료",
+  draft: "임시",
+  rollback: "롤백",
+};
 
 function normalizeQuery(value: string): string {
   return value.trim().toLowerCase();
@@ -73,6 +92,18 @@ function formatTimeOnly(iso: string | null): string {
   return `${hour12}:${minute} ${period}`;
 }
 
+function formatMemoTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "-";
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hour24 = date.getHours();
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const period = hour24 < 12 ? "am" : "pm";
+  const hour12 = hour24 % 12 || 12;
+  return `${month}/${day} ${hour12}:${minute}${period}`;
+}
+
 function linesToBullets(input: string): string[] {
   return input
     .split("\n")
@@ -94,13 +125,9 @@ function textToParagraphs(input: string): string[] {
 }
 
 function parseDateParts(iso: string | null): { year: number; month: number; day: number } {
-  if (!iso) {
-    return { year: 0, month: 0, day: 0 };
-  }
+  if (!iso) return { year: 0, month: 0, day: 0 };
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return { year: 0, month: 0, day: 0 };
-  }
+  if (Number.isNaN(date.getTime())) return { year: 0, month: 0, day: 0 };
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -108,14 +135,14 @@ function parseDateParts(iso: string | null): { year: number; month: number; day:
     day: "2-digit",
   });
   const parts = formatter.formatToParts(date);
-  const year = Number(parts.find((part) => part.type === "year")?.value ?? "0");
-  const month = Number(parts.find((part) => part.type === "month")?.value ?? "0");
-  const day = Number(parts.find((part) => part.type === "day")?.value ?? "0");
-  return {
-    year,
-    month,
-    day,
-  };
+  const year = Number(parts.find((p) => p.type === "year")?.value ?? "0");
+  const month = Number(parts.find((p) => p.type === "month")?.value ?? "0");
+  const day = Number(parts.find((p) => p.type === "day")?.value ?? "0");
+  return { year, month, day };
+}
+
+function toDateKey(year: number, month: number, day: number): number {
+  return year * 10000 + month * 100 + day;
 }
 
 function toReportItem(row: WorkLogApiRow): CommitReportItem {
@@ -127,32 +154,12 @@ function toReportItem(row: WorkLogApiRow): CommitReportItem {
   const dateParts = parseDateParts(sourceIso);
 
   const sections: CommitReportSection[] = [];
-  if (summary) {
-    sections.push({
-      title: "간략 리뷰",
-      bullets: [summary],
-    });
-  }
-  if (details) {
-    sections.push({
-      title: "상세 리뷰",
-      bullets: linesToBullets(details),
-    });
-  }
-  if (sections.length === 0) {
-    sections.push({
-      title: "내용",
-      bullets: ["등록된 요약/상세 내용이 없습니다."],
-    });
-  }
+  if (summary) sections.push({ title: "간략 리뷰", bullets: [summary] });
+  if (details) sections.push({ title: "상세 리뷰", bullets: linesToBullets(details) });
+  if (sections.length === 0) sections.push({ title: "내용", bullets: ["등록된 요약/상세 내용이 없습니다."] });
 
-  const metaParts: string[] = [
-    `커밋: ${row.commit_hash}`,
-    `상태: ${row.status}`,
-  ];
-  if (row.report_url) {
-    metaParts.push(`링크: ${row.report_url}`);
-  }
+  const metaParts: string[] = [`커밋: ${row.commit_hash}`, `상태: ${row.status}`];
+  if (row.report_url) metaParts.push(`링크: ${row.report_url}`);
 
   return {
     id: row.id,
@@ -164,19 +171,21 @@ function toReportItem(row: WorkLogApiRow): CommitReportItem {
     month: dateParts.month,
     day: dateParts.day,
     aiAgent: row.author_name_snapshot?.trim() || "Unknown",
+    status: row.status,
     originalReview,
     meta: metaParts.join(" / "),
-    keywords: [
-      row.commit_hash,
-      row.title,
-      summary,
-      details,
-      originalReview,
-      row.author_name_snapshot,
-      row.status,
-    ].filter(Boolean),
+    keywords: [row.commit_hash, row.title, summary, details, originalReview, row.author_name_snapshot, row.status].filter(Boolean),
     sections,
   };
+}
+
+function StatsBadge({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className={`admin-commit-stats-badge${active ? " active" : ""}`} onClick={onClick}>
+      <span className="admin-commit-stats-label">{label}</span>
+      <span className="admin-commit-stats-count">{count}</span>
+    </button>
+  );
 }
 
 export function AdminCommitListPage() {
@@ -191,6 +200,12 @@ export function AdminCommitListPage() {
   const [selectedYear, setSelectedYear] = useState(initialYear);
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [selectedDay, setSelectedDay] = useState(initialDay);
+  const [dateMode, setDateMode] = useState<DateMode>("day");
+  const [rangeEndYear, setRangeEndYear] = useState(initialYear);
+  const [rangeEndMonth, setRangeEndMonth] = useState(initialMonth);
+  const [rangeEndDay, setRangeEndDay] = useState(initialDay);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [agentFilter, setAgentFilter] = useState<string>("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
@@ -198,15 +213,19 @@ export function AdminCommitListPage() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // 메모 관련 state
+  const [memos, setMemos] = useState<Record<string, MemoRow[]>>({});
+  const [memoInput, setMemoInput] = useState<Record<string, string>>({});
+  const [memoSubmitting, setMemoSubmitting] = useState<Record<string, boolean>>({});
+  const [memoLoadedIds, setMemoLoadedIds] = useState<Set<string>>(new Set());
+
   async function loadItems() {
     setLoading(true);
     setLoadError(null);
     try {
       const response = await fetch("/api/admin/work-logs?limit=1000");
       const data = (await response.json()) as { items?: WorkLogApiRow[]; message?: string };
-      if (!response.ok) {
-        throw new Error(data.message ?? "작업 이력을 불러오지 못했습니다.");
-      }
+      if (!response.ok) throw new Error(data.message ?? "작업 이력을 불러오지 못했습니다.");
       const rows = Array.isArray(data.items) ? data.items : [];
       setItems(rows.map(toReportItem));
     } catch (error) {
@@ -225,7 +244,7 @@ export function AdminCommitListPage() {
       const response = await fetch(`/api/admin/work-logs/${item.id}`, { method: "DELETE" });
       const payload = (await response.json().catch(() => null)) as { message?: string } | null;
       if (!response.ok) {
-        window.alert(payload?.message ?? "삭제에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        window.alert(payload?.message ?? "삭제에 실패했습니다.");
         return;
       }
       if (openId === item.id) setOpenId(null);
@@ -238,28 +257,57 @@ export function AdminCommitListPage() {
     }
   }
 
+  const loadMemos = useCallback(async (itemId: string) => {
+    if (memoLoadedIds.has(itemId)) return;
+    try {
+      const res = await fetch(`/api/admin/work-logs/${itemId}/memos`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { items?: MemoRow[] };
+      setMemos((prev) => ({ ...prev, [itemId]: Array.isArray(data.items) ? data.items : [] }));
+      setMemoLoadedIds((prev) => new Set([...prev, itemId]));
+    } catch {}
+  }, [memoLoadedIds]);
+
+  const submitMemo = useCallback(async (itemId: string) => {
+    const text = (memoInput[itemId] ?? "").trim();
+    if (!text || memoSubmitting[itemId]) return;
+    setMemoSubmitting((prev) => ({ ...prev, [itemId]: true }));
+    try {
+      const res = await fetch(`/api/admin/work-logs/${itemId}/memos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memo: text }),
+      });
+      if (!res.ok) { window.alert("메모 저장에 실패했습니다."); return; }
+      const data = (await res.json()) as { item?: MemoRow };
+      if (data.item) {
+        setMemos((prev) => ({ ...prev, [itemId]: [...(prev[itemId] ?? []), data.item as MemoRow] }));
+      }
+      setMemoInput((prev) => ({ ...prev, [itemId]: "" }));
+    } catch {
+      window.alert("메모 저장 중 오류가 발생했습니다.");
+    } finally {
+      setMemoSubmitting((prev) => ({ ...prev, [itemId]: false }));
+    }
+  }, [memoInput, memoSubmitting]);
+
+  // 아이템 열릴 때 메모 로드
   useEffect(() => {
-    void loadItems();
-  }, []);
+    if (openId) void loadMemos(openId);
+  }, [openId, loadMemos]);
+
+  useEffect(() => { void loadItems(); }, []);
 
   useEffect(() => {
     try {
-      const savedTheme = window.localStorage.getItem("work_list_theme");
-      if (savedTheme === "light" || savedTheme === "dark") {
-        setTheme(savedTheme);
-      }
-    } catch {
-      // no-op
-    }
+      const saved = window.localStorage.getItem("work_list_theme");
+      if (saved === "light" || saved === "dark") setTheme(saved);
+    } catch {}
   }, []);
 
   useEffect(() => {
     if (!theme) return;
-    try {
-      window.localStorage.setItem("work_list_theme", theme);
-    } catch {
-      // no-op
-    }
+    try { window.localStorage.setItem("work_list_theme", theme); } catch {}
   }, [theme]);
 
   useEffect(() => {
@@ -267,40 +315,62 @@ export function AdminCommitListPage() {
     if (!pageRoot) return;
     if (theme === "dark") {
       pageRoot.dataset.reportTheme = "dark";
-      return () => {
-        pageRoot.removeAttribute("data-report-theme");
-      };
+      return () => { pageRoot.removeAttribute("data-report-theme"); };
     }
     if (theme === "light") {
       pageRoot.dataset.reportTheme = "light";
-      return () => {
-        pageRoot.removeAttribute("data-report-theme");
-      };
+      return () => { pageRoot.removeAttribute("data-report-theme"); };
     }
     pageRoot.removeAttribute("data-report-theme");
-    return () => {
-      pageRoot.removeAttribute("data-report-theme");
-    };
+    return () => { pageRoot.removeAttribute("data-report-theme"); };
   }, [theme]);
 
+  // 날짜 필터
   const dateFilteredItems = useMemo(() => {
     return items.filter((item) => {
-      return (
-        item.year === Number(selectedYear) &&
-        item.month === Number(selectedMonth) &&
-        item.day === Number(selectedDay)
-      );
+      if (dateMode === "day") {
+        return item.year === Number(selectedYear) && item.month === Number(selectedMonth) && item.day === Number(selectedDay);
+      }
+      // range
+      const itemKey = toDateKey(item.year, item.month, item.day);
+      const startKey = toDateKey(Number(selectedYear), Number(selectedMonth), Number(selectedDay));
+      const endKey = toDateKey(Number(rangeEndYear), Number(rangeEndMonth), Number(rangeEndDay));
+      const [lo, hi] = startKey <= endKey ? [startKey, endKey] : [endKey, startKey];
+      return itemKey >= lo && itemKey <= hi;
     });
-  }, [items, selectedYear, selectedMonth, selectedDay]);
+  }, [items, dateMode, selectedYear, selectedMonth, selectedDay, rangeEndYear, rangeEndMonth, rangeEndDay]);
 
+  // 고유 AI 에이전트 목록
+  const agentOptions = useMemo(() => {
+    const set = new Set(items.map((i) => i.aiAgent));
+    return Array.from(set).sort();
+  }, [items]);
+
+  // 통계 (날짜 필터 기준)
+  const stats = useMemo(() => {
+    const base = dateFilteredItems;
+    return {
+      all: base.length,
+      done: base.filter((i) => i.status === "done").length,
+      draft: base.filter((i) => i.status === "draft").length,
+      rollback: base.filter((i) => i.status === "rollback").length,
+    };
+  }, [dateFilteredItems]);
+
+  // 상태 + 에이전트 + 검색 필터
   const filteredItems = useMemo(() => {
+    let result = dateFilteredItems;
+    if (statusFilter !== "all") result = result.filter((i) => i.status === statusFilter);
+    if (agentFilter !== "all") result = result.filter((i) => i.aiAgent === agentFilter);
     const normalized = normalizeQuery(query);
-    if (!normalized) return dateFilteredItems;
-    return dateFilteredItems.filter((item) => {
-      const text = `${item.menu} ${item.heading} ${item.meta ?? ""} ${item.keywords.join(" ")}`.toLowerCase();
-      return text.includes(normalized);
-    });
-  }, [dateFilteredItems, query]);
+    if (normalized) {
+      result = result.filter((item) => {
+        const text = `${item.menu} ${item.heading} ${item.meta ?? ""} ${item.keywords.join(" ")}`.toLowerCase();
+        return text.includes(normalized);
+      });
+    }
+    return result;
+  }, [dateFilteredItems, statusFilter, agentFilter, query]);
 
   useEffect(() => {
     if (!openId) return;
@@ -324,16 +394,8 @@ export function AdminCommitListPage() {
           <div className="admin-commit-report-top">
             <div className="admin-commit-report-head">
               <div className="admin-commit-report-top-actions">
-                <Link href="/" className="admin-commit-report-home-link">
-                  홈
-                </Link>
-                <button
-                  type="button"
-                  className="admin-commit-report-nav-button"
-                  onClick={() => router.back()}
-                >
-                  이전
-                </button>
+                <Link href="/" className="admin-commit-report-home-link">홈</Link>
+                <button type="button" className="admin-commit-report-nav-button" onClick={() => router.back()}>이전</button>
                 <button
                   type="button"
                   className="admin-commit-report-theme-btn admin-commit-report-theme-btn-compact"
@@ -349,48 +411,82 @@ export function AdminCommitListPage() {
                 className="admin-commit-report-search"
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(e) => setQuery(e.target.value)}
                 placeholder="검색어: 커밋명, 제목, 리뷰"
               />
             </div>
 
-            <div className="admin-commit-report-date-filters">
-              <select
-                className="admin-commit-report-select admin-commit-report-select-year"
-                value={selectedYear}
-                onChange={(event) => setSelectedYear(event.target.value)}
+            {/* 날짜 모드 토글 */}
+            <div className="admin-commit-report-date-mode">
+              <button
+                type="button"
+                className={`admin-commit-date-mode-btn${dateMode === "day" ? " active" : ""}`}
+                onClick={() => setDateMode("day")}
               >
-                {YEAR_OPTIONS.map((year) => (
-                  <option key={year} value={String(year)}>
-                    {year}년
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="admin-commit-report-select admin-commit-report-select-month"
-                value={selectedMonth}
-                onChange={(event) => setSelectedMonth(event.target.value)}
+                하루
+              </button>
+              <button
+                type="button"
+                className={`admin-commit-date-mode-btn${dateMode === "range" ? " active" : ""}`}
+                onClick={() => setDateMode("range")}
               >
-                {MONTH_OPTIONS.map((month) => (
-                  <option key={month} value={String(month)}>
-                    {month}월
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="admin-commit-report-select admin-commit-report-select-day"
-                value={selectedDay}
-                onChange={(event) => setSelectedDay(event.target.value)}
-              >
-                {DAY_OPTIONS.map((day) => (
-                  <option key={day} value={String(day)}>
-                    {day}일
-                  </option>
-                ))}
-              </select>
+                기간
+              </button>
             </div>
+
+            <div className="admin-commit-report-date-filters">
+              <select className="admin-commit-report-select admin-commit-report-select-year" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+                {YEAR_OPTIONS.map((y) => <option key={y} value={String(y)}>{y}년</option>)}
+              </select>
+              <select className="admin-commit-report-select admin-commit-report-select-month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+                {MONTH_OPTIONS.map((m) => <option key={m} value={String(m)}>{m}월</option>)}
+              </select>
+              <select className="admin-commit-report-select admin-commit-report-select-day" value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)}>
+                {DAY_OPTIONS.map((d) => <option key={d} value={String(d)}>{d}일</option>)}
+              </select>
+
+              {dateMode === "range" && (
+                <>
+                  <span className="admin-commit-range-sep">~</span>
+                  <select className="admin-commit-report-select admin-commit-report-select-year" value={rangeEndYear} onChange={(e) => setRangeEndYear(e.target.value)}>
+                    {YEAR_OPTIONS.map((y) => <option key={y} value={String(y)}>{y}년</option>)}
+                  </select>
+                  <select className="admin-commit-report-select admin-commit-report-select-month" value={rangeEndMonth} onChange={(e) => setRangeEndMonth(e.target.value)}>
+                    {MONTH_OPTIONS.map((m) => <option key={m} value={String(m)}>{m}월</option>)}
+                  </select>
+                  <select className="admin-commit-report-select admin-commit-report-select-day" value={rangeEndDay} onChange={(e) => setRangeEndDay(e.target.value)}>
+                    {DAY_OPTIONS.map((d) => <option key={d} value={String(d)}>{d}일</option>)}
+                  </select>
+                </>
+              )}
+            </div>
+
+            {/* 통계 + 상태 필터 */}
+            <div className="admin-commit-stats-row">
+              {(["all", "done", "draft", "rollback"] as StatusFilter[]).map((s) => (
+                <StatsBadge
+                  key={s}
+                  label={STATUS_LABELS[s]}
+                  count={s === "all" ? stats.all : stats[s]}
+                  active={statusFilter === s}
+                  onClick={() => setStatusFilter(s)}
+                />
+              ))}
+            </div>
+
+            {/* AI 에이전트 필터 */}
+            {agentOptions.length > 1 && (
+              <div className="admin-commit-agent-filter">
+                <select
+                  className="admin-commit-report-select"
+                  value={agentFilter}
+                  onChange={(e) => setAgentFilter(e.target.value)}
+                >
+                  <option value="all">모든 AI</option>
+                  {agentOptions.map((a) => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="admin-commit-report-list-head">
@@ -408,8 +504,10 @@ export function AdminCommitListPage() {
             <ul className="admin-commit-report-rows">
               {filteredItems.map((item) => {
                 const expanded = item.id === openId;
+                const itemMemos = memos[item.id] ?? [];
+                const memoText = memoInput[item.id] ?? "";
                 return (
-                  <li key={item.id} className="admin-commit-report-row">
+                  <li key={item.id} className={`admin-commit-report-row${item.status === "rollback" ? " is-rollback" : ""}`}>
                     <button
                       type="button"
                       className={`admin-commit-report-row-trigger${expanded ? " active" : ""}`}
@@ -419,6 +517,10 @@ export function AdminCommitListPage() {
                     >
                       <span className="admin-commit-report-row-main">
                         <span className="admin-commit-report-row-commit">{item.displayTime}</span>
+                        <span className="admin-commit-report-row-divider">/</span>
+                        <span className={`admin-commit-status-badge admin-commit-status-badge--${item.status}`}>
+                          {STATUS_LABELS[item.status]}
+                        </span>
                         <span className="admin-commit-report-row-divider">/</span>
                         <span className="admin-commit-report-row-title">{item.heading}</span>
                         <span className="admin-commit-report-row-divider">/</span>
@@ -436,11 +538,7 @@ export function AdminCommitListPage() {
                           <div className="admin-commit-report-title-actions">
                             <span className="admin-commit-report-datetime">{item.displayDateTime}</span>
                             <div className="admin-commit-report-action-buttons">
-                              <button
-                                type="button"
-                                className="admin-commit-report-detail-btn"
-                                onClick={() => setDetailItemId(item.id)}
-                              >
+                              <button type="button" className="admin-commit-report-detail-btn" onClick={() => setDetailItemId(item.id)}>
                                 상세보기
                               </button>
                               <button
@@ -461,10 +559,8 @@ export function AdminCommitListPage() {
                             <p className="admin-commit-report-section-title">{section.title}</p>
                             {section.title === "상세 리뷰" ? (
                               <div className="admin-commit-report-paragraphs">
-                                {textToParagraphs(section.bullets.join("\n")).map((paragraph, index) => (
-                                  <p key={`${item.id}-${section.title}-${index}`} className="admin-commit-report-paragraph">
-                                    {paragraph}
-                                  </p>
+                                {textToParagraphs(section.bullets.join("\n")).map((para, idx) => (
+                                  <p key={`${item.id}-${section.title}-${idx}`} className="admin-commit-report-paragraph">{para}</p>
                                 ))}
                               </div>
                             ) : (
@@ -476,6 +572,39 @@ export function AdminCommitListPage() {
                             )}
                           </div>
                         ))}
+
+                        {/* 인라인 메모 */}
+                        <div className="admin-commit-memo-section">
+                          <p className="admin-commit-report-section-title">메모</p>
+                          {itemMemos.length > 0 && (
+                            <ul className="admin-commit-memo-list">
+                              {itemMemos.map((memo) => (
+                                <li key={memo.id} className="admin-commit-memo-item">
+                                  <span className="admin-commit-memo-text">{memo.memo}</span>
+                                  <span className="admin-commit-memo-meta">{memo.created_by_name_snapshot} · {formatMemoTime(memo.created_at)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <div className="admin-commit-memo-input-row">
+                            <input
+                              className="admin-commit-memo-input"
+                              type="text"
+                              placeholder="메모 추가..."
+                              value={memoText}
+                              onChange={(e) => setMemoInput((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                              onKeyDown={(e) => { if (e.key === "Enter") void submitMemo(item.id); }}
+                            />
+                            <button
+                              type="button"
+                              className="admin-commit-memo-submit"
+                              onClick={() => void submitMemo(item.id)}
+                              disabled={!memoText.trim() || memoSubmitting[item.id]}
+                            >
+                              {memoSubmitting[item.id] ? "저장중" : "저장"}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ) : null}
                   </li>
@@ -496,21 +625,17 @@ export function AdminCommitListPage() {
               >
                 ← 돌아가기
               </button>
-
               <div className="admin-commit-report-detail-content">
                 <h2>{detailItem.heading}</h2>
                 <p className="admin-commit-report-meta">{detailItem.displayDateTime}</p>
                 <p className="admin-commit-report-section-title">원본 리뷰</p>
                 <div className="admin-commit-report-original-text">
                   {detailItemOriginalParagraphs.length > 0
-                    ? detailItemOriginalParagraphs.map((paragraph, index) => (
-                        <p key={`${detailItem.id}-original-${index}`} className="admin-commit-report-paragraph">
-                          {paragraph}
-                        </p>
+                    ? detailItemOriginalParagraphs.map((para, idx) => (
+                        <p key={`${detailItem.id}-original-${idx}`} className="admin-commit-report-paragraph">{para}</p>
                       ))
-                    : (
-                      <p className="admin-commit-report-paragraph">{detailItem.originalReview}</p>
-                    )}
+                    : <p className="admin-commit-report-paragraph">{detailItem.originalReview}</p>
+                  }
                 </div>
               </div>
             </section>

@@ -1235,3 +1235,203 @@
     top: 24px;
   }
 }
+
+/* ── work-list 확장 기능 ── */
+
+/* 날짜 모드 토글 */
+.admin-commit-report-date-mode {
+  display: flex;
+  gap: 4px;
+}
+
+.admin-commit-date-mode-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--report-line);
+  border-radius: 6px;
+  background: var(--report-panel);
+  color: var(--report-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.admin-commit-date-mode-btn.active {
+  background: var(--report-fg);
+  color: var(--report-bg);
+  border-color: var(--report-fg);
+}
+
+.admin-commit-range-sep {
+  display: flex;
+  align-items: center;
+  color: var(--report-muted);
+  font-size: 13px;
+  padding: 0 2px;
+}
+
+/* 통계 + 상태 필터 배지 */
+.admin-commit-stats-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.admin-commit-stats-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--report-line);
+  border-radius: 20px;
+  background: var(--report-panel);
+  color: var(--report-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.admin-commit-stats-badge.active {
+  background: var(--report-fg);
+  color: var(--report-bg);
+  border-color: var(--report-fg);
+}
+
+.admin-commit-stats-badge.active .admin-commit-stats-count {
+  color: var(--report-bg);
+}
+
+.admin-commit-stats-count {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--report-fg);
+}
+
+/* AI 에이전트 필터 */
+.admin-commit-agent-filter {
+  display: flex;
+}
+
+/* 상태 배지 (리스트 행 내) */
+.admin-commit-status-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.admin-commit-status-badge--done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-commit-status-badge--draft {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.admin-commit-status-badge--rollback {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* rollback 행 강조 */
+.admin-commit-report-row.is-rollback .admin-commit-report-row-trigger {
+  border-left: 3px solid #ef4444;
+}
+
+/* dark 모드 상태 배지 */
+.admin-commit-report[data-theme="dark"] .admin-commit-status-badge--done {
+  background: #14532d;
+  color: #86efac;
+}
+
+@media (prefers-color-scheme: dark) {
+  .admin-commit-status-badge--done {
+    background: #14532d;
+    color: #86efac;
+  }
+}
+
+.admin-commit-report[data-theme="dark"] .admin-commit-status-badge--draft {
+  background: #422006;
+  color: #fde68a;
+}
+
+.admin-commit-report[data-theme="dark"] .admin-commit-status-badge--rollback {
+  background: #450a0a;
+  color: #fca5a5;
+}
+
+/* 인라인 메모 */
+.admin-commit-memo-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--report-line);
+}
+
+.admin-commit-memo-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-commit-memo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--report-panel);
+  border-radius: 6px;
+  border: 1px solid var(--report-line);
+}
+
+.admin-commit-memo-text {
+  font-size: 13px;
+  color: var(--report-fg);
+  white-space: pre-wrap;
+}
+
+.admin-commit-memo-meta {
+  font-size: 11px;
+  color: var(--report-muted);
+}
+
+.admin-commit-memo-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-commit-memo-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--report-line);
+  border-radius: 6px;
+  background: var(--report-bg);
+  color: var(--report-fg);
+  font-size: 13px;
+  outline: none;
+}
+
+.admin-commit-memo-input:focus {
+  border-color: var(--report-fg);
+}
+
+.admin-commit-memo-submit {
+  padding: 7px 12px;
+  border: 1px solid var(--report-line);
+  border-radius: 6px;
+  background: var(--report-fg);
+  color: var(--report-bg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-commit-memo-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
