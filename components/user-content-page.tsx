@@ -437,18 +437,25 @@ export function UserContentPage({
   const cameFromNotification = routeSource === "notification";
   const targetCommentId = routeCommentId && routeCommentId.trim().length > 0 ? routeCommentId : null;
 
-  // 마운트 시 오른쪽에서 슬라이드 인
+  // 마운트 시 오른쪽에서 슬라이드 인 (double RAF: 초기 paint 후 transition 시작)
   useEffect(() => {
     const el = document.querySelector(".user-content-page-shell") as HTMLElement | null;
     if (!el) return;
+    el.style.transition = "none";
     el.style.transform = "translateX(100%)";
     el.style.opacity = "0";
-    const raf = requestAnimationFrame(() => {
-      el.style.transition = "transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.22s";
-      el.style.transform = "translateX(0)";
-      el.style.opacity = "1";
+    let raf2: number;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        el.style.transition = "transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.22s";
+        el.style.transform = "translateX(0)";
+        el.style.opacity = "1";
+      });
     });
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
   }, []);
 
   useEffect(() => {
