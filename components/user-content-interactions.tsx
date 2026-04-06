@@ -239,7 +239,11 @@ export function UserContentInteractions({
   const lastCommentCountRef = useRef<number | null>(null);
   const highlightedCommentDoneRef = useRef<string | null>(null);
   const highlightTimerRef = useRef<number | null>(null);
+  const missingTargetNoticeTimerRef = useRef<number | null>(null);
+  const commentSectionRef = useRef<HTMLElement | null>(null);
   const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
+  const [missingTargetNotice, setMissingTargetNotice] = useState(false);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
   const COMMENT_HIGHLIGHT_DURATION_MS = 1000;
 
   function setCommentsCache(nextComments: Comment[]) {
@@ -271,6 +275,9 @@ export function UserContentInteractions({
       if (submitButtonStateTimerRef.current !== null) {
         window.clearTimeout(submitButtonStateTimerRef.current);
       }
+      if (missingTargetNoticeTimerRef.current !== null) {
+        window.clearTimeout(missingTargetNoticeTimerRef.current);
+      }
     };
   }, []);
 
@@ -291,7 +298,22 @@ export function UserContentInteractions({
     if (!normalizedTargetId) return;
     if (highlightedCommentDoneRef.current === normalizedTargetId) return;
     const targetEl = document.getElementById(`user-review-comment-${normalizedTargetId}`);
-    if (!targetEl) return;
+    if (!targetEl) {
+      if (!commentsLoaded) return;
+      highlightedCommentDoneRef.current = normalizedTargetId;
+      window.requestAnimationFrame(() => {
+        commentSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      setMissingTargetNotice(true);
+      if (missingTargetNoticeTimerRef.current !== null) {
+        window.clearTimeout(missingTargetNoticeTimerRef.current);
+      }
+      missingTargetNoticeTimerRef.current = window.setTimeout(() => {
+        setMissingTargetNotice(false);
+        missingTargetNoticeTimerRef.current = null;
+      }, 2400);
+      return;
+    }
 
     highlightedCommentDoneRef.current = normalizedTargetId;
     window.requestAnimationFrame(() => {
@@ -304,7 +326,7 @@ export function UserContentInteractions({
     highlightTimerRef.current = window.setTimeout(() => {
       setHighlightedCommentId((prev) => (prev === normalizedTargetId ? null : prev));
     }, COMMENT_HIGHLIGHT_DURATION_MS);
-  }, [targetCommentId, comments, COMMENT_HIGHLIGHT_DURATION_MS]);
+  }, [targetCommentId, comments, commentsLoaded, COMMENT_HIGHLIGHT_DURATION_MS]);
 
   function setCommentLikePending(commentId: string, pending: boolean) {
     setPendingLikeCommentIds((prev) => {
@@ -367,6 +389,9 @@ export function UserContentInteractions({
   });
 
   useEffect(() => {
+    highlightedCommentDoneRef.current = null;
+    setMissingTargetNotice(false);
+    setCommentsLoaded(false);
     fetch(`/api/main/user-review/${reviewId}/comments`)
       .then((r) => r.json())
       .then((d) => {
@@ -381,7 +406,10 @@ export function UserContentInteractions({
           );
         } catch {}
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setCommentsLoaded(true);
+      });
   }, [reviewId, syncCommentCount]);
 
   function editRows(text: string) {
@@ -546,8 +574,13 @@ export function UserContentInteractions({
   const visibleCommentCount = getVisibleCommentCount(comments);
 
   return (
-    <section className="user-content-comment-section">
+    <section ref={commentSectionRef} className="user-content-comment-section">
       <p className="user-content-comment-label">댓글 {visibleCommentCount > 0 ? visibleCommentCount : ""}</p>
+      {missingTargetNotice && (
+        <p className="user-content-comment-missing-notice" role="status" aria-live="polite">
+          삭제되었거나 찾을 수 없는 댓글임
+        </p>
+      )}
 
       {/* 댓글 목록 */}
       {comments.length > 0 && (

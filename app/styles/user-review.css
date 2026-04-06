@@ -1054,6 +1054,13 @@
   color: var(--text);
 }
 
+.user-content-comment-missing-notice {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .user-content-comment-thread-list {
   display: flex;
   flex-direction: column;
