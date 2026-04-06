@@ -437,27 +437,6 @@ export function UserContentPage({
   const cameFromNotification = routeSource === "notification";
   const targetCommentId = routeCommentId && routeCommentId.trim().length > 0 ? routeCommentId : null;
 
-  // 마운트 시 오른쪽에서 슬라이드 인 (double RAF: 초기 paint 후 transition 시작)
-  useEffect(() => {
-    const el = document.querySelector(".user-content-page-shell") as HTMLElement | null;
-    if (!el) return;
-    el.style.transition = "none";
-    el.style.transform = "translateX(100%)";
-    el.style.opacity = "0";
-    let raf2: number;
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => {
-        el.style.transition = "transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.22s";
-        el.style.transform = "translateX(0)";
-        el.style.opacity = "1";
-      });
-    });
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-    };
-  }, []);
-
   useEffect(() => {
     try {
       const stored = localStorage.getItem("user-review-read-ids");
@@ -477,18 +456,22 @@ export function UserContentPage({
         sessionStorage.setItem("header-notification-reopen-once", "1");
       } catch {}
     }
-    // 즉시 슬라이드 아웃, 동시에 라우팅
-    const el = document.querySelector(".user-content-page-shell") as HTMLElement | null;
-    if (el) {
-      el.style.transition = "transform 0.26s cubic-bezier(0.4,0,1,1), opacity 0.26s";
-      el.style.transform = "translateX(100%)";
-      el.style.opacity = "0.6";
+    const navigate = () => {
+      if (onRequestClose) {
+        onRequestClose();
+        return;
+      }
+      router.push(boardListPath, { scroll: false });
+    };
+    if (typeof document !== "undefined" && "startViewTransition" in document) {
+      document.documentElement.dataset.vtDirection = "backward";
+      const vt = document.startViewTransition(navigate);
+      vt.finished.finally(() => {
+        delete document.documentElement.dataset.vtDirection;
+      });
+    } else {
+      navigate();
     }
-    if (onRequestClose) {
-      onRequestClose();
-      return;
-    }
-    router.push(boardListPath, { scroll: false });
   }, [onRequestClose, router, boardListPath, cameFromNotification]);
 
   // 1단계: 마운트 후 캐시 데이터로 즉시 채우기

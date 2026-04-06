@@ -1707,3 +1707,47 @@
   color: #1d4ed8;
 }
 
+/* ── View Transitions: 페이지 슬라이드 전환 ── */
+
+@keyframes vt-slide-in-from-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes vt-slide-out-to-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-30%); }
+}
+
+@keyframes vt-slide-in-from-left {
+  from { transform: translateX(-30%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes vt-slide-out-to-right {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+
+/* forward: 리스트 → 본문 */
+:root[data-vt-direction="forward"]::view-transition-old(root) {
+  animation: vt-slide-out-to-left 0.32s cubic-bezier(0.4, 0, 1, 1) both;
+}
+:root[data-vt-direction="forward"]::view-transition-new(root) {
+  animation: vt-slide-in-from-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* backward: 본문 → 리스트 */
+:root[data-vt-direction="backward"]::view-transition-old(root) {
+  animation: vt-slide-out-to-right 0.32s cubic-bezier(0.4, 0, 1, 1) both;
+}
+:root[data-vt-direction="backward"]::view-transition-new(root) {
+  animation: vt-slide-in-from-left 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

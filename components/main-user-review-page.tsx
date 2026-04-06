@@ -774,13 +774,16 @@ export function MainUserReviewPage() {
       sessionStorage.setItem(LIST_RETURN_FLAG_KEY, "1");
     } catch {}
     const targetPath = `/user_content/${id}?board=${encodeURIComponent(board)}`;
-    // 리스트 fade-out 시작과 동시에 라우팅 (헤더 멈칫 최소화)
-    const el = document.querySelector(".user-review-page") as HTMLElement | null;
-    if (el) {
-      el.style.transition = "opacity 0.15s";
-      el.style.opacity = "0";
+    const navigate = () => router.push(targetPath, { scroll: false });
+    if (typeof document !== "undefined" && "startViewTransition" in document) {
+      document.documentElement.dataset.vtDirection = "forward";
+      const vt = document.startViewTransition(navigate);
+      vt.finished.finally(() => {
+        delete document.documentElement.dataset.vtDirection;
+      });
+    } else {
+      navigate();
     }
-    router.push(targetPath, { scroll: false });
   };
 
   function closeSearchSheet() {
