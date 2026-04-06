@@ -23,10 +23,14 @@ type ReplyContext = {
   parentId: string;
 };
 
+type SubmitButtonState = "idle" | "pending" | "error";
+
 type ReviewCountPatch = {
   likeCount?: number;
   commentCount?: number;
 };
+
+const SOFT_DELETED_PARENT_TEXT = "댓글이 삭제되었습니다.";
 
 function dispatchNotificationRefresh() {
   if (typeof window === "undefined") return;
@@ -229,8 +233,9 @@ export function UserContentInteractions({
   const commentTextareaElRef = useRef<HTMLTextAreaElement>(null);
   const editTextareaElRef = useRef<HTMLTextAreaElement>(null);
   const [menuComment, setMenuComment] = useState<Comment | null>(null);
-  const [menuParentId, setMenuParentId] = useState<string | null>(null);
   const [pendingLikeCommentIds, setPendingLikeCommentIds] = useState<Set<string>>(new Set());
+  const [submitButtonState, setSubmitButtonState] = useState<SubmitButtonState>("idle");
+  const submitButtonStateTimerRef = useRef<number | null>(null);
   const lastCommentCountRef = useRef<number | null>(null);
   const highlightedCommentDoneRef = useRef<string | null>(null);
   const highlightTimerRef = useRef<number | null>(null);
@@ -262,6 +267,9 @@ export function UserContentInteractions({
     return () => {
       if (highlightTimerRef.current !== null) {
         window.clearTimeout(highlightTimerRef.current);
+      }
+      if (submitButtonStateTimerRef.current !== null) {
+        window.clearTimeout(submitButtonStateTimerRef.current);
       }
     };
   }, []);
@@ -392,12 +400,34 @@ export function UserContentInteractions({
 
   function startReply(target: Comment, parentId: string) {
     setReplyTo({ target, parentId });
+    setSubmitButtonState("idle");
     focusCommentTextarea();
+  }
+
+  function updateSubmitButtonState(next: SubmitButtonState, autoResetMs?: number) {
+    if (submitButtonStateTimerRef.current !== null) {
+      window.clearTimeout(submitButtonStateTimerRef.current);
+      submitButtonStateTimerRef.current = null;
+    }
+
+    setSubmitButtonState(next);
+    if (!autoResetMs) return;
+
+    submitButtonStateTimerRef.current = window.setTimeout(() => {
+      setSubmitButtonState("idle");
+      submitButtonStateTimerRef.current = null;
+    }, autoResetMs);
   }
 
   async function handleSubmitComment() {
     if (!isSignedIn) { router.push("/sign-in"); return; }
     if (!commentInput.trim() || submitting) return;
+    const submittingReply = replyTo !== null;
+    if (submittingReply) {
+      updateSubmitButtonState("pending");
+    } else {
+      updateSubmitButtonState("idle");
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`/api/main/user-review/${reviewId}/comments`, {
@@ -426,7 +456,16 @@ export function UserContentInteractions({
         });
         setCommentInput("");
         setReplyTo(null);
+        if (submittingReply) {
+          updateSubmitButtonState("idle");
+        }
         dispatchNotificationRefresh();
+      } else if (submittingReply) {
+        updateSubmitButtonState("error", 2200);
+      }
+    } catch {
+      if (submittingReply) {
+        updateSubmitButtonState("error", 2200);
       }
     } finally {
       setSubmitting(false);
@@ -472,11 +511,29 @@ export function UserContentInteractions({
         body: JSON.stringify({ commentId }),
       });
       if (res.ok) {
+        const payload = (await res.json()) as {
+          ok?: boolean;
+          mode?: "hard" | "soft";
+          commentId?: string;
+          content?: string;
+        };
+        const deletedCommentId = payload.commentId ?? commentId;
+        const target = commentsRef.current.find((c) => c.id === deletedCommentId);
+        const fallbackMode: "hard" | "soft" = target?.parentId ? "hard" : "soft";
+        const deleteMode = payload.mode ?? fallbackMode;
+
         setComments((prev) => {
-          const next = prev.map((c) => c.id === commentId ? { ...c, isDeleted: true, content: "삭제된 댓글입니다." } : c);
+          const next = deleteMode === "hard"
+            ? prev.filter((c) => c.id !== deletedCommentId)
+            : prev.map((c) =>
+              c.id === deletedCommentId
+                ? { ...c, isDeleted: true, content: payload.content ?? SOFT_DELETED_PARENT_TEXT }
+                : c
+            );
           setCommentsCache(next);
           return next;
         });
+        setReplyTo((prev) => (prev?.target.id === deletedCommentId ? null : prev));
       }
     } finally {
       setSubmitting(false);
@@ -519,7 +576,7 @@ export function UserContentInteractions({
                       <button
                         type="button"
                         className="user-content-comment-more-btn"
-                        onClick={() => { setMenuComment(comment); setMenuParentId(comment.id); }}
+                        onClick={() => { setMenuComment(comment); }}
                       >
                         ...
                       </button>
@@ -551,7 +608,7 @@ export function UserContentInteractions({
                         className="user-content-comment-action-btn"
                         onClick={() => startReply(comment, comment.id)}
                       >
-                        댓글달기
+                        댓글쓰기
                       </button>
                     )}
                     <button
@@ -594,7 +651,7 @@ export function UserContentInteractions({
                             <button
                               type="button"
                               className="user-content-comment-more-btn"
-                              onClick={() => { setMenuComment(reply); setMenuParentId(comment.id); }}
+                              onClick={() => { setMenuComment(reply); }}
                             >
                               ...
                             </button>
@@ -627,7 +684,7 @@ export function UserContentInteractions({
                             className="user-content-comment-action-btn"
                             onClick={() => startReply(reply, comment.id)}
                           >
-                            댓글달기
+                            댓글쓰기
                           </button>
                         )}
                         <button
@@ -653,7 +710,7 @@ export function UserContentInteractions({
       {replyTo && (
         <div className="user-content-replying-banner">
           <span>{replyTo.target.authorId}에게 답글 남기는 중...</span>
-          <button type="button" onClick={() => setReplyTo(null)}>
+          <button type="button" onClick={() => { setReplyTo(null); updateSubmitButtonState("idle"); }}>
             취소
           </button>
         </div>
@@ -680,7 +737,11 @@ export function UserContentInteractions({
           onClick={handleSubmitComment}
           disabled={!commentInput.trim() || submitting}
         >
-          등록
+          {submitButtonState === "pending"
+            ? "등록 중..."
+            : submitButtonState === "error"
+                ? "다시 시도"
+                : "등록"}
         </button>
       </div>
 
@@ -689,16 +750,6 @@ export function UserContentInteractions({
         <>
           <div className="user-content-comment-sheet-backdrop" onClick={() => setMenuComment(null)} />
           <div className="user-content-comment-sheet">
-            <button
-              type="button"
-              className="user-content-comment-sheet-item"
-              onClick={() => {
-                startReply(menuComment, menuParentId ?? menuComment.id);
-                setMenuComment(null);
-              }}
-            >
-              댓글쓰기
-            </button>
             <button
               type="button"
               className="user-content-comment-sheet-item"

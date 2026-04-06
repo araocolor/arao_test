@@ -105,7 +105,7 @@ export function HeaderProfileLink() {
   const { isSignedIn, user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const realtimeUnreadCount = useNotificationCount(user?.id);
+  const { unreadCount: realtimeUnreadCount, ready: notificationCountReady } = useNotificationCount(user?.id);
   useAdminPendingCount(isSignedIn ?? false);
   const notificationCacheKey = getNotificationCacheKey(user?.id);
   const badgeCount = useHeaderSessionStore((state) => state.badgeCount);
@@ -330,10 +330,11 @@ export function HeaderProfileLink() {
   useEffect(() => {
     if (!isSignedIn) return;
     if (drawerOpen) return;
+    if (!notificationCountReady) return;
     if (badgeCount !== realtimeUnreadCount) {
       setHeaderBadgeCount(realtimeUnreadCount);
     }
-  }, [isSignedIn, realtimeUnreadCount, drawerOpen, badgeCount, setHeaderBadgeCount]);
+  }, [isSignedIn, realtimeUnreadCount, notificationCountReady, drawerOpen, badgeCount, setHeaderBadgeCount]);
 
   // 초기 로드: 아바타 먼저 → 알림 / 로그아웃 시 캐시 제거
   useEffect(() => {

@@ -4,6 +4,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfile } from "@/lib/profiles";
 import { createNotification } from "@/lib/notifications";
 
+const SOFT_DELETED_PARENT_TEXT = "댓글이 삭제되었습니다.";
+
 function maskEmail(email: string): string {
   const at = email.indexOf("@");
   if (at < 0) return email;
@@ -44,12 +46,14 @@ export async function GET(
     likedSet = new Set((likeRows ?? []).map((r: any) => r.comment_id));
   }
 
-  const comments = (data ?? []).map((row: any) => {
+  const comments = (data ?? [])
+    .filter((row: any) => !(row.is_deleted && row.parent_id))
+    .map((row: any) => {
     const p = Array.isArray(row.profile) ? row.profile[0] : row.profile;
     const authorId = p?.username || (p?.email ? maskEmail(p.email) : "익명");
     return {
       id: row.id,
-      content: row.is_deleted ? "삭제된 댓글입니다." : row.content,
+      content: row.is_deleted ? SOFT_DELETED_PARENT_TEXT : row.content,
       isDeleted: row.is_deleted,
       createdAt: row.created_at,
       parentId: row.parent_id ?? null,
@@ -208,14 +212,59 @@ export async function DELETE(
   if (!commentId) return NextResponse.json({ message: "commentId가 필요합니다." }, { status: 400 });
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
+  const { data: targetComment, error: targetCommentError } = await supabase
     .from("user_review_comments")
-    .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+    .select("id, parent_id")
+    .eq("id", commentId)
+    .eq("review_id", id)
+    .eq("profile_id", profile.id)
+    .maybeSingle();
+
+  if (targetCommentError) return NextResponse.json({ message: "댓글 삭제 실패" }, { status: 500 });
+  if (!targetComment) return NextResponse.json({ message: "댓글을 찾을 수 없습니다." }, { status: 404 });
+
+  const isReply = !!targetComment.parent_id;
+
+  if (isReply) {
+    const { error: deleteReplyError } = await supabase
+      .from("user_review_comments")
+      .delete()
+      .eq("id", commentId)
+      .eq("review_id", id)
+      .eq("profile_id", profile.id);
+
+    if (deleteReplyError) return NextResponse.json({ message: "댓글 삭제 실패" }, { status: 500 });
+    return NextResponse.json({ ok: true, mode: "hard" as const, commentId });
+  }
+
+  const { count: replyCount, error: replyCountError } = await supabase
+    .from("user_review_comments")
+    .select("id", { count: "exact", head: true })
+    .eq("review_id", id)
+    .eq("parent_id", commentId);
+
+  if (replyCountError) return NextResponse.json({ message: "댓글 삭제 실패" }, { status: 500 });
+
+  if ((replyCount ?? 0) > 0) {
+    const { error: softDeleteError } = await supabase
+      .from("user_review_comments")
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq("id", commentId)
+      .eq("review_id", id)
+      .eq("profile_id", profile.id);
+
+    if (softDeleteError) return NextResponse.json({ message: "댓글 삭제 실패" }, { status: 500 });
+    return NextResponse.json({ ok: true, mode: "soft" as const, commentId, content: SOFT_DELETED_PARENT_TEXT });
+  }
+
+  const { error: deleteRootError } = await supabase
+    .from("user_review_comments")
+    .delete()
     .eq("id", commentId)
     .eq("review_id", id)
     .eq("profile_id", profile.id);
 
-  if (error) return NextResponse.json({ message: "댓글 삭제 실패" }, { status: 500 });
+  if (deleteRootError) return NextResponse.json({ message: "댓글 삭제 실패" }, { status: 500 });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, mode: "hard" as const, commentId });
 }

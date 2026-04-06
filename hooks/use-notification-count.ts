@@ -5,23 +5,34 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function useNotificationCount(userId: string | null | undefined) {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const normalizedUserId = typeof userId === "string" && userId.length > 0 ? userId : null;
     if (!normalizedUserId) {
       setUnreadCount(0);
+      setReady(false);
       return;
     }
+
+    let isActive = true;
+    setReady(false);
 
     async function fetchUnreadCount() {
       try {
         const response = await fetch("/api/account/notifications");
         if (response.ok) {
           const data = (await response.json()) as { unreadCount: number };
-          setUnreadCount(data.unreadCount);
+          if (isActive) {
+            setUnreadCount(data.unreadCount);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch unread count:", error);
+      } finally {
+        if (isActive) {
+          setReady(true);
+        }
       }
     }
 
@@ -52,11 +63,12 @@ export function useNotificationCount(userId: string | null | undefined) {
       .subscribe();
 
     return () => {
+      isActive = false;
       supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("notification-refresh", handleRefreshNotification);
     };
   }, [userId]);
 
-  return unreadCount;
+  return { unreadCount, ready };
 }

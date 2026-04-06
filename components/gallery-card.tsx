@@ -72,12 +72,24 @@ export function GalleryCard({
   const [usernamePromptOpen, setUsernamePromptOpen] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const userInteractedRef = useRef(false);
+  const interactionLockTimerRef = useRef<number | null>(null);
   const likeUsersSheetDraggingRef = useRef(false);
   const likeUsersSheetDragStartYRef = useRef(0);
   const cardCacheKey = `gallery_card_${category}_${index}_${user?.id ?? "guest"}`;
   const publicCacheKey = `gallery_public_${category}_${index}`;
   const likeUsersCacheKey = `gallery_like_users_${category}_${index}`;
   const generalCacheKey = `general_${(user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? "guest").toLowerCase()}`;
+
+  function lockInteractionSync(ms = 1500) {
+    userInteractedRef.current = true;
+    if (interactionLockTimerRef.current !== null) {
+      window.clearTimeout(interactionLockTimerRef.current);
+    }
+    interactionLockTimerRef.current = window.setTimeout(() => {
+      userInteractedRef.current = false;
+      interactionLockTimerRef.current = null;
+    }, ms);
+  }
 
   function maskEmail(email: string): string {
     const atIndex = email.indexOf("@");
@@ -104,6 +116,14 @@ export function GalleryCard({
       setCommentSheetOpen(true);
     }
   }, [autoOpenComments, openTimestamp]);
+
+  useEffect(() => {
+    return () => {
+      if (interactionLockTimerRef.current !== null) {
+        window.clearTimeout(interactionLockTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (autoOpenLikes) {
@@ -229,7 +249,7 @@ export function GalleryCard({
       return;
     }
     if (likeLoading) return;
-    userInteractedRef.current = true;
+    lockInteractionSync();
     setLikeAnimating(true);
     setTimeout(() => setLikeAnimating(false), 450);
     setLikeLoading(true);
@@ -242,11 +262,22 @@ export function GalleryCard({
         const data = await res.json();
         setLiked(data.liked);
         setLikeCount(data.count);
-        // 캐시 업데이트 → 페이지 재방문 시 liked 상태 유지
-        const cached = getCached<{ count: number; liked: boolean; firstLiker: string | null; commentCount: number }>(cardCacheKey);
-        if (cached) {
-          setCached(cardCacheKey, { ...cached, liked: data.liked, count: data.count });
-        }
+        // 캐시 항상 업데이트 → 페이지 재방문 시 로그인 사용자 하트 상태 즉시 반영
+        const cached =
+          getCached<{ count: number; liked: boolean; firstLiker: string | null; commentCount: number }>(cardCacheKey) ??
+          getCached<{ count: number; firstLiker: string | null; commentCount: number }>(publicCacheKey) ??
+          { count: 0, firstLiker: null, commentCount };
+        setCached(cardCacheKey, {
+          count: data.count ?? cached.count ?? 0,
+          liked: data.liked ?? false,
+          firstLiker: cached.firstLiker ?? firstLiker,
+          commentCount: cached.commentCount ?? commentCount,
+        });
+        setCached(publicCacheKey, {
+          count: data.count ?? cached.count ?? 0,
+          firstLiker: cached.firstLiker ?? firstLiker,
+          commentCount: cached.commentCount ?? commentCount,
+        });
       } else {
         setLiked(wasLiked);
         setLikeCount((prev) => (wasLiked ? prev + 1 : Math.max(prev - 1, 0)));
