@@ -124,6 +124,8 @@ export function HeaderProfileLink() {
   const [email, setEmail] = useState<string | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drawerCacheBatch1Ref = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drawerCacheBatch2Ref = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -185,7 +187,7 @@ export function HeaderProfileLink() {
         const data = (await response.json()) as NotificationPayload;
         applyNotificationPayload(data);
 
-        // 새 갤러리 알림의 댓글 미리 캐시
+        // 안 읽은 갤러리 알림의 댓글 미리 캐시
         const unreadGallery = (data.items ?? []).filter(
           (item) =>
             !item.is_read &&
@@ -206,9 +208,30 @@ export function HeaderProfileLink() {
                 .then((d) => setCached(commentKey, d))
                 .catch(() => {});
             }
-          } catch {
-            // URL 파싱 실패 시 무시
-          }
+          } catch {}
+        }
+
+        // 안 읽은 커뮤니티 알림의 댓글 미리 캐시
+        const unreadReview = (data.items ?? []).filter(
+          (item) =>
+            !item.is_read &&
+            (item.type === "review_comment" ||
+              item.type === "review_comment_like" ||
+              item.type === "review_reply")
+        );
+        for (const item of unreadReview) {
+          try {
+            const url = new URL(item.link, window.location.origin);
+            const reviewId = url.searchParams.get("id") ?? url.pathname.split("/").pop();
+            if (!reviewId) continue;
+            const commentKey = `user-review-comments-${reviewId}`;
+            if (!sessionStorage.getItem(commentKey)) {
+              fetch(`/api/main/user-review/${reviewId}/comments`)
+                .then((r) => r.json())
+                .then((d) => sessionStorage.setItem(commentKey, JSON.stringify({ data: d, ts: Date.now() })))
+                .catch(() => {});
+            }
+          } catch {}
         }
       }
     } catch (error) {
@@ -372,12 +395,33 @@ export function HeaderProfileLink() {
     return () => window.removeEventListener("notification-setting-updated", handleNotificationSettingUpdated);
   }, [notificationCacheKey]);
 
+  // 알림 항목의 커뮤니티 댓글 캐시 (startIdx ~ endIdx)
+  function prefetchCommentRange(notifItems: NotificationItem[], startIdx: number, endIdx: number) {
+    const slice = notifItems.slice(startIdx, endIdx);
+    for (const item of slice) {
+      try {
+        const url = new URL(item.link, window.location.origin);
+        if (!url.pathname.startsWith("/user_content/")) continue;
+        const reviewId = url.pathname.split("/").pop();
+        if (!reviewId) continue;
+        const commentKey = `user-review-comments-${reviewId}`;
+        if (sessionStorage.getItem(commentKey)) continue;
+        fetch(`/api/main/user-review/${reviewId}/comments`)
+          .then((r) => r.json())
+          .then((d) => sessionStorage.setItem(commentKey, JSON.stringify({ data: d, ts: Date.now() })))
+          .catch(() => {});
+      } catch {}
+    }
+  }
+
   // 드로어 오픈
   function openDrawer() {
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
+    if (drawerCacheBatch1Ref.current) clearTimeout(drawerCacheBatch1Ref.current);
+    if (drawerCacheBatch2Ref.current) clearTimeout(drawerCacheBatch2Ref.current);
 
     const cached = readNotificationCache(notificationCacheKey);
     if (cached) {
@@ -386,11 +430,27 @@ export function HeaderProfileLink() {
     setDrawerMounted(true);
     setDrawerOpen(true);
     void fetchNotificationItems({ showLoading: !cached });
+
+    // 드로어 열리는 순간 즉시 첫 5개 댓글 캐시
+    const currentItems = itemsRef.current;
+    prefetchCommentRange(currentItems, 0, 5);
+
+    // 2초 후 6~10개 캐시
+    drawerCacheBatch1Ref.current = setTimeout(() => {
+      prefetchCommentRange(itemsRef.current, 5, 10);
+    }, 2000);
+
+    // 4초 후 11~15개 캐시
+    drawerCacheBatch2Ref.current = setTimeout(() => {
+      prefetchCommentRange(itemsRef.current, 10, 15);
+    }, 4000);
   }
 
   // 드로어 닫기
   function closeDrawer() {
     setDrawerOpen(false);
+    if (drawerCacheBatch1Ref.current) { clearTimeout(drawerCacheBatch1Ref.current); drawerCacheBatch1Ref.current = null; }
+    if (drawerCacheBatch2Ref.current) { clearTimeout(drawerCacheBatch2Ref.current); drawerCacheBatch2Ref.current = null; }
     closeTimerRef.current = setTimeout(() => {
       setDrawerMounted(false);
     }, 260);
@@ -399,9 +459,9 @@ export function HeaderProfileLink() {
   // 정리
   useEffect(() => {
     return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-      }
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      if (drawerCacheBatch1Ref.current) clearTimeout(drawerCacheBatch1Ref.current);
+      if (drawerCacheBatch2Ref.current) clearTimeout(drawerCacheBatch2Ref.current);
     };
   }, []);
 

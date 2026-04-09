@@ -243,7 +243,7 @@ export function UserContentInteractions({
   const commentSectionRef = useRef<HTMLElement | null>(null);
   const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
   const [missingTargetNotice, setMissingTargetNotice] = useState(false);
-  const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [commentsLoaded, setCommentsLoaded] = useState(cachedComments !== null);
   const COMMENT_HIGHLIGHT_DURATION_MS = 1000;
 
   function setCommentsCache(nextComments: Comment[]) {

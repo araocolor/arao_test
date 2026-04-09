@@ -257,7 +257,7 @@ export function NotificationDrawer({
           <div className="notif-empty">알림이 없습니다.</div>
         ) : (
           <div className="notif-list">
-            {(expanded ? sortedItems : sortedItems.slice(0, 5)).map((item) => {
+            {(expanded ? sortedItems : sortedItems.slice(0, 5)).map((item, idx) => {
               const isRead = item.is_read || optimisticReadIds.has(item.id);
               const senderName = getSenderName(item.title);
               const senderInitial = senderName ? senderName.slice(0, 1).toUpperCase() : "?";
@@ -278,6 +278,16 @@ export function NotificationDrawer({
                 href = appendQueryParam(href, "t", String(Date.now()));
               }
               return (
+              <div key={item.id}>
+              {expanded && idx === 5 && (
+                <button
+                  className="notif-more-btn"
+                  onClick={() => setExpanded(false)}
+                  type="button"
+                >
+                  접기
+                </button>
+              )}
               <Link
                 key={item.id}
                 href={href}
@@ -314,6 +324,7 @@ export function NotificationDrawer({
                   </span>
                 )}
               </Link>
+              </div>
               );
             })}
             {!expanded && sortedItems.length > 5 && (
@@ -322,7 +333,7 @@ export function NotificationDrawer({
                 onClick={() => setExpanded(true)}
                 type="button"
               >
-                더보기 ({sortedItems.length - 5}개)
+                {`더보기 (${sortedItems.length - 5}개)`}
               </button>
             )}
           </div>
