@@ -1,0 +1,527 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>역사 퀴즈 챌린지</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .progress {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .question-box {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border-left: 5px solid #667eea;
+        }
+
+        .question {
+            font-size: 1.3em;
+            color: #333;
+            line-height: 1.5;
+            font-weight: 600;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            padding: 18px 25px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: #667eea;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .option-btn.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .option-btn.wrong {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .message-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            padding: 30px 60px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease;
+            pointer-events: none;
+        }
+
+        .message-overlay.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .message-overlay.correct {
+            background: #28a745;
+            color: white;
+        }
+
+        .message-overlay.wrong {
+            background: #dc3545;
+            color: white;
+        }
+
+        .result-screen {
+            text-align: center;
+            display: none;
+        }
+
+        .result-screen.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .score-display {
+            font-size: 3em;
+            color: #667eea;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .restart-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hide {
+            display: none !important;
+        }
+
+        .question-container {
+            animation: fadeIn 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="header">
+            <h1>📚 역사 퀴즈</h1>
+            <div class="progress">
+                문제 <span id="currentNum">1</span> / <span id="totalNum">10</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar" style="width: 10%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="questionContainer" class="question-container">
+            <div class="question-box">
+                <div class="question" id="questionText">로딩 중...</div>
+            </div>
+            <div class="options" id="optionsContainer">
+                <!-- 옵션 버튼들이 여기에 동적으로 생성됩니다 -->
+            </div>
+        </div>
+
+        <div id="resultScreen" class="result-screen">
+            <h2>퀴즈 완료! 🎉</h2>
+            <div class="score-display">
+                <span id="finalScore">0</span> / 10
+            </div>
+            <p id="resultMessage"></p>
+            <button class="restart-btn" onclick="restartQuiz()">다시 시작하기</button>
+        </div>
+    </div>
+
+    <div id="messageOverlay" class="message-overlay">
+        정답입니다! ✅
+    </div>
+
+    <script>
+        // 역사 문제 데이터베이스 (20개 중 랜덤 10개 선택)
+        const allQuestions = [
+            {
+                question: "삼국통일을 이룬 신라의 장군은 누구인가?",
+                options: ["김춘추", "김유신", "계백", "원효"],
+                correct: 1,
+                explanation: "김유신 장군은 삼국을 통일하는 데 결정적인 역할을 했습니다."
+            },
+            {
+                question: "조선 4대 영조의 아들이자 정조의 아버지는?",
+                options: ["사도세자", "효장세자", "장조", "원종"],
+                correct: 0,
+                explanation: "사도세자는 영조의 아들이자 정조의 아버지입니다."
+            },
+            {
+                question: "프랑스 혁명이 일어난 해는?",
+                options: ["1789년", "1799년", "1776년", "1812년"],
+                correct: 0,
+                explanation: "1789년 7월 14일 바스티유 감옥 습격을 시작으로 프랑스 혁명이 일어났습니다."
+            },
+            {
+                question: "한글을 창제한 왕은?",
+                options: ["태종", "세종대왕", "성종", "세조"],
+                correct: 1,
+                explanation: "세종대왕은 1443년 한글을 창제하여 1446년 반포했습니다."
+            },
+            {
+                question: "1차 세계대전이 종료된 해는?",
+                options: ["1914년", "1918년", "1923년", "1939년"],
+                correct: 1,
+                explanation: "1차 세계대전은 1918년 11월 11일에 종전되었습니다."
+            },
+            {
+                question: "고구려를 세운 왕은?",
+                options: ["주몽", "유리왕", "대무신왕", "광개토대왕"],
+                correct: 0,
+                explanation: "주몽(동명성왕)이 고구려를 건국했습니다."
+            },
+            {
+                question: "미국 독립선언이 이루어진 해는?",
+                options: ["1776년", "1783년", "1492년", "1800년"],
+                correct: 0,
+                explanation: "1776년 7월 4일 미국 독립선언이 이루어졌습니다."
+            },
+            {
+                question: "임진왜란이 발발한 해는?",
+                options: ["1592년", "1597년", "1598년", "1609년"],
+                correct: 0,
+                explanation: "1592년(선조 25년) 4월 13일 임진왜란이 발발했습니다."
+            },
+            {
+                question: "이탈리아 통일운동의 영웅으로 '붉은 셔츠'로 불린 인물은?",
+                options: ["마치니", "가리발디", "카보우르", "비토리오"],
+                correct: 1,
+                explanation: "가리발디는 붉은 셔츠를 입고 이탈리아 통일에 기여했습니다."
+            },
+            {
+                question: "근대 서양의학이 처음 도입된 조선 왕은?",
+                options: ["철종", "고종", "순종", "헌종"],
+                correct: 1,
+                explanation: "고종 때 최초로 서양의사인 알렌이 입국하여 의료활동을 시작했습니다."
+            },
+            {
+                question: "나폴레옹이 최후를 맞이한 전투는?",
+                options: ["아우스터리츠 전투", "워털루 전투", "보라딘노 전투", "마레고 전투"],
+                correct: 1,
+                explanation: "1815년 워털루 전투에서 패배한 나폴레옹은 생헬레나 섬에 유폐되었습니다."
+            },
+            {
+                question: "신라의 화랑도를 정립한 왕은?",
+                options: ["진흥왕", "진지왕", "진평왕", "진덕여왕"],
+                correct: 0,
+                explanation: "진흥왕은 화랑도를 조직하여 국가의 위상을 높였습니다."
+            },
+            {
+                question: "3.1운동이 일어난 해는?",
+                options: ["1910년", "1919년", "1920년", "1945년"],
+                correct: 1,
+                explanation: "1919년 3월 1일 만세운동이 전국적으로 일어났습니다."
+            },
+            {
+                question: "로마 제국을 최초로 정립한 황제는?",
+                options: ["카이사르", "아우구스투스", "네로", "트라야누스"],
+                correct: 1,
+                explanation: "아우구스투스(옥타비아누스)가 로마 제국의 초대 황제가 되었습니다."
+            },
+            {
+                question: "백제를 세운 왕은?",
+                options: ["온조", "다루", "위례", "계루"],
+                correct: 0,
+                explanation: "온조가 한강 하류 지역에 백제를 건국했습니다."
+            },
+            {
+                question: "최초로 한반도 전체를 통일한 왕조는?",
+                options: ["고려", "조선", "신라", "고구려"],
+                correct: 2,
+                explanation: "신라가 668년 삼국통일을 이루어 최초로 한반도 전체를 통일했습니다."
+            },
+            {
+                question: "마르크스와 엥겔스가 공산당선언을 발표한 해는?",
+                options: ["1848년", "1871년", "1917년", "1789년"],
+                correct: 0,
+                explanation: "1848년 마르크스와 엥겔스는 공산당선언을 발표했습니다."
+            },
+            {
+                question: "조선시대 최초의 금속활자는?",
+                options: ["경자전", "갑인자", "주자소", "규장각"],
+                correct: 1,
+                explanation: "고종 11년(1874)에 찍은 갑인자가 조선의 최초 금속활자입니다."
+            },
+            {
+                question: "크리스토퍼 콜럼버스가 아메리카 대륙에 도달한 해는?",
+                options: ["1492년", "1498년", "1519년", "1607년"],
+                correct: 0,
+                explanation: "1492년 콜럼버스는 서인도제도로 오인한 아메리카 대륙에 도달했습니다."
+            },
+            {
+                question: "을사늑약이 체결된 해는?",
+                options: ["1905년", "1910년", "1895년", "1876년"],
+                correct: 0,
+                explanation: "1905년(을사년)에 을사늑약이 체결되어 한국의 외교권이 박탈되었습니다."
+            }
+        ];
+
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let isWaiting = false;
+        let messageTimeout;
+
+        // 배열 섞기 함수
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // 퀴즈 초기화
+        function initQuiz() {
+            // 20개 중 랜덤 10개 선택
+            currentQuestions = shuffleArray(allQuestions).slice(0, 10);
+            currentIndex = 0;
+            score = 0;
+            isWaiting = false;
+            
+            document.getElementById('resultScreen').classList.remove('show');
+            document.getElementById('questionContainer').classList.remove('hide');
+            document.querySelector('.header').style.display = 'block';
+            
+            updateProgress();
+            showQuestion();
+        }
+
+        // 진행 상황 업데이트
+        function updateProgress() {
+            document.getElementById('currentNum').textContent = currentIndex + 1;
+            document.getElementById('totalNum').textContent = currentQuestions.length;
+            const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        // 문제 표시
+        function showQuestion() {
+            const question = currentQuestions[currentIndex];
+            const shuffledOptions = shuffleArray(
+                question.options.map((opt, idx) => ({ text: opt, originalIndex: idx }))
+            );
+            
+            // 현재 문제의 정답 인덱스 저장 (섞인 후의 인덱스로 변환)
+            question.shuffledCorrectIndex = shuffledOptions.findIndex(
+                opt => opt.originalIndex === question.correct
+            );
+            
+            document.getElementById('questionText').textContent = question.question;
+            
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            shuffledOptions.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt.text;
+                btn.onclick = () => checkAnswer(index);
+                optionsContainer.appendChild(btn);
+            });
+            
+            // 애니메이션 효과
+            const container = document.getElementById('questionContainer');
+            container.style.animation = 'none';
+            setTimeout(() => {
+                container.style.animation = 'fadeIn 0.5s ease';
+            }, 10);
+        }
+
+        // 정답 체크
+        function checkAnswer(selectedIndex) {
+            if (isWaiting) return;
+            
+            isWaiting = true;
+            const question = currentQuestions[currentIndex];
+            const buttons = document.querySelectorAll('.option-btn');
+            const isCorrect = selectedIndex === question.shuffledCorrectIndex;
+            
+            // 버튼 상태 표시
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === question.shuffledCorrectIndex) {
+                    btn.classList.add('correct');
+                } else if (idx === selectedIndex && !isCorrect) {
+                    btn.classList.add('wrong');
+                }
+            });
+            
+            // 메시지 표시
+            const message = document.getElementById('messageOverlay');
+            if (isCorrect) {
+                message.textContent = '정답입니다! ✅';
+                message.className = 'message-overlay correct show';
+                score++;
+            } else {
+                message.textContent = '오답입니다! ❌';
+                message.className = 'message-overlay wrong show';
+            }
+            
+            // 2초 후 처리
+            messageTimeout = setTimeout(() => {
+                message.classList.remove('show');
+                
+                if (isCorrect) {
+                    currentIndex++;
+                    if (currentIndex < currentQuestions.length) {
+                        updateProgress();
+                        showQuestion();
+                    } else {
+                        showResult();
+                    }
+                } else {
+                    // 오답인 경우 현재 문제 유지, 버튼만 초기화
+                    buttons.forEach(btn => {
+                        btn.disabled = false;
+                        btn.classList.remove('correct', 'wrong');
+                    });
+                }
+                
+                isWaiting = false;
+            }, 2000);
+        }
+
+        // 결과 화면 표시
+        function showResult() {
+            document.getElementById('questionContainer').classList.add('hide');
+            document.querySelector('.header').style.display = 'none';
+            
+            const resultScreen = document.getElementById('resultScreen');
+            resultScreen.classList.add('show');
+            
+            document.getElementById('finalScore').textContent = score;
+            
+            let message = '';
+            const percentage = (score / currentQuestions.length) * 100;
+            
+            if (percentage === 100) {
+                message = '완벽합니다! 역사 박사 수준! 🏆';
+            } else if (percentage >= 80) {
+                message = '훌륭합니다! 역사를 잘 알고 계시네요! 👏';
+            } else if (percentage >= 60) {
+                message = '괜찮습니다! 조금만 더 공부하면 될 거예요! 📖';
+            } else {
+                message = '아쉽네요. 역사 공부가 필요해요! 💪';
+            }
+            
+            document.getElementById('resultMessage').textContent = message;
+        }
+
+        // 퀴즈 재시작
+        function restartQuiz() {
+            clearTimeout(messageTimeout);
+            document.getElementById('messageOverlay').classList.remove('show');
+            initQuiz();
+        }
+
+        // 페이지 로드 시 시작
+        window.onload = initQuiz;
+    </script>
+</body>
+</html>
+```
