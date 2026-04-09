@@ -42,8 +42,7 @@ function readNotificationCache(cacheKey: string): NotificationPayload | null {
     const parsed = JSON.parse(raw) as NotificationCacheSnapshot;
     if (!parsed?.data || !Number.isFinite(parsed.ts)) return null;
     if (Date.now() - parsed.ts > NOTIFICATION_CACHE_TTL) {
-      sessionStorage.removeItem(cacheKey);
-      return null;
+      return parsed.data; // 만료돼도 즉시 표시, 백그라운드 fetch가 갱신
     }
     return parsed.data;
   } catch {
