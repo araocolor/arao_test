@@ -34,11 +34,6 @@ body {
     "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
 }
 
-iframe[src*="accounts.dev"],
-iframe[src*="clerk.accounts.dev"] {
-  display: none !important;
-}
-
 a {
   color: inherit;
   text-decoration: none;

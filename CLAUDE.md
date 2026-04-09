@@ -8,10 +8,6 @@ Also follow **AGENTS.md** for shared agent workflow and verification rules.
 > 2. **부모 요소부터 자식 요소까지 전체 구조를 파악**하고 이미 적용된 스타일 확인
 > 3. 확인한 내용을 사용자에게 먼저 보고한 후 수정 진행
 
-## 체크리스트
-
-- [ ] 이미지는 Supabase Storage에 업로드 후 URL만 DB에 저장 (base64 DB 직접 저장 금지)
-- [ ] 커뮤니티 이미지 저장 방식을 Supabase Storage URL 방식
 
 ## Quick Start
 
@@ -48,54 +44,28 @@ export async function GET(
 
 ## 핵심 패턴
 
-### profiles.id = Clerk userId
+### 캐시 로딩
 
-`isAuthor` 체크 시 `currentUser()` + `syncProfile()` 불필요:
 ```typescript
-const { userId } = await auth();
-const isAuthor = !!userId && userId === item.profileId;
-```
-
-### 캐시 로딩 패턴 (Hydration 안전)
-
-`sessionStorage`/`localStorage` 캐시는 `useState` 초기값에서 읽지 말 것. 서버에 없는 데이터라 Hydration 에러 발생.
-```typescript
-// O 올바른 패턴 — 빈 틀로 시작, 마운트 후 캐시 채우기
+// O — useEffect에서 로드
 const [item, setItem] = useState(null);
 useEffect(() => {
   const cached = getCache(id);
   if (cached) setItem(cached);
 }, [id]);
 
-// X 잘못된 패턴 — Hydration 에러 (서버/클라이언트 불일치)
+// X — useState 초기값에서 로드 (Hydration 에러)
 const [item, setItem] = useState(() => getCache(id));
 ```
 
-### 비블로킹 패턴: after()
+### 뒤에서 처리: after()
 
-응답 후 실행할 작업(조회수 증가 등):
 ```typescript
 import { after } from "next/server";
 after(() => { void incrementUserReviewViewCount(id); });
 ```
 
-### Consulting 알림 분리
-
-`notifications` 테이블 조회 시 `.neq("type","consulting")` 필수 — `inquiries` 쿼리로 별도 처리
-
-### Supabase Realtime 필수 설정
-
-```sql
-alter publication supabase_realtime add table gallery_item_likes;
-alter publication supabase_realtime add table gallery_comments;
-alter publication supabase_realtime add table notifications;
-alter publication supabase_realtime add table inquiries;
-```
-
-### DB RPC 함수
-
-- `increment_review_likes` / `decrement_review_likes` — 리뷰 좋아요
-- `increment_user_review_view_count` — 커뮤니티 조회수
+상세 내용은 **frontend.md**, **backend.md** 참조.
 
 ## Styling & Layout
 

@@ -1,9 +1,10 @@
 {
-  "name": "landing-expansion-architecture",
+  "name": "araocolor Project",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "test": "npm run build",
     "start": "next start",
     "lint": "next lint",
     "report:push": "node scripts/push-work-report.mjs"

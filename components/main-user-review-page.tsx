@@ -84,6 +84,7 @@ const LIST_CACHE_KEY = "user-review-list-cache";
 const SCROLL_KEY = "user-review-scroll";
 const LIST_STATE_KEY = "user-review-list-state-v1";
 const LIST_RETURN_FLAG_KEY = "user-review-return-once";
+const LAST_OPENED_REVIEW_ID_KEY = "user-review-last-opened-id";
 const CACHE_TTL = 300000; // 5분
 const BACKGROUND_REVALIDATE_COOLDOWN = 60000; // 1분
 const TOP_REFRESH_COOLDOWN = 30000; // 30초
@@ -203,6 +204,9 @@ export function MainUserReviewPage() {
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [returnHighlightedId, setReturnHighlightedId] = useState<string | null>(null);
+  const returnHighlightedIdRef = useRef<string | null>(null);
+  const [returnMarkedId, setReturnMarkedId] = useState<string | null>(null);
   const [newItemId, setNewItemId] = useState<string | null>(null);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   const [searchSheetClosing, setSearchSheetClosing] = useState(false);
@@ -239,6 +243,16 @@ export function MainUserReviewPage() {
       query: query.trim(),
     };
   }, [board, page, sortMode, query]);
+
+  useEffect(() => {
+    returnHighlightedIdRef.current = returnHighlightedId;
+    if (!returnHighlightedId) return;
+    const timer = window.setTimeout(() => {
+      setReturnHighlightedId((prev) => (prev === returnHighlightedId ? null : prev));
+      returnHighlightedIdRef.current = null;
+    }, 2100);
+    return () => window.clearTimeout(timer);
+  }, [returnHighlightedId]);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -281,6 +295,22 @@ export function MainUserReviewPage() {
     }
     if (restoreFlag) {
       sessionStorage.removeItem(LIST_RETURN_FLAG_KEY);
+    }
+    if (restoreFlag) {
+      const restoredReviewId = sessionStorage.getItem(LAST_OPENED_REVIEW_ID_KEY);
+      if (restoredReviewId && restoredReviewId.trim()) {
+        const nextId = restoredReviewId.trim();
+        // 같은 글을 연속으로 열어도 복귀 시 애니메이션이 다시 재생되도록 강제 리셋
+        setReturnHighlightedId(null);
+        setReturnMarkedId(nextId);
+        window.requestAnimationFrame(() => setReturnHighlightedId(nextId));
+      } else {
+        setReturnHighlightedId(null);
+        setReturnMarkedId(null);
+      }
+    } else {
+      setReturnHighlightedId(null);
+      setReturnMarkedId(null);
     }
 
     const initialBoard =
@@ -521,7 +551,8 @@ export function MainUserReviewPage() {
         current.page === 1 &&
         current.sortMode === "latest" &&
         !current.query &&
-        Date.now() >= backgroundApplyResumeAtRef.current
+        Date.now() >= backgroundApplyResumeAtRef.current &&
+        !returnHighlightedIdRef.current
       ) {
         setItems(nextItems);
         setTotal(nextTotal);
@@ -567,7 +598,8 @@ export function MainUserReviewPage() {
         currentState.page !== 1 ||
         currentState.sortMode !== "latest" ||
         currentState.query ||
-        Date.now() < backgroundApplyResumeAtRef.current
+        Date.now() < backgroundApplyResumeAtRef.current ||
+        returnHighlightedIdRef.current
       ) {
         return;
       }
@@ -767,6 +799,7 @@ export function MainUserReviewPage() {
     backgroundApplyResumeAtRef.current = Number.POSITIVE_INFINITY;
     saveScroll();
     try {
+      sessionStorage.setItem(LAST_OPENED_REVIEW_ID_KEY, id);
       sessionStorage.setItem(
         LIST_STATE_KEY,
         JSON.stringify({ board, page, sortMode, query: query.trim(), viewMode, ts: Date.now() })
@@ -959,12 +992,13 @@ export function MainUserReviewPage() {
                 <button
                   key={item.id}
                   type="button"
-                  className={`user-review-item list${readIds.has(item.id) ? " read" : ""}${item.isAuthor ? " mine" : ""}`}
+                  className={`user-review-item list${readIds.has(item.id) ? " read" : ""}${item.isAuthor ? " mine" : ""}${returnHighlightedId === item.id ? " return-flash" : ""}`}
                   onClick={() => openReview(item.id)}
                 >
                 <div className="user-review-item-main">
                   <p className="user-review-item-title">
                     {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
+                    {returnMarkedId === item.id && <strong>{">"} </strong>}
                     {item.title.length > 21 ? `${item.title.slice(0, 20)}...` : item.title}
                     {item.id === newItemId && <span className="user-review-item-new-badge">NEW</span>}
                   </p>
