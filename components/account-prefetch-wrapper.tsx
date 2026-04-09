@@ -1,13 +1,13 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import { useAccountPrefetch } from "@/hooks/use-account-prefetch";
 import { useInactivityLogout } from "@/hooks/use-inactivity-logout";
 import { useGalleryPrefetch } from "@/hooks/use-gallery-prefetch";
 import { setCached } from "@/hooks/use-prefetch-cache";
 import { GALLERY_CATEGORIES } from "@/lib/gallery-categories";
-
-const REVIEW_LIST_CACHE_TTL = 300000; // 5분
+import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 
@@ -96,9 +96,10 @@ function isStale(key: string, maxAge = REVIEW_LIST_CACHE_TTL): boolean {
 }
 
 export function AccountPrefetchWrapper({ children }: { children: ReactNode }) {
+  const { user } = useUser();
   useAccountPrefetch();
   useInactivityLogout();
-  useGalleryPrefetch();
+  useGalleryPrefetch(user?.id ?? null);
 
   useEffect(() => {
     // 첫 페이지 도착 시 캐시가 만료됐으면 1회 갱신

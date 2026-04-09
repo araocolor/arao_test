@@ -4,15 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import {
-  SparklesIcon,
-  CursorArrowRippleIcon,
-  TagIcon,
-  BookOpenIcon,
-  ChatBubbleLeftIcon,
-  Cog6ToothIcon,
-  UsersIcon,
-} from "@heroicons/react/24/outline";
+import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users } from "lucide-react";
+import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 
 type SiteHeaderProps = {
   links: Array<{ href: string; label: string; icon?: string; divider?: boolean }>;
@@ -27,7 +20,6 @@ type SiteHeaderProps = {
   menuHeader?: string;
 };
 
-const REVIEW_LIST_CACHE_TTL = 300000; // 5분
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 
@@ -53,14 +45,14 @@ function isReviewPrefetchLocked(): boolean {
   }
 }
 
-// 메뉴 항목별 Heroicons
+// 메뉴 항목별 아이콘
 const MENU_ICONS: Record<string, ReactNode> = {
-  "/arao": <SparklesIcon width={20} height={20} strokeWidth={1.7} />,
-  "/gallery": <CursorArrowRippleIcon width={20} height={20} strokeWidth={1.7} />,
-  "/pricing": <TagIcon width={20} height={20} strokeWidth={1.7} />,
-  "/manual": <BookOpenIcon width={20} height={20} strokeWidth={1.7} />,
-  "/user_review": <UsersIcon width={20} height={20} strokeWidth={1.7} />,
-  "/account/general": <Cog6ToothIcon width={20} height={20} strokeWidth={1.7} />,
+  "/arao": <Sparkles width={20} height={20} strokeWidth={1.7} />,
+  "/gallery": <MousePointerClick width={20} height={20} strokeWidth={1.7} />,
+  "/pricing": <Tag width={20} height={20} strokeWidth={1.7} />,
+  "/manual": <BookOpen width={20} height={20} strokeWidth={1.7} />,
+  "/user_review": <Users width={20} height={20} strokeWidth={1.7} />,
+  "/account/general": <Settings2 width={20} height={20} strokeWidth={1.7} />,
 };
 
 export function SiteHeader({

@@ -2,6 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { clearAllCachesOnLogout } from "@/hooks/use-prefetch-cache";
 
 export function HeaderLogoutButton() {
   const { isSignedIn } = useUser();
@@ -19,7 +20,10 @@ export function HeaderLogoutButton() {
     <button
       className="header-menu-label"
       type="button"
-      onClick={() => void signOut().then(() => { window.location.href = "/"; })}
+      onClick={() => {
+        clearAllCachesOnLogout();
+        void signOut().then(() => { window.location.href = "/"; });
+      }}
     >
       로그아웃
     </button>

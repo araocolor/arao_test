@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
+import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 
 const UserReviewFeed = dynamic(() => import("./user-review-feed").then((mod) => ({ default: mod.UserReviewFeed })), {
   loading: () => <div className="user-review-feed" />,
@@ -85,7 +86,7 @@ const SCROLL_KEY = "user-review-scroll";
 const LIST_STATE_KEY = "user-review-list-state-v1";
 const LIST_RETURN_FLAG_KEY = "user-review-return-once";
 const LAST_OPENED_REVIEW_ID_KEY = "user-review-last-opened-id";
-const CACHE_TTL = 300000; // 5분
+const CACHE_TTL = REVIEW_LIST_CACHE_TTL;
 const BACKGROUND_REVALIDATE_COOLDOWN = 60000; // 1분
 const TOP_REFRESH_COOLDOWN = 30000; // 30초
 const TOP_REFRESH_LIMIT = 2;

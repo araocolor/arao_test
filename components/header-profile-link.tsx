@@ -9,12 +9,11 @@ import { NotificationDrawer } from "@/components/notification-drawer";
 import type { NotificationItem } from "@/lib/notifications";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
+import { REVIEW_LIST_CACHE_TTL, NOTIFICATION_CACHE_TTL } from "@/lib/cache-config";
 
-const REVIEW_LIST_CACHE_TTL = 300000; // 5분
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 const NOTIFICATION_CACHE_PREFIX = "header-notifications-cache-v1";
-const NOTIFICATION_CACHE_TTL = 60000; // 60초
 const NOTIFICATION_REOPEN_ONCE_KEY = "header-notification-reopen-once";
 
 type NotificationPayload = {

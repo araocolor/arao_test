@@ -83,6 +83,9 @@ after(() => { void incrementUserReviewViewCount(id); });
 | **share.md** | Routing, auth, workflows, deployment, preferences |
 | **DATABASE_SCHEMA.md** | Complete database structure |
 | **LAYOUT_MAP.md** | 구역명 → CSS 클래스 → 파일 매핑 |
+| **CACHE_IMPROVEMENTS.md** | 캐싱 전략 개선 계획 (심각도별 체크리스트) |
+
+> **캐싱 개선 작업 규칙**: 사용자가 "개선사항 보여줘" 또는 "캐시 개선" 을 요청할 때만 **CACHE_IMPROVEMENTS.md**를 참조하여 미완료 항목을 확인하고 보고할 것. 자동으로 개선 작업을 시작하지 말 것.
 
 ## Commit Convention
 
