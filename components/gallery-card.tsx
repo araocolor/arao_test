@@ -145,10 +145,16 @@ export function GalleryCard({
     };
   }, [likeUsersSheetOpen]);
 
+  const ssrLikedRef = useRef(initialLiked);
+
   useEffect(() => {
     function applyData(data: { count?: number; liked?: boolean; firstLiker?: string | null; commentCount?: number }) {
       setLikeCount(data.count ?? 0);
-      setLiked(data.liked ?? false);
+      // SSR에서 받은 liked 값이 있으면 첫 fetch 결과로 덮어쓰지 않음 (1초 딜레이 방지)
+      if (!ssrLikedRef.current) {
+        setLiked(data.liked ?? false);
+      }
+      ssrLikedRef.current = false;
       setFirstLiker(data.firstLiker ?? null);
       setCommentCount(data.commentCount ?? 0);
     }
