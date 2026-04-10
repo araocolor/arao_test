@@ -3,31 +3,28 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { SignOutButton } from "@clerk/nextjs";
 import type { LandingContent } from "@/lib/landing-content";
 import { AdminContentManager } from "@/components/admin-content-manager";
 import { AdminPricingManager } from "@/components/admin-pricing-manager";
 import { AdminConsultingManager } from "@/components/admin-consulting-manager";
-import { AdminWorkLogsManager } from "@/components/admin-work-logs-manager";
-import { AdminSignOut } from "@/components/admin-sign-out";
+import { AdminCommitListPage } from "@/components/admin-commit-list-page";
 
 const MOBILE_DRAWER_CLOSE_MS = 280;
 
 const adminSections = [
-  {
-    id: "gallery",
-    menu: "갤러리 관리",
-    eyebrow: "Gallery",
-    title: "갤러리 관리",
-    description: "카테고리별 Before / After 이미지, 제목, 문구, 촬영 정보를 관리합니다.",
-  },
   {
     id: "landing",
     menu: "랜딩페이지",
     eyebrow: "Landing",
     title: "랜딩페이지",
     description: "Hero, Before/After, 리뷰, YouTube, 푸터 섹션을 수정합니다.",
+  },
+  {
+    id: "gallery",
+    menu: "갤러리 관리",
+    eyebrow: "Gallery",
+    title: "갤러리 관리",
+    description: "카테고리별 Before / After 이미지, 제목, 문구, 촬영 정보를 관리합니다.",
   },
   {
     id: "pricing",
@@ -42,13 +39,6 @@ const adminSections = [
     eyebrow: "Consulting",
     title: "상담 및 문의 관리",
     description: "사용자가 제출한 1:1 상담과 일반 문의를 확인하고 답변을 관리합니다.",
-  },
-  {
-    id: "worklogs",
-    menu: "작업이력",
-    eyebrow: "Work Logs",
-    title: "작업 이력 및 메모",
-    description: "커밋별 작업 결과를 정리하고, 관리자 메모를 누적 기록합니다.",
   },
   {
     id: "members",
@@ -82,6 +72,13 @@ const adminSections = [
     description: "로그인, 관리자 접근 제어, 역할 기반 권한 흐름을 이 영역에서 계속 확장할 수 있습니다.",
     items: ["로그인 정책", "관리자 접근 제한", "역할 기반 권한 체크"],
   },
+  {
+    id: "commit-list",
+    menu: "커밋내역",
+    eyebrow: "Commit List",
+    title: "커밋내역",
+    description: "커밋 내역과 보고서, 메모를 확인합니다.",
+  },
 ];
 
 type AdminDashboardProps = {
@@ -91,7 +88,6 @@ type AdminDashboardProps = {
 };
 
 export function AdminDashboard({ email, role, landingContent }: AdminDashboardProps) {
-  const searchParams = useSearchParams();
   const [activeSectionId, setActiveSectionId] = useState(adminSections[0].id);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
@@ -107,14 +103,7 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
     };
   }, []);
 
-  useEffect(() => {
-    if (searchParams.get("menu") === "open") {
-      setMenuMounted(true);
-      setMenuOpen(true);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
+useEffect(() => {
     if (menuOpen) {
       document.body.style.overflow = "hidden";
       return () => {
@@ -147,6 +136,11 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
     }, MOBILE_DRAWER_CLOSE_MS);
   };
 
+  const selectSection = (sectionId: string) => {
+    setActiveSectionId(sectionId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="admin-layout admin-layout-root">
       <button
@@ -163,25 +157,25 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
 
       {menuMounted ? (
         <div
-          className={`nav-drawer-backdrop${menuOpen ? " is-open" : ""}`}
+          className={`admin-nav-drawer-backdrop${menuOpen ? " is-open" : ""}`}
           onClick={() => closeMenu()}
           role="presentation"
           aria-hidden="true"
         >
           <aside
-            className={`nav-drawer${menuOpen ? " is-open" : ""}`}
+            className={`admin-nav-drawer${menuOpen ? " is-open" : ""}`}
             onClick={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="관리 메뉴"
           >
-            <div className="nav-drawer-header">
-              <Link href="/" className="nav-drawer-logo" onClick={() => closeMenu()}>
+            <div className="admin-nav-drawer-header">
+              <Link href="/" className="admin-nav-drawer-logo" onClick={() => closeMenu()}>
                 <Image src="/logo.svg" alt="ARAO" width={72} height={26} />
               </Link>
               <button
                 type="button"
-                className="nav-drawer-close"
+                className="admin-nav-drawer-close"
                 onClick={closeMenu}
                 aria-label="닫기"
               >
@@ -192,17 +186,17 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
               </button>
             </div>
 
-            <nav className="nav-drawer-list">
-              <Link className="nav-drawer-link" href="/" onClick={() => closeMenu()}>
-                1. 홈
+            <nav className="admin-nav-drawer-list">
+              <Link className="admin-nav-drawer-link" href="/" onClick={() => closeMenu()}>
+                1. Home
               </Link>
               {adminSections.map((section, sectionIndex) => (
                 <button
                   key={`mobile-${section.id}`}
-                  className={section.id === activeSectionId ? "nav-drawer-link admin-mobile-nav-button is-active" : "nav-drawer-link admin-mobile-nav-button"}
+                  className={section.id === activeSectionId ? "admin-nav-drawer-link admin-mobile-nav-button is-active" : "admin-nav-drawer-link admin-mobile-nav-button"}
                   type="button"
                   onClick={() => {
-                    setActiveSectionId(section.id);
+                    selectSection(section.id);
                     closeMenu();
                   }}
                 >
@@ -211,20 +205,7 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
               ))}
             </nav>
 
-            <div className="nav-drawer-footer">
-              <Link
-                className="admin-mobile-footer-link"
-                href="/admin/work-list"
-                onClick={() => closeMenu()}
-              >
-                커밋리스트
-              </Link>
-              <SignOutButton>
-                <button className="header-logout-button admin-mobile-logout-button" type="button" onClick={() => closeMenu()}>
-                  로그아웃
-                </button>
-              </SignOutButton>
-            </div>
+            <div className="admin-nav-drawer-footer" />
           </aside>
         </div>
       ) : null}
@@ -233,10 +214,7 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
         <p className="admin-sidebar-title">관리 메뉴</p>
         <div className="admin-sidebar-top">
           <Link className="admin-menu-link admin-menu-link-home" href="/">
-            <span className="admin-home-link-content">
-              <span className="admin-home-icon" aria-hidden="true" />
-              <span>홈</span>
-            </span>
+            <span className="admin-home-link-content">Home</span>
           </Link>
         </div>
         <div className="admin-menu-list">
@@ -245,21 +223,13 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
               key={section.id}
               className={section.id === activeSectionId ? "admin-menu-item active" : "admin-menu-item"}
               type="button"
-              onClick={() => setActiveSectionId(section.id)}
+              onClick={() => selectSection(section.id)}
             >
               {section.menu}
             </button>
           ))}
         </div>
-        <div className="admin-sidebar-bottom">
-          <Link
-            className="admin-menu-link"
-            href="/admin/work-list"
-          >
-            커밋리스트
-          </Link>
-          <AdminSignOut />
-        </div>
+        <div className="admin-sidebar-bottom" />
       </aside>
 
       <div className="admin-panel stack" onClick={() => (menuOpen ? closeMenu() : null)}>
@@ -276,8 +246,8 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
             <AdminPricingManager key="pricing" initialContent={landingContent} />
           ) : activeSection.id === "consulting" ? (
             <AdminConsultingManager key="consulting" />
-          ) : activeSection.id === "worklogs" ? (
-            <AdminWorkLogsManager key="worklogs" />
+          ) : activeSection.id === "commit-list" ? (
+            <AdminCommitListPage key="commit-list" embedded />
           ) : (
             <div className="admin-checklist">
               {activeSection.items?.map((item) => (
