@@ -234,9 +234,8 @@ export function AdminConsultingManager() {
           ) : (
             <div className="admin-consulting-items">
               <div className="admin-consulting-header-row">
-                <div className="col-email">이메일</div>
-                <div className="col-type">유형</div>
                 <div className="col-title">제목</div>
+                <div className="col-type">유형</div>
                 <div className="col-status">상태</div>
                 <div className="col-date">접수일</div>
               </div>
@@ -247,15 +246,14 @@ export function AdminConsultingManager() {
                   className="admin-consulting-item"
                   onClick={() => loadInquiryDetail(inquiry.id)}
                 >
-                  <div className="col-email">{inquiry.profile.email}</div>
-                  <div className="col-type">
-                    {inquiry.type === "consulting" ? "상담" : "문의"}
-                  </div>
                   <div className="col-title">
                     {inquiry.title}
                     {inquiry.has_unread_reply && (
                       <span className="admin-consulting-badge">새로운</span>
                     )}
+                  </div>
+                  <div className="col-type">
+                    {inquiry.type === "consulting" ? "상담" : "문의"}
                   </div>
                   <div className="col-status">
                     <span

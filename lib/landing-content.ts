@@ -328,7 +328,7 @@ export async function getLandingContent() {
   return fetchLandingContent();
 }
 
-export async function saveLandingContent(content: LandingContent) {
+export async function saveLandingContent(content: LandingContent, options?: { skipGallery?: boolean }) {
   const supabase = createSupabaseAdminClient();
   const mergedContent = mergeLandingContent(content);
   const [beforeResult, afterResult] = await Promise.all([
@@ -336,30 +336,34 @@ export async function saveLandingContent(content: LandingContent) {
     uploadLandingImage("after", mergedContent.comparison.afterImage),
   ]);
 
-  const galleryCategories = (Object.keys(mergedContent.gallery) as GalleryCategory[]).filter(
-    (cat) => mergedContent.gallery[cat] !== undefined,
-  );
-  const galleryEntries = await Promise.all(
-    galleryCategories.map(async (category) => {
-      const item = mergedContent.gallery[category]!;
-      const [beforeRes, afterRes] = await Promise.all([
-        uploadLandingImage(`gallery-${category}-before`, item.beforeImage),
-        uploadLandingImage(`gallery-${category}-after`, item.afterImage),
-      ]);
-      return [category, {
-        beforeImage: beforeRes.thumb,
-        beforeImageFull: beforeRes.full,
-        afterImage: afterRes.thumb,
-        afterImageFull: afterRes.full,
-        title: item.title,
-        body: item.body,
-        caption: item.caption,
-        aspectRatio: item.aspectRatio,
-        exif: item.exif,
-      }] as [GalleryCategory, GalleryItem];
-    }),
-  );
-  const processedGallery = Object.fromEntries(galleryEntries) as Partial<Record<GalleryCategory, GalleryItem>>;
+  let processedGallery = mergedContent.gallery;
+
+  if (!options?.skipGallery) {
+    const galleryCategories = (Object.keys(mergedContent.gallery) as GalleryCategory[]).filter(
+      (cat) => mergedContent.gallery[cat] !== undefined,
+    );
+    const galleryEntries = await Promise.all(
+      galleryCategories.map(async (category) => {
+        const item = mergedContent.gallery[category]!;
+        const [beforeRes, afterRes] = await Promise.all([
+          uploadLandingImage(`gallery-${category}-before`, item.beforeImage),
+          uploadLandingImage(`gallery-${category}-after`, item.afterImage),
+        ]);
+        return [category, {
+          beforeImage: beforeRes.thumb,
+          beforeImageFull: beforeRes.full,
+          afterImage: afterRes.thumb,
+          afterImageFull: afterRes.full,
+          title: item.title,
+          body: item.body,
+          caption: item.caption,
+          aspectRatio: item.aspectRatio,
+          exif: item.exif,
+        }] as [GalleryCategory, GalleryItem];
+      }),
+    );
+    processedGallery = Object.fromEntries(galleryEntries) as Partial<Record<GalleryCategory, GalleryItem>>;
+  }
 
   const nextContent: LandingContent = {
     ...mergedContent,

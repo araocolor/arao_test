@@ -40,17 +40,21 @@ export async function GET() {
 }
 
 function validateUsername(username: string) {
-  const trimmedUsername = username.trim().toLowerCase();
+  const trimmed = username.trim();
 
-  if (trimmedUsername.length < 3) {
-    return { error: "아이디는 3자 이상이어야 합니다." };
+  if (trimmed.length < 2) {
+    return { error: "이름은 2자 이상이어야 합니다." };
   }
 
-  if (!/^[a-z0-9._-]+$/.test(trimmedUsername)) {
-    return { error: "아이디는 영문 소문자, 숫자, 점, 밑줄, 하이픈만 사용할 수 있습니다." };
+  if (trimmed.length > 5) {
+    return { error: "이름은 5자 이하여야 합니다." };
   }
 
-  return { value: trimmedUsername };
+  if (!/^[a-z0-9._\-\uAC00-\uD7A3\u3131-\u314E\u314F-\u3163]+$/i.test(trimmed)) {
+    return { error: "이름에 사용할 수 없는 문자가 포함되어 있습니다." };
+  }
+
+  return { value: trimmed };
 }
 
 function normalizePhone(phone: string) {

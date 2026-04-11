@@ -169,8 +169,19 @@ async function readGalleryExif(file: File): Promise<GalleryExif | null> {
   }
 }
 
+type LandingSection = "hero" | "comparison" | "reviews" | "video" | "footer";
+
+const LANDING_SECTIONS: { value: LandingSection; label: string }[] = [
+  { value: "hero", label: "히어로 섹션" },
+  { value: "comparison", label: "비교 섹션" },
+  { value: "reviews", label: "사용자평" },
+  { value: "video", label: "영상 섹션" },
+  { value: "footer", label: "풋터" },
+];
+
 export function AdminContentManager({ initialContent, view }: AdminContentManagerProps) {
   const [content, setContent] = useState(initialContent);
+  const [selectedLandingSection, setSelectedLandingSection] = useState<LandingSection>("hero");
   const [status, setStatus] = useState<string>("");
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [pendingComparisonFiles, setPendingComparisonFiles] = useState({
@@ -339,7 +350,9 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
     }
 
     try {
-      const response = await fetch("/api/admin/landing-content", {
+      const skipGallery = key === "comparison" || key === "all" || key === "hero" || key === "reviews" || key === "pricing" || key === "video" || key === "footer";
+      const url = skipGallery ? "/api/admin/landing-content?skipGallery=true" : "/api/admin/landing-content";
+      const response = await fetch(url, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -414,20 +427,22 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
       {showUploadToast ? <div className="admin-upload-toast">업로드가 완료되었습니다.</div> : null}
       {view !== "gallery" ? (
         <div className="admin-toolbar">
-          <button
-            className="sign-out-button"
-            type="button"
-            onClick={() => void save("all")}
-            disabled={savingKey !== null}
+          <select
+            className="admin-input"
+            value={selectedLandingSection}
+            onChange={(e) => setSelectedLandingSection(e.target.value as LandingSection)}
           >
-            {savingKey === "all" ? "저장 중..." : "저장하기"}
-          </button>
+            {LANDING_SECTIONS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
           {status ? <p className="muted">{status}</p> : null}
         </div>
       ) : null}
 
       {view !== "gallery" ? (
         <>
+        {selectedLandingSection === "hero" && (
         <section className="admin-form-card stack">
         <div className="admin-section-heading">
           <span className="muted">Hero</span>
@@ -499,7 +514,9 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
           />
         </div>
       </section>
+        )}
 
+        {selectedLandingSection === "comparison" && (
       <section className="admin-form-card stack">
         <div className="admin-section-heading">
           <span className="muted">Before / After</span>
@@ -594,7 +611,9 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
           </div>
         ) : null}
       </section>
+        )}
 
+        {selectedLandingSection === "reviews" && (
       <section className="admin-form-card stack">
         <div className="admin-section-heading">
           <span className="muted">Reviews</span>
@@ -619,7 +638,7 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
           placeholder="리뷰 섹션 제목"
         />
         {content.reviews.items.map((item, index) => (
-          <div key={`${item.name}-${index}`} className="admin-review-card stack">
+          <div key={index} className="admin-review-card stack">
             <span className="muted">리뷰 {index + 1}</span>
             <textarea
               className="admin-textarea"
@@ -645,7 +664,9 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
           </div>
         ))}
       </section>
+        )}
 
+        {selectedLandingSection === "video" && (
       <section className="admin-form-card stack">
         <div className="admin-section-heading">
           <span className="muted">YouTube</span>
@@ -704,6 +725,7 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
           placeholder="유튜브 주소 (예: https://www.youtube.com/watch?v=...)"
         />
       </section>
+        )}
         </>
       ) : null}
 
@@ -871,7 +893,7 @@ export function AdminContentManager({ initialContent, view }: AdminContentManage
       </section>
       ) : null}
 
-      {view !== "gallery" ? (
+      {view !== "gallery" && selectedLandingSection === "footer" ? (
       <section className="admin-form-card stack">
         <div className="admin-section-heading">
           <span className="muted">Footer</span>

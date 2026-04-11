@@ -43,8 +43,10 @@ export async function PUT(request: Request) {
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const skipGallery = searchParams.get("skipGallery") === "true";
     const body = (await request.json()) as LandingContent;
-    const content = await saveLandingContent(body);
+    const content = await saveLandingContent(body, { skipGallery });
     return NextResponse.json(content);
   } catch (error) {
     if (error instanceof Error) {

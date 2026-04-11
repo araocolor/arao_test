@@ -243,9 +243,13 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
 
       <div className="admin-panel stack" onClick={() => (menuOpen ? closeMenu() : null)}>
         <div className={panelCardClassName}>
-          <p className="muted">{activeSection.eyebrow}</p>
-          <h2>{activeSection.title}</h2>
-          <p className="muted">{activeSection.description}</p>
+          {activeSection.id !== "landing" && activeSection.id !== "gallery" && activeSection.id !== "consulting" ? (
+            <>
+              <p className="muted">{activeSection.eyebrow}</p>
+              <h2>{activeSection.title}</h2>
+              <p className="muted">{activeSection.description}</p>
+            </>
+          ) : null}
 
           {activeSection.id === "gallery" ? (
             <AdminContentManager key="gallery" initialContent={landingContent} view="gallery" />

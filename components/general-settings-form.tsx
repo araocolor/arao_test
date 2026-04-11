@@ -417,7 +417,8 @@ export function GeneralSettingsForm({
                   type="text"
                   value={usernameInput}
                   onChange={(event) => setUsernameInput(event.target.value)}
-                  placeholder="아이디를 입력하세요"
+                  placeholder="이름을 입력하세요 (2~5자)"
+                  maxLength={5}
                 />
                 <button
                   className={`admin-save-button account-state-button${hasUsernameInput ? " account-action-button-active" : ""}`}
