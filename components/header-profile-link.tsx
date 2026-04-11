@@ -337,15 +337,6 @@ export function HeaderProfileLink() {
     void fetchNotificationItems({ showLoading: !cached });
   }, [isSignedIn, pathname, notificationCacheKey]);
 
-  // 사이트 체류 중 2분마다 리스트/갤러리 캐시 백그라운드 갱신 (탭 visible일 때만)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        prefetchUserReviewList();
-      }
-    }, 120000);
-    return () => clearInterval(timer);
-  }, []);
 
   // 실시간 unread 카운트를 헤더 뱃지에 동기화
   useEffect(() => {
