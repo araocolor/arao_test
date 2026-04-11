@@ -239,7 +239,9 @@ function ImageViewer({
 
   const trackStyle: React.CSSProperties = {
     display: "flex",
+    width: "100%",
     height: "100%",
+    flexShrink: 0,
     transform: `translateX(calc(${-current * 100}vw + ${dragX}px))`,
     transition: isDragging ? "none" : `transform ${slideDuration}s cubic-bezier(0.4, 0.9, 0.3, 1)`,
   };
