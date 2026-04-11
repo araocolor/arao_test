@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   icons: {
     apple: "/apple-touch-icon.png",
   },
+  appleWebApp: {
+    capable: true,
+    title: "ARAO",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport = {

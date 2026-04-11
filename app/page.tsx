@@ -16,7 +16,7 @@ export default async function HomePage() {
       <LandingPageHeader />
 
       <div className="landing-shell">
-        <section className="landing-hero landing-stack-sm" id="intro">
+        <section className="landing-hero landing-stack-sm" id="intro" style={{ background: "#000", borderRadius: 16 }}>
           <img src="/apple-touch-icon.png" alt="ARAO" style={{ width: 40, height: 40, borderRadius: 10, display: "block", margin: "0 auto" }} />
           <span className="landing-section-label">{landingContent.hero.badge}</span>
           <h1 className="landing-hero-title">{landingContent.hero.title}</h1>
