@@ -546,11 +546,11 @@ export function HeaderDrawerAvatar() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  if (!mounted || !isSignedIn) return null;
+  if (!mounted) return null;
 
   return (
-    <span className="header-profile-link signed-in" aria-hidden="true">
-      {iconImage ? (
+    <span className={`header-profile-link${isSignedIn ? " signed-in" : ""}`} aria-hidden="true">
+      {isSignedIn && iconImage ? (
         <img src={iconImage} className="header-profile-avatar" alt="avatar" />
       ) : (
         <span className="header-profile-icon">

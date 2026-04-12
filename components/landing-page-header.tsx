@@ -68,7 +68,7 @@ export function LandingPageHeader({ brandHref = "/", scrollTopOnLogoClick = fals
       mobileFooterLogout={isSignedIn ? null : <HeaderLogoutButton />}
       isAdmin={isAdmin}
       isSignedIn={isSignedIn ?? false}
-      version={3}
+      version={4}
       links={links}
     />
   );
