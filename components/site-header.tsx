@@ -22,6 +22,8 @@ type SiteHeaderProps = {
   mobileFooterLogout?: ReactNode;
   menuHeader?: string;
   isAdmin?: boolean;
+  isSignedIn?: boolean;
+  version?: number;
 };
 
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
@@ -73,6 +75,8 @@ export function SiteHeader({
   mobileFooterLogout,
   menuHeader,
   isAdmin,
+  isSignedIn,
+  version,
 }: SiteHeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
@@ -278,7 +282,7 @@ export function SiteHeader({
         </div>
 
         {/* 하단 로그인/로그아웃 */}
-        <div className="nav-drawer-footer">
+        <div className="nav-drawer-footer" onClick={!isSignedIn ? () => { window.location.href = "/sign-in"; } : undefined} style={!isSignedIn ? { cursor: "pointer" } : undefined}>
           <div className="nav-drawer-footer-row">
             <button
               type="button"
@@ -290,6 +294,9 @@ export function SiteHeader({
             </button>
             {mobileFooterLogout}
             {mobileLeading ?? leading}
+            {!isSignedIn && version !== undefined && version % 2 !== 0 && (
+              <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginLeft: "auto" }}>배포완료</span>
+            )}
           </div>
         </div>
       </div>
