@@ -1,5 +1,3 @@
-export const revalidate = 0;
-
 import { LandingPageFooter } from "@/components/landing-page-footer";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import { GalleryCard } from "@/components/gallery-card";
