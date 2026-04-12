@@ -725,7 +725,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 4px 0 env(safe-area-inset-bottom);
-  height: calc(50px + env(safe-area-inset-bottom));
+  height: calc(55px + env(safe-area-inset-bottom));
   background: var(--surface, #fff);
   box-shadow: 0 -4px 16px rgb(17 17 17 / 10%);
   border-top: 1px solid var(--line);
