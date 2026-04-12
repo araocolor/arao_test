@@ -197,6 +197,27 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
     return () => { supabase.removeChannel(channel); };
   }, [category, index]);
 
+  // visibilitychange: 앱 복귀 시 백그라운드로 캐시 갱신
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState !== "visible") return;
+      const commentKey = `gallery_comments_${category}_${index}`;
+      fetch(`/api/gallery/${category}/${index}/comments`)
+        .then((r) => r.json())
+        .then((data) => {
+          const list: (GalleryComment & { user_liked?: boolean })[] = data.comments ?? [];
+          setComments(list);
+          const likes: Record<string, { liked: boolean; count: number }> = {};
+          list.forEach((c) => { likes[c.id] = { liked: c.user_liked ?? false, count: c.like_count }; });
+          setCommentLikes(likes);
+          setCached(commentKey, data);
+        })
+        .catch(() => {});
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => { document.removeEventListener("visibilitychange", handleVisibilityChange); };
+  }, [category, index]);
+
   function dismiss() {
     if (closing) return;
     setDragY(0);
