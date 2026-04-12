@@ -96,8 +96,8 @@ function isStale(key: string, maxAge = REVIEW_LIST_CACHE_TTL): boolean {
 }
 
 export function AccountPrefetchWrapper({ children }: { children: ReactNode }) {
-  const { user } = useUser();
-  useAccountPrefetch();
+  const { user, isSignedIn } = useUser();
+  useAccountPrefetch(isSignedIn ?? false);
   useInactivityLogout();
   useGalleryPrefetch(user?.id ?? null);
 

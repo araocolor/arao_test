@@ -13,8 +13,10 @@ import { getCached, setCached } from "./use-prefetch-cache";
  * - consulting: GET /api/account/consulting?type=consulting
  * - general_inquiries: GET /api/account/consulting?type=general
  */
-export function useAccountPrefetch() {
+export function useAccountPrefetch(isSignedIn?: boolean) {
   useEffect(() => {
+    if (!isSignedIn) return;
+
     // 모든 캐시가 이미 있으면 prefetch 스킵 (효율성)
     if (
       getCached("orders") &&
@@ -30,7 +32,7 @@ export function useAccountPrefetch() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isSignedIn]);
 }
 
 async function prefetchAccountData() {
