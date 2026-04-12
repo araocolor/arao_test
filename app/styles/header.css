@@ -685,6 +685,7 @@
   gap: 12px;
   flex-shrink: 0;
   background: rgba(17, 17, 17, 0.8);
+  min-height: calc(72px + env(safe-area-inset-bottom));
 }
 
 .nav-drawer-footer-row {
