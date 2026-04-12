@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Comment = {
   id: string;
@@ -430,6 +431,37 @@ export function UserContentInteractions({
         setCommentsLoaded(true);
       });
   }, [reviewId, syncCommentCount]);
+
+  // Supabase Realtime: 다른 사용자의 댓글 실시간 반영
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel(`review-comments-${reviewId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "review_comments",
+          filter: `review_id=eq.${reviewId}`,
+        },
+        () => {
+          fetch(`/api/main/user-review/${reviewId}/comments`)
+            .then((r) => r.json())
+            .then((d) => {
+              const nextComments: Comment[] = Array.isArray(d.comments)
+                ? d.comments.map((comment: Comment) => ({ ...comment, parentId: comment.parentId ?? null, likeCount: comment.likeCount ?? 0, liked: comment.liked ?? false }))
+                : [];
+              setComments(nextComments);
+              setCommentsCache(nextComments);
+            })
+            .catch(() => {});
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [reviewId]);
 
   function editRows(text: string) {
     return Math.max(text.split("\n").length, 1);
