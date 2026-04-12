@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, LogOut, ShieldCheck } from "lucide-react";
+import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, LogOut, ShieldCheck, Camera } from "lucide-react";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 
@@ -80,37 +80,32 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
+  const [panelDragY, setPanelDragY] = useState(0);
   const drawerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number>(0);
-  const touchDeltaY = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
   const email = useHeaderSessionStore((state) => state.email);
 
   function handlePanelTouchStart(e: React.TouchEvent) {
     isDragging.current = true;
     touchStartY.current = e.touches[0].clientY;
-    touchDeltaY.current = 0;
-    if (panelRef.current) panelRef.current.style.transition = "none";
+    setPanelDragY(0);
   }
 
   function handlePanelTouchMove(e: React.TouchEvent) {
     if (!isDragging.current) return;
     const delta = e.touches[0].clientY - touchStartY.current;
     if (delta < 0) return;
-    touchDeltaY.current = delta;
-    if (panelRef.current) panelRef.current.style.transform = `translateY(${delta}px)`;
+    setPanelDragY(delta);
   }
 
   function handlePanelTouchEnd() {
     isDragging.current = false;
-    if (panelRef.current) panelRef.current.style.transition = "";
-    if (touchDeltaY.current > 80) {
+    if (panelDragY > 80) {
       setProfilePanelOpen(false);
-    } else {
-      if (panelRef.current) panelRef.current.style.transform = "";
     }
-    touchDeltaY.current = 0;
+    setPanelDragY(0);
   }
 
   // 드로어 열릴 때 body 스크롤 잠금 + 커뮤니티 prefetch
@@ -245,6 +240,10 @@ export function SiteHeader({
           onTouchStart={handlePanelTouchStart}
           onTouchMove={handlePanelTouchMove}
           onTouchEnd={handlePanelTouchEnd}
+          style={{
+            transform: panelDragY > 0 ? `translateY(${panelDragY}px)` : undefined,
+            transition: isDragging.current ? "none" : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+          }}
         >
           <div className="nav-drawer-profile-panel-handle" onClick={() => setProfilePanelOpen(false)}>
             <span className="nav-drawer-profile-panel-handle-bar" />
@@ -255,15 +254,19 @@ export function SiteHeader({
               <span className="nav-drawer-icon"><Settings2 width={20} height={20} strokeWidth={1.7} /></span>
               사용자설정
             </Link>
-            <Link href="/account/purchase" className="nav-drawer-link" onClick={closeDrawer}>
+            <Link href="/user_review?board=arao" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><Camera width={20} height={20} strokeWidth={1.7} /></span>
+              아라오사진
+            </Link>
+            <Link href="/account/orders" className="nav-drawer-link" onClick={closeDrawer}>
               <span className="nav-drawer-icon"><CreditCard width={20} height={20} strokeWidth={1.7} /></span>
               구매프로파일
             </Link>
-            <Link href="/contact" className="nav-drawer-link" onClick={closeDrawer}>
+            <Link href="/account/consulting" className="nav-drawer-link" onClick={closeDrawer}>
               <span className="nav-drawer-icon"><MessageCircle width={20} height={20} strokeWidth={1.7} /></span>
               이용문의
             </Link>
-            <Link href="/help" className="nav-drawer-link" onClick={closeDrawer}>
+            <Link href="/user_review?board=qna" className="nav-drawer-link" onClick={closeDrawer}>
               <span className="nav-drawer-icon"><HelpCircle width={20} height={20} strokeWidth={1.7} /></span>
               도움말
             </Link>
