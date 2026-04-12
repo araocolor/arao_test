@@ -13,7 +13,6 @@ const BASE_LINKS = [
   { href: "/user_review", label: "커뮤니티" },
   { href: "/manual", label: "설치방법" },
   { href: "/pricing", label: "구매가이드" },
-  { href: "/account/general", label: "사용자설정", divider: true },
 ] as const;
 
 type LandingPageHeaderProps = {
@@ -53,10 +52,7 @@ export function LandingPageHeader({ brandHref = "/", scrollTopOnLogoClick = fals
     return () => controller.abort();
   }, [isSignedIn]);
 
-  const links = useMemo(
-    () => (isAdmin ? [...BASE_LINKS, { href: "/admin", label: "admin" }] : [...BASE_LINKS]),
-    [isAdmin]
-  );
+  const links = useMemo(() => [...BASE_LINKS], []);
 
   return (
     <SiteHeader
@@ -69,6 +65,8 @@ export function LandingPageHeader({ brandHref = "/", scrollTopOnLogoClick = fals
       mobileNotif={<HeaderProfileLink />}
       mobileProfile={<HeaderDrawerAvatar />}
       mobileLogout={<HeaderLogoutButton />}
+      mobileFooterLogout={isSignedIn ? null : <HeaderLogoutButton />}
+      isAdmin={isAdmin}
       links={links}
     />
   );

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users } from "lucide-react";
+import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, LogOut, ShieldCheck } from "lucide-react";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 
@@ -19,7 +19,9 @@ type SiteHeaderProps = {
   mobileProfile?: ReactNode;
   mobileNotif?: ReactNode;
   mobileLogout?: ReactNode;
+  mobileFooterLogout?: ReactNode;
   menuHeader?: string;
+  isAdmin?: boolean;
 };
 
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
@@ -68,7 +70,9 @@ export function SiteHeader({
   mobileProfile,
   mobileNotif,
   mobileLogout,
+  mobileFooterLogout,
   menuHeader,
+  isAdmin,
 }: SiteHeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
@@ -238,10 +242,35 @@ export function SiteHeader({
             <span className="nav-drawer-profile-panel-handle-bar" />
           </div>
           <div className="nav-drawer-profile-panel-email">{email ?? ""}</div>
-          <div className="nav-drawer-profile-panel-bottom">
+          <nav className="nav-drawer-list">
+            <Link href="/account/general" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><Settings2 width={20} height={20} strokeWidth={1.7} /></span>
+              사용자설정
+            </Link>
+            <Link href="/account/purchase" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><CreditCard width={20} height={20} strokeWidth={1.7} /></span>
+              구매프로파일
+            </Link>
+            <Link href="/contact" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><MessageCircle width={20} height={20} strokeWidth={1.7} /></span>
+              이용문의
+            </Link>
+            <Link href="/help" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><HelpCircle width={20} height={20} strokeWidth={1.7} /></span>
+              도움말
+            </Link>
+            {isAdmin && (
+              <Link href="/admin" className="nav-drawer-link" onClick={closeDrawer}>
+                <span className="nav-drawer-icon"><ShieldCheck width={20} height={20} strokeWidth={1.7} /></span>
+                관리자
+              </Link>
+            )}
             <hr className="nav-drawer-divider" />
-            {mobileLogout}
-          </div>
+            <div className="nav-drawer-link nav-drawer-logout-wrap">
+              <span className="nav-drawer-icon"><LogOut width={20} height={20} strokeWidth={1.7} /></span>
+              {mobileLogout}
+            </div>
+          </nav>
         </div>
 
         {/* 하단 로그인/로그아웃 */}
@@ -255,6 +284,7 @@ export function SiteHeader({
             >
               {mobileProfile}
             </button>
+            {mobileFooterLogout}
             {mobileLeading ?? leading}
           </div>
         </div>

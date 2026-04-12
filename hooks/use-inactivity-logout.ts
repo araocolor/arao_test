@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { clearAllCachesOnLogout } from "@/hooks/use-prefetch-cache";
 
-const TIMEOUT = 60 * 60 * 1000; // 1시간
+const TIMEOUT = 3 * 60 * 60 * 1000; // 3시간
 const CHECK_INTERVAL = 60 * 1000; // 1분마다 체크
 
 export function useInactivityLogout() {
