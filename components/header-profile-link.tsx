@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { Heart } from "lucide-react";
+import { Heart, UserRound } from "lucide-react";
 import { useNotificationCount } from "@/hooks/use-notification-count";
 import { useAdminPendingCount } from "@/hooks/use-admin-pending-count";
 import { NotificationDrawer } from "@/components/notification-drawer";
@@ -540,24 +540,19 @@ export function HeaderProfileLink() {
 }
 
 export function HeaderDrawerAvatar() {
-  const { isSignedIn } = useUser();
   const [mounted, setMounted] = useState(false);
   const iconImage = useHeaderSessionStore((state) => state.avatar);
-  const hasAvatarImage = isSignedIn && Boolean(iconImage);
 
   useEffect(() => { setMounted(true); }, []);
 
   if (!mounted) return null;
 
   return (
-    <span className={`header-profile-link${hasAvatarImage ? " signed-in" : ""}`} aria-hidden="true">
-      {hasAvatarImage ? (
+    <span className="header-profile-link" aria-hidden="true">
+      {iconImage ? (
         <img src={iconImage} className="header-profile-avatar" alt="avatar" />
       ) : (
-        <span className="header-profile-icon">
-          <span className="header-profile-head" />
-          <span className="header-profile-body" />
-        </span>
+        <UserRound className="header-profile-icon" width={18} height={18} strokeWidth={1.8} />
       )}
     </span>
   );

@@ -318,17 +318,23 @@
   display: inline-flex;
   width: 40px;
   height: 40px;
+  flex: 0 0 40px;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
   border: 1px solid rgba(17, 17, 17, 0.08);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.82);
   align-items: center;
   justify-content: center;
   overflow: visible;
+  color: #111111;
 }
 
 .header-profile-avatar {
   width: 40px;
   height: 40px;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: cover;
   object-position: center;
   display: block;
@@ -338,43 +344,10 @@
 }
 
 .header-profile-icon {
-  position: relative;
-  width: 16px;
-  height: 16px;
-}
-
-.header-profile-head {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  border: 1.5px solid #111111;
-  border-radius: 999px;
-  transform: translateX(-50%);
-}
-
-.header-profile-body {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 12px;
-  height: 8px;
-  border: 1.5px solid #111111;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  border-bottom: 0;
-  transform: translateX(-50%);
-}
-
-.header-profile-link.signed-in .header-profile-head {
-  background: #FCD34D;
-  border-color: #FCD34D;
-}
-
-.header-profile-link.signed-in .header-profile-body {
-  background: #FCD34D;
-  border-color: #FCD34D;
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 
@@ -697,11 +670,7 @@
 .nav-drawer-footer .header-profile-link {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.25);
-}
-
-.nav-drawer-footer .header-profile-link .header-profile-head,
-.nav-drawer-footer .header-profile-link .header-profile-body {
-  border-color: #ffffff;
+  color: #ffffff;
 }
 
 .nav-drawer-footer .header-logout-button,
@@ -722,12 +691,17 @@
 .nav-drawer-avatar-btn {
   background: none;
   border: none;
-  padding: 16px 0 16px 24px;
-  margin: -16px 0 -16px -24px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+  margin: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  width: 25%;
+  justify-content: center;
+  border-radius: 999px;
+  box-sizing: border-box;
 }
 
 .nav-drawer-profile-panel {

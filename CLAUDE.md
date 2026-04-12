@@ -1,5 +1,12 @@
 # CLAUDE.md
 
+## 스킬 규칙 (최우선)
+- `using-superpowers` 스킬 사용 금지
+
+## 메모리 규칙 (최우선)
+
+모든 답변 전에 `/Users/chalres/.claude/projects/-Users-chalres-Projects-test-codex/memory/MEMORY.md`의 메모리 규칙을 먼저 읽고 적용할 것. 사용자가 별도로 언급하지 않아도 항상 적용.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. See **frontend.md**, **backend.md**, and **share.md** for detailed specifications.
 Also follow **AGENTS.md** for shared agent workflow and verification rules.
 
