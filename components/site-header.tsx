@@ -80,15 +80,18 @@ export function SiteHeader({
   const panelRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number>(0);
   const touchDeltaY = useRef<number>(0);
+  const isDragging = useRef<boolean>(false);
   const email = useHeaderSessionStore((state) => state.email);
 
   function handlePanelTouchStart(e: React.TouchEvent) {
+    isDragging.current = true;
     touchStartY.current = e.touches[0].clientY;
     touchDeltaY.current = 0;
     if (panelRef.current) panelRef.current.style.transition = "none";
   }
 
   function handlePanelTouchMove(e: React.TouchEvent) {
+    if (!isDragging.current) return;
     const delta = e.touches[0].clientY - touchStartY.current;
     if (delta < 0) return;
     touchDeltaY.current = delta;
@@ -96,8 +99,9 @@ export function SiteHeader({
   }
 
   function handlePanelTouchEnd() {
+    isDragging.current = false;
     if (panelRef.current) panelRef.current.style.transition = "";
-    if (touchDeltaY.current > 30) {
+    if (touchDeltaY.current > 80) {
       setProfilePanelOpen(false);
     } else {
       if (panelRef.current) panelRef.current.style.transform = "";

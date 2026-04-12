@@ -631,7 +631,7 @@
   align-items: center;
   gap: 14px;
   padding: 10px 24px;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text);
   text-decoration: none;
@@ -684,7 +684,7 @@
   flex-direction: column;
   gap: 12px;
   flex-shrink: 0;
-  background: rgba(100, 100, 100, 0.9);
+  background: rgba(17, 17, 17, 0.8);
 }
 
 .nav-drawer-footer-row {
@@ -721,10 +721,12 @@
 .nav-drawer-avatar-btn {
   background: none;
   border: none;
-  padding: 0;
+  padding: 16px 0 16px 24px;
+  margin: -16px 0 -16px -24px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  width: 25%;
 }
 
 .nav-drawer-profile-panel {
@@ -770,7 +772,7 @@
 
 .nav-drawer-profile-panel .nav-drawer-link {
   font-weight: 400;
-  font-size: 14px;
+  font-size: 15px;
   padding: 5px 24px;
 }
 
