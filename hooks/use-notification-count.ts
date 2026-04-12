@@ -2,21 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useHeaderSessionStore } from "@/stores/header-session-store";
 
 export function useNotificationCount(userId: string | null | undefined) {
-  const [unreadCount, setUnreadCount] = useState(0);
+  const badgeCount = useHeaderSessionStore((state) => state.badgeCount);
+  const setBadgeCount = useHeaderSessionStore((state) => state.setBadgeCount);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const normalizedUserId = typeof userId === "string" && userId.length > 0 ? userId : null;
     if (!normalizedUserId) {
-      setUnreadCount(0);
       setReady(false);
       return;
     }
 
     let isActive = true;
-    setReady(false);
+    setReady(true);
 
     async function fetchUnreadCount() {
       try {
@@ -24,20 +25,13 @@ export function useNotificationCount(userId: string | null | undefined) {
         if (response.ok) {
           const data = (await response.json()) as { unreadCount: number };
           if (isActive) {
-            setUnreadCount(data.unreadCount);
+            setBadgeCount(data.unreadCount);
           }
         }
       } catch (error) {
         console.error("Failed to fetch unread count:", error);
-      } finally {
-        if (isActive) {
-          setReady(true);
-        }
       }
     }
-
-    // 초기 로드
-    void fetchUnreadCount();
 
     // 탭 포커스 시 재조회 (안전망)
     const handleVisibilityChange = () => {
@@ -52,13 +46,16 @@ export function useNotificationCount(userId: string | null | undefined) {
 
     // Supabase Realtime 구독 (notifications + inquiries 테이블)
     const supabase = createSupabaseBrowserClient();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel(`notification-count:${normalizedUserId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => {
-        void fetchUnreadCount();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => { void fetchUnreadCount(); }, 1000);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "inquiries" }, () => {
-        void fetchUnreadCount();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => { void fetchUnreadCount(); }, 1000);
       })
       .subscribe();
 
@@ -70,5 +67,5 @@ export function useNotificationCount(userId: string | null | undefined) {
     };
   }, [userId]);
 
-  return { unreadCount, ready };
+  return { unreadCount: badgeCount, ready };
 }
