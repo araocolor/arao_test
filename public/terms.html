@@ -11,8 +11,8 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 13px;
       line-height: 1.5;
-      color: #222;
-      background: #fff;
+      color: #e0e0e0;
+      background: #121212;
       padding: 24px 16px 40px;
       max-width: 800px;
       margin: 0 auto;
@@ -22,29 +22,12 @@
       font-size: 22px;
       font-weight: 700;
       letter-spacing: -0.3px;
-      border-bottom: 2px solid #222;
+      border-bottom: 2px solid #555;
       padding-bottom: 8px;
       margin-bottom: 14px;
+      color: #f0f0f0;
     }
 
-    .toc {
-      background: #f7f7f7;
-      border-left: 3px solid #ccc;
-      padding: 8px 12px;
-      margin-bottom: 20px;
-      font-size: 12px;
-    }
-    .toc p {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .toc ol {
-      padding-left: 16px;
-    }
-    .toc li {
-      margin-bottom: 1px;
-      color: #444;
-    }
 
     h2 {
       font-size: 15px;
@@ -52,19 +35,19 @@
       margin-top: 20px;
       margin-bottom: 6px;
       padding-bottom: 4px;
-      border-bottom: 1px solid #ddd;
-      color: #111;
+      border-bottom: 1px solid #333;
+      color: #e8e8e8;
     }
 
     p {
-      color: #333;
+      color: #ccc;
       margin-bottom: 6px;
     }
 
     ul, ol {
       padding-left: 16px;
       margin-bottom: 6px;
-      color: #333;
+      color: #ccc;
     }
     li { margin-bottom: 2px; }
 
@@ -75,26 +58,26 @@
       font-size: 12px;
     }
     th {
-      background: #f0f0f0;
+      background: #2a2a2a;
       font-weight: 600;
       text-align: left;
       padding: 5px 8px;
-      border: 1px solid #ddd;
-      color: #111;
+      border: 1px solid #444;
+      color: #e0e0e0;
     }
     td {
       padding: 5px 8px;
-      border: 1px solid #ddd;
+      border: 1px solid #333;
       vertical-align: top;
-      color: #333;
+      color: #ccc;
     }
-    tr:nth-child(even) td { background: #fafafa; }
+    tr:nth-child(even) td { background: #1a1a1a; }
 
     .meta {
       margin-top: 24px;
       font-size: 12px;
-      color: #888;
-      border-top: 1px solid #eee;
+      color: #666;
+      border-top: 1px solid #333;
       padding-top: 10px;
     }
 
@@ -103,51 +86,76 @@
       table { display: block; overflow-x: auto; }
     }
   </style>
+
+  <style>
+    @media (max-width: 768px) {
+      .sheet-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 100;
+      }
+      .sheet-backdrop.active { display: block; }
+
+      .sheet-panel {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        height: 100%;
+        background: rgba(20, 20, 20, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 16px 16px 0 0;
+        z-index: 101;
+        display: flex;
+        flex-direction: column;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        overflow: hidden;
+      }
+      .sheet-panel.active { transform: translateY(0); }
+
+      .sheet-handle-bar {
+        flex-shrink: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px 0 8px;
+        cursor: grab;
+        touch-action: none;
+      }
+      .sheet-handle-bar::after {
+        content: '';
+        width: 40px;
+        height: 4px;
+        background: #555;
+        border-radius: 2px;
+      }
+
+      .sheet-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 16px 32px;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+  </style>
 </head>
 <body>
 
-  <h1>서비스 이용약관</h1>
+  <!-- 모바일 보텀시트 backdrop -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+  <!-- 모바일 보텀시트 패널 -->
+  <div class="sheet-panel" id="sheetPanel">
+    <div class="sheet-handle-bar" id="sheetHandle"></div>
+    <div class="sheet-content" id="sheetContent">
+      <h1>서비스 이용약관</h1>
 
   <p>본 약관은 아라오(ARAO)(이하 "회사")가 운영하는 웹사이트에서 제공하는 온라인 디지털 콘텐츠 및 관련 서비스의 이용과 관련하여 회사와 회원의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
 
-  <div class="toc">
-    <p>목차</p>
-    <ol>
-      <li>제1조 (목적)</li>
-      <li>제2조 (정의)</li>
-      <li>제3조 (약관의 명시와 개정)</li>
-      <li>제4조 (약관 외 준칙)</li>
-      <li>제5조 (이용계약의 성립)</li>
-      <li>제6조 (개인정보의 보호)</li>
-      <li>제7조 (회원탈퇴 및 자격 상실)</li>
-      <li>제8조 (계정 및 인증정보에 대한 의무)</li>
-      <li>제9조 (회원의 의무)</li>
-      <li>제10조 (게시물)</li>
-      <li>제11조 (회원에 대한 통지)</li>
-      <li>제12조 (회사의 의무)</li>
-      <li>제13조 (서비스의 제공 및 변경)</li>
-      <li>제14조 (개별 서비스에 대한 조건)</li>
-      <li>제15조 (서비스 이용시간)</li>
-      <li>제16조 (서비스 이용책임)</li>
-      <li>제17조 (서비스 제공의 중지)</li>
-      <li>제18조 (정보의 제공 및 광고의 게재)</li>
-      <li>제19조 (구매신청)</li>
-      <li>제20조 (대금지급방법)</li>
-      <li>제21조 (쿠폰)</li>
-      <li>제22조 (상품 등의 공급)</li>
-      <li>제23조 (환급)</li>
-      <li>제24조 (회사의 환불 정책)</li>
-      <li>제25조 (청약철회 등)</li>
-      <li>제26조 (청약철회 등의 효과)</li>
-      <li>제27조 (취소 및 환불의 특칙)</li>
-      <li>제28조 (저작권의 귀속 및 이용제한)</li>
-      <li>제29조 (게시물의 관리)</li>
-      <li>제30조 (회사의 면책)</li>
-      <li>제31조 (분쟁해결)</li>
-      <li>제32조 (준거법 및 관할법원)</li>
-      <li>부칙 및 사업자 정보</li>
-    </ol>
-  </div>
 
   <h2>제1조 (목적)</h2>
   <p>본 약관은 회사가 제공하는 컬러프로파일, LUT, 프리셋 등 온라인 디지털 콘텐츠 판매 및 관련 서비스의 이용과 관련하여 회사와 회원 간의 권리·의무 및 책임사항, 이용조건 및 절차를 규정하는 것을 목적으로 합니다.</p>
@@ -436,23 +444,47 @@
   <h2>부칙</h2>
   <p>본 약관은 2026년 4월 13일부터 시행합니다.</p>
 
-  <h2>사업자 정보</h2>
-  <table>
-    <tbody>
-      <tr><td>상호</td><td>아라오(ARAO)</td></tr>
-      <tr><td>소재지</td><td>제주특별자치도 제주시 조함해안로 6-1</td></tr>
-      <tr><td>책임자</td><td>한 철</td></tr>
-      <tr><td>이메일</td><td>araocolor@gail.com</td></tr>
-      <tr><td>연락처</td><td>064-783-3655</td></tr>
-      <tr><td>주요 상품</td><td>온라인 디지털 콘텐츠(컬러프로파일, LUT, 프리셋)</td></tr>
-      <tr><td>회원인증 및 관리</td><td>Clerk 인증</td></tr>
-      <tr><td>안내 수단</td><td>카카오 메시지, 이메일</td></tr>
-    </tbody>
-  </table>
 
   <div class="meta">
     공고일자: 2026년 4월 13일&nbsp;&nbsp;|&nbsp;&nbsp;시행일자: 2026년 4월 13일
   </div>
+
+    </div><!-- /sheet-content -->
+  </div><!-- /sheet-panel -->
+
+  <script>
+    (function () {
+      var isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (!isMobile) return;
+
+      var backdrop = document.getElementById('sheetBackdrop');
+      var panel    = document.getElementById('sheetPanel');
+      var handle   = document.getElementById('sheetHandle');
+
+      // 열기
+      backdrop.classList.add('active');
+      panel.classList.add('active');
+
+      function closeSheet() {
+        panel.classList.remove('active');
+        backdrop.classList.remove('active');
+        setTimeout(function () { history.back(); }, 300);
+      }
+
+      // 배경 터치 → 닫기
+      backdrop.addEventListener('click', closeSheet);
+
+      // 드래그 다운 → 닫기
+      var startY = 0;
+      handle.addEventListener('touchstart', function (e) {
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+      handle.addEventListener('touchend', function (e) {
+        var dy = e.changedTouches[0].clientY - startY;
+        if (dy > 60) closeSheet();
+      }, { passive: true });
+    })();
+  </script>
 
 </body>
 </html>
