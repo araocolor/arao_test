@@ -108,7 +108,7 @@
       .sheet-panel {
         position: fixed;
         left: 0; right: 0; bottom: 0;
-        height: 100%;
+        height: 90%;
         background: rgba(20, 20, 20, 0.6);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
@@ -443,6 +443,8 @@
     공고일자: 2026년 4월 13일&nbsp;&nbsp;|&nbsp;&nbsp;시행일자: 2026년 4월 13일
   </div>
 
+  <button id="closeBtn" style="display:block;margin:16px auto 0;padding:10px 32px;background:#333;color:#ccc;border:none;border-radius:8px;font-size:13px;cursor:pointer;">닫기</button>
+
     </div><!-- /sheet-content -->
   </div><!-- /sheet-panel -->
 
@@ -467,6 +469,9 @@
 
       // 배경 터치 → 닫기
       backdrop.addEventListener('click', closeSheet);
+
+      // 닫기 버튼
+      document.getElementById('closeBtn').addEventListener('click', closeSheet);
 
       // 핸들 클릭 → 닫기
       handle.addEventListener('click', closeSheet);
