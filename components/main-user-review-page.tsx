@@ -855,7 +855,7 @@ export function MainUserReviewPage() {
     VIEW_OPTIONS.find((opt) => opt.value === viewMode)?.label ?? "목록형";
 
   const openReview = (id: string) => {
-    if (!isSignedIn) {
+    if (!isSignedIn && board !== "qna") {
       router.push("/sign-in");
       return;
     }

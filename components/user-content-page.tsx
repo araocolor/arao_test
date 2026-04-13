@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, type CSSProperties } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { createPortal } from "react-dom";
 import { UserContentHeader } from "@/components/user-content-header";
 import { UserContentInteractions, UserContentLikeSection } from "@/components/user-content-interactions";
@@ -426,6 +427,7 @@ export function UserContentPage({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isSignedIn } = useUser();
   const [item, setItem] = useState<ReviewItem | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -472,6 +474,7 @@ export function UserContentPage({
   }, [onRequestClose, router, boardListPath, cameFromNotification]);
 
   function openCommentSheet() {
+    if (!isSignedIn) { router.push("/sign-in"); return; }
     setCommentSheetOpen(true);
     setCommentSheetClosing(false);
     setCommentSheetExpanded(false);

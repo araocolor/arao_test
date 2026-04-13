@@ -6,11 +6,13 @@ import { UserContentPage } from "@/components/user-content-page";
 
 export default async function MainUserContentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ board?: string }>;
 }) {
-  const [{ userId }, { id }] = await Promise.all([auth(), params]);
-  if (!userId) redirect("/sign-in");
+  const [{ userId }, { id }, { board }] = await Promise.all([auth(), params, searchParams]);
+  if (!userId && board !== "qna") redirect("/sign-in");
 
   after(() => { void incrementUserReviewViewCount(id); });
 

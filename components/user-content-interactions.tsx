@@ -857,6 +857,8 @@ export function UserContentInteractions({
           className="user-content-comment-input"
           placeholder={replyTo ? "답글을 남겨보세요" : "댓글을 남겨보세요"}
           value={commentInput}
+          onClick={() => { if (!isSignedIn) { router.push("/sign-in"); } }}
+          onFocus={() => { if (!isSignedIn) { router.push("/sign-in"); } }}
           onChange={(e) => {
             setCommentInput(e.target.value);
             e.target.style.height = "auto";

@@ -181,7 +181,7 @@ export const defaultLandingContent: LandingContent = {
     links: [
       { label: "이용약관", href: "#" },
       { label: "개인정보처리방침", href: "/privacy.html" },
-      { label: "고객지원", href: "#" },
+      { label: "고객지원", href: "/user_review?board=qna" },
     ],
   },
   gallery: {},
@@ -286,13 +286,7 @@ function mergeLandingContent(input?: Partial<LandingContent> | null): LandingCon
     footer: {
       ...defaultLandingContent.footer,
       ...(input?.footer ?? {}),
-      links:
-        input?.footer?.links?.length
-          ? input.footer.links.map((link, index) => ({
-              ...defaultLandingContent.footer.links[index % defaultLandingContent.footer.links.length],
-              ...link,
-            }))
-          : defaultLandingContent.footer.links,
+      links: defaultLandingContent.footer.links,
     },
     gallery: {
       ...defaultLandingContent.gallery,
