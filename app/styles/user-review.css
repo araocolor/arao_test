@@ -796,6 +796,15 @@
   font-weight: 700;
   line-height: 1.35;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.user-content-title .user-review-pin-badge {
+  font-size: 15px;
+  padding: 3px 12px;
 }
 
 .user-content-author-row {
@@ -1543,6 +1552,88 @@
 
 .write-review-inline-attach-btn:active {
   color: var(--text);
+}
+
+.write-review-pin-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.write-review-pin-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--text);
+  cursor: pointer;
+}
+
+.write-review-pin-check.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.write-review-pin-check.disabled input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.user-review-item.is-pinned {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-review-list .user-review-item.is-pinned + .user-review-item.is-pinned,
+.user-review-feed .user-review-item.is-pinned + .user-review-item.is-pinned {
+  border-top: none;
+  padding-top: 0;
+}
+
+.user-review-item.is-pinned.album,
+.user-review-item.is-pinned.feed {
+  grid-column: 1 / -1;
+}
+
+.user-review-item-title-pinned {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-review-pin-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.user-review-pin-badge.is-global {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 .write-review-divider {

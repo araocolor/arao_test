@@ -39,6 +39,7 @@ export async function GET() {
       username: profile.username ?? null,
       email: profile.email ?? null,
       notificationEnabled: profile.notification_enabled ?? true,
+      role: profile.role ?? null,
     });
   } catch (error) {
     console.error("GET /api/account/notifications error:", error);

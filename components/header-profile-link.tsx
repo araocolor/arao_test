@@ -25,6 +25,7 @@ type NotificationPayload = {
   username?: string | null;
   email?: string | null;
   notificationEnabled?: boolean;
+  role?: string | null;
 };
 
 type NotificationCacheSnapshot = {
@@ -114,6 +115,7 @@ export function HeaderProfileLink() {
   const setHeaderBadgeCount = useHeaderSessionStore((state) => state.setBadgeCount);
   const setHeaderAvatar = useHeaderSessionStore((state) => state.setAvatar);
   const setHeaderEmail = useHeaderSessionStore((state) => state.setEmail);
+  const setHeaderRole = useHeaderSessionStore((state) => state.setRole);
   const clearActiveHeaderSession = useHeaderSessionStore((state) => state.clearActiveUserCache);
 
   // 드로어 상태
@@ -155,6 +157,7 @@ export function HeaderProfileLink() {
       setEmail(payload.email ?? null);
       setHeaderEmail(payload.email ?? null);
     }
+    if (payload.role !== undefined) setHeaderRole(payload.role ?? null);
     setNotificationEnabled(nextNotificationEnabled);
     if (options?.persist !== false) {
       writeNotificationCache(notificationCacheKey, {

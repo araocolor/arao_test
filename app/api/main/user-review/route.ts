@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string; thumbnailSmall?: string; attachedFile?: string; board?: string };
+    const body = (await request.json()) as { category?: string; title?: string; content?: string; thumbnailImage?: string; thumbnailSmall?: string; attachedFile?: string; board?: string; isPinned?: boolean; isGlobalPinned?: boolean };
     const title = (body.title ?? "").trim();
     const content = (body.content ?? "").trim();
     const category = (body.category ?? "일반").trim();
@@ -66,12 +66,15 @@ export async function POST(request: Request) {
     const thumbnailImage = body.thumbnailImage ?? undefined;
     const thumbnailSmall = body.thumbnailSmall ?? undefined;
     const attachedFile = body.attachedFile ?? undefined;
+    const isAdmin = profile.role === "admin";
+    const isPinned = isAdmin && !!body.isPinned;
+    const isGlobalPinned = isAdmin && !!body.isGlobalPinned && isPinned;
 
     if (!title) {
       return NextResponse.json({ message: "제목을 입력해주세요." }, { status: 400 });
     }
 
-    const result = await createUserReview({ profileId: profile.id, category, title, content, thumbnailImage, thumbnailSmall: thumbnailSmall ?? undefined, attachedFile, board });
+    const result = await createUserReview({ profileId: profile.id, category, title, content, thumbnailImage, thumbnailSmall: thumbnailSmall ?? undefined, attachedFile, board, isPinned, isGlobalPinned });
     if (!result) {
       return NextResponse.json({ message: "저장에 실패했습니다." }, { status: 500 });
     }

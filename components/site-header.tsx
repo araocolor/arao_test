@@ -86,6 +86,7 @@ export function SiteHeader({
   const touchStartY = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
   const email = useHeaderSessionStore((state) => state.email);
+  const role = useHeaderSessionStore((state) => state.role);
 
   function handlePanelTouchStart(e: React.TouchEvent) {
     isDragging.current = true;
@@ -248,7 +249,10 @@ export function SiteHeader({
           <div className="nav-drawer-profile-panel-handle" onClick={() => setProfilePanelOpen(false)}>
             <span className="nav-drawer-profile-panel-handle-bar" />
           </div>
-          <div className="nav-drawer-profile-panel-email">{email ?? ""}</div>
+          <div className="nav-drawer-profile-panel-email">
+            {email ?? ""}
+            {role === "admin" && <span style={{ display: "inline-block", marginLeft: 6, fontSize: 11, fontWeight: 600, color: "#fff", background: "red", borderRadius: 20, padding: "1px 6px", lineHeight: "18px" }}>admin</span>}
+          </div>
           <nav className="nav-drawer-list">
             <Link href="/account/general" className="nav-drawer-link" onClick={closeDrawer}>
               <span className="nav-drawer-icon"><Settings2 width={20} height={20} strokeWidth={1.7} /></span>

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { BoardHeader } from "@/components/board-header";
+import { useHeaderSessionStore } from "@/stores/header-session-store";
 
 type Category = "일반" | "공지";
 type BoardType = "notice" | "review" | "qna" | "arao";
@@ -153,8 +154,12 @@ function WriteReviewContent() {
   const initialBoardParam = normalizeBoard(searchParams.get("board"));
   const isEditMode = !!editId;
   const { isSignedIn } = useUser();
+  const role = useHeaderSessionStore((state) => state.role);
+  const isAdmin = role === "admin";
   const [board, setBoard] = useState(initialBoardParam);
   const [category, setCategory] = useState<Category>("일반");
+  const [isPinned, setIsPinned] = useState(false);
+  const [isGlobalPinned, setIsGlobalPinned] = useState(false);
   const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -194,6 +199,8 @@ function WriteReviewContent() {
           }
         }
         if (d.category && (d.category === "일반" || d.category === "공지")) setCategory(d.category);
+        if (typeof d.isPinned === "boolean") setIsPinned(d.isPinned);
+        if (typeof d.isGlobalPinned === "boolean") setIsGlobalPinned(d.isGlobalPinned);
         if (d.thumbnailImage) {
           let urls: string[] = [];
           try {
@@ -413,6 +420,8 @@ function WriteReviewContent() {
           title: title.trim(),
           content: finalContent.trim(),
           board,
+          isPinned,
+          isGlobalPinned: isPinned && isGlobalPinned,
         }),
       });
       if (!res.ok) {
@@ -530,6 +539,8 @@ function WriteReviewContent() {
             thumbnailFirst: savedThumbFirst,
             attachedFile: attachedFilePayload,
             board,
+            isPinned,
+            isGlobalPinned: isPinned && isGlobalPinned,
           }),
         });
         if (!updateResponse.ok) {
@@ -693,6 +704,33 @@ function WriteReviewContent() {
               <polyline points="21 15 16 10 5 21" />
             </svg>
           </button>
+
+          {isAdmin && (
+            <>
+              <span className="write-review-dropdown-separator">|</span>
+              <label className="write-review-pin-check">
+                <input
+                  type="checkbox"
+                  checked={isPinned}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setIsPinned(next);
+                    if (!next) setIsGlobalPinned(false);
+                  }}
+                />
+                <span>공지글</span>
+              </label>
+              <label className={`write-review-pin-check${isPinned ? "" : " disabled"}`}>
+                <input
+                  type="checkbox"
+                  checked={isGlobalPinned}
+                  disabled={!isPinned}
+                  onChange={(e) => setIsGlobalPinned(e.target.checked)}
+                />
+                <span>전체</span>
+              </label>
+            </>
+          )}
         </div>
 
         <div className="write-review-divider" />

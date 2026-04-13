@@ -60,18 +60,25 @@ export async function PUT(
     thumbnailFirst?: string | null;
     attachedFile?: string | null;
     board?: string;
+    isPinned?: boolean;
+    isGlobalPinned?: boolean;
   };
   const title = (body.title ?? "").trim();
   const content = (body.content ?? "").trim();
   const category = (body.category ?? "일반").trim();
   if (!title) return NextResponse.json({ message: "제목을 입력해주세요." }, { status: 400 });
 
+  const isAdmin = profile.role === "admin";
   const supabase = createSupabaseAdminClient();
   const updateData: Record<string, unknown> = { title, content, category, updated_at: new Date().toISOString() };
   if (body.thumbnailImage !== undefined) updateData.thumbnail_image = body.thumbnailImage;
   if (body.thumbnailSmall !== undefined) updateData.thumbnail_small = body.thumbnailSmall;
   if (body.thumbnailFirst !== undefined) updateData.thumbnail_first = body.thumbnailFirst;
   if (body.attachedFile !== undefined) updateData.attached_file = body.attachedFile;
+  if (isAdmin && body.isPinned !== undefined) updateData.is_pinned = !!body.isPinned;
+  if (isAdmin && body.isGlobalPinned !== undefined) {
+    updateData.is_global_pinned = !!body.isGlobalPinned && !!(body.isPinned ?? false);
+  }
   if (body.board !== undefined) {
     const board = body.board.trim();
     if (!ALLOWED_BOARDS.has(board)) {

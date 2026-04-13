@@ -32,6 +32,8 @@ type UserReviewItem = {
   authorId: string;
   isAuthor?: boolean;
   board?: string;
+  isPinned?: boolean;
+  isGlobalPinned?: boolean;
 };
 
 type BoardType = "notice" | "review" | "qna" | "arao";
@@ -1052,6 +1054,24 @@ export function MainUserReviewPage() {
         <div className="user-review-list">
           {items.map((item) => {
             const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
+            const pinned = item.isPinned || item.isGlobalPinned;
+            if (pinned) {
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`user-review-item list is-pinned${item.isGlobalPinned ? " is-global" : ""}${readIds.has(item.id) ? " read" : ""}${item.isAuthor ? " mine" : ""}${returnHighlightedId === item.id ? " return-flash" : ""}`}
+                  onClick={() => openReview(item.id)}
+                >
+                  <p className="user-review-item-title user-review-item-title-pinned">
+                    <span className={`user-review-pin-badge${item.isGlobalPinned ? " is-global" : ""}`}>
+                      {item.isGlobalPinned ? "필독" : "공지"}
+                    </span>
+                    {item.title}
+                  </p>
+                </button>
+              );
+            }
             return (
                 <button
                   key={item.id}
@@ -1146,7 +1166,10 @@ export function MainUserReviewPage() {
           <button
             type="button"
             className="user-review-write-btn"
-            onClick={() => router.push(`/write_review?board=${board}`)}
+            onClick={() => {
+              if (!isSignedIn) { router.push("/sign-in"); return; }
+              router.push(`/write_review?board=${board}`);
+            }}
             aria-label={writeFabMounted ? "새글작성" : undefined}
             title={writeFabMounted ? "새글작성" : undefined}
           >

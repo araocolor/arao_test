@@ -7,10 +7,12 @@ type HeaderSessionStore = {
   badgeCount: number;
   avatar: string | null;
   email: string | null;
+  role: string | null;
   hydrateForUser: (userId: string | null | undefined) => void;
   setBadgeCount: (count: number) => void;
   setAvatar: (avatar: string | null) => void;
   setEmail: (email: string | null) => void;
+  setRole: (role: string | null) => void;
   clearActiveUserCache: () => void;
 };
 
@@ -55,6 +57,7 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
   badgeCount: 0,
   avatar: null,
   email: null,
+  role: null,
 
   hydrateForUser: (userId) => {
     const normalized = normalizeUserId(userId);
@@ -92,6 +95,10 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
     set({ email: email && email.trim().length > 0 ? email : null });
   },
 
+  setRole: (role) => {
+    set({ role: role && role.trim().length > 0 ? role : null });
+  },
+
   clearActiveUserCache: () => {
     const activeUserId = get().activeUserId;
     if (activeUserId && typeof window !== "undefined") {
@@ -100,6 +107,6 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
         localStorage.removeItem(getAvatarKey(activeUserId));
       } catch {}
     }
-    set({ activeUserId: null, badgeCount: 0, avatar: null, email: null });
+    set({ activeUserId: null, badgeCount: 0, avatar: null, email: null, role: null });
   },
 }));

@@ -381,6 +381,8 @@ type ReviewItem = {
   profileId: string;
   isAuthor: boolean;
   board?: string;
+  isPinned?: boolean;
+  isGlobalPinned?: boolean;
 };
 
 function formatDate(value: string): string {
@@ -652,7 +654,14 @@ export function UserContentPage({
         ) : (
           <>
             <article className="user-content-article">
-              <h1 className="user-content-title">{item.title}</h1>
+              <h1 className="user-content-title">
+                {(item.isPinned || item.isGlobalPinned) && (
+                  <span className={`user-review-pin-badge${item.isGlobalPinned ? " is-global" : ""}`}>
+                    {item.isGlobalPinned ? "필독" : "공지"}
+                  </span>
+                )}
+                {item.title}
+              </h1>
               <div className="user-content-author-row">
                 <span className="user-content-author-avatar" aria-hidden="true">
                   {item.authorIconImage ? (

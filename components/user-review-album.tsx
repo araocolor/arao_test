@@ -13,6 +13,8 @@ type UserReviewItem = {
   createdAt: string;
   authorId: string;
   isAuthor?: boolean;
+  isPinned?: boolean;
+  isGlobalPinned?: boolean;
 };
 
 function getFirstImage(thumbnailImage: string | null): string | null {
@@ -39,6 +41,24 @@ export function UserReviewAlbum({
     <div className="user-review-album">
       {items.map((item) => {
         const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
+        const pinned = item.isPinned || item.isGlobalPinned;
+        if (pinned) {
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`user-review-item album is-pinned${item.isGlobalPinned ? " is-global" : ""}${item.isAuthor ? " mine" : ""}`}
+              onClick={() => onOpenReview(item.id)}
+            >
+              <p className="user-review-item-title user-review-item-title-pinned">
+                <span className={`user-review-pin-badge${item.isGlobalPinned ? " is-global" : ""}`}>
+                  {item.isGlobalPinned ? "필독" : "공지"}
+                </span>
+                {item.title}
+              </p>
+            </button>
+          );
+        }
         return (
           <button
             key={item.id}

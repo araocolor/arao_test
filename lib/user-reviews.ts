@@ -17,6 +17,8 @@ export type UserReviewListItem = {
   authorIconImage: string | null;
   isAuthor: boolean;
   board: string;
+  isPinned: boolean;
+  isGlobalPinned: boolean;
 };
 
 export type UserReviewDetail = UserReviewListItem & {
@@ -76,6 +78,8 @@ function mapRowToListItem(row: any, viewerProfileId?: string | null): UserReview
     authorIconImage: profile?.icon_image ?? null,
     isAuthor: !!viewerProfileId && row.profile_id === viewerProfileId,
     board: row.board ?? "review",
+    isPinned: !!row.is_pinned,
+    isGlobalPinned: !!row.is_global_pinned,
   };
 }
 
@@ -103,10 +107,10 @@ export async function getUserReviewList(params: {
   let query = supabase
     .from("user_reviews")
     .select(
-      "id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, board, created_at, updated_at, profile:profile_id(username, email, icon_image)",
+      "id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, board, is_pinned, is_global_pinned, created_at, updated_at, profile:profile_id(username, email, icon_image)",
       { count: "exact" }
     )
-    .eq("board", board);
+    .or(`board.eq.${board},is_global_pinned.eq.true`);
 
   if (q) {
     const pattern = `%${q}%`;
@@ -122,6 +126,9 @@ export async function getUserReviewList(params: {
     query = query.or(`title.ilike.${pattern},content.ilike.${pattern}${profileFilter}`);
   }
 
+  query = query
+    .order("is_global_pinned", { ascending: false })
+    .order("is_pinned", { ascending: false });
   if (sort === "views") {
     query = query.order("view_count", { ascending: false }).order("created_at", { ascending: false });
   } else if (sort === "likes") {
@@ -169,7 +176,7 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("user_reviews")
-    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, thumbnail_first, attached_file, view_count, like_count, is_public, board, created_at, updated_at, profile:profile_id(username, email, icon_image)")
+    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, thumbnail_first, attached_file, view_count, like_count, is_public, board, is_pinned, is_global_pinned, created_at, updated_at, profile:profile_id(username, email, icon_image)")
     .eq("id", id)
     .maybeSingle();
 
@@ -196,6 +203,8 @@ export async function createUserReview(params: {
   thumbnailSmall?: string;
   attachedFile?: string;
   board?: string;
+  isPinned?: boolean;
+  isGlobalPinned?: boolean;
 }): Promise<{ id: string } | null> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
@@ -206,6 +215,8 @@ export async function createUserReview(params: {
       title: params.title,
       content: params.content,
       board: params.board ?? "review",
+      is_pinned: !!params.isPinned,
+      is_global_pinned: !!params.isGlobalPinned,
       ...(params.thumbnailImage ? { thumbnail_image: params.thumbnailImage } : {}),
       ...(params.thumbnailSmall ? { thumbnail_small: params.thumbnailSmall } : {}),
       ...(params.attachedFile ? { attached_file: params.attachedFile } : {}),
