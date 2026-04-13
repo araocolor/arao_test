@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+
 type UserReviewItem = {
   id: string;
   title: string;
@@ -22,77 +24,143 @@ function getFirstImage(thumbnailImage: string | null): string | null {
   try {
     const parsed = JSON.parse(thumbnailImage);
     if (Array.isArray(parsed) && parsed.length > 0) return parsed[0] as string;
-  } catch {
-    // not JSON — use as-is
-  }
+  } catch {}
   return thumbnailImage;
 }
 
+function get480Url(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.pathname.includes("/storage/v1/object/public/")) {
+      const renderUrl = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+      return `${renderUrl}?width=480&resize=cover`;
+    }
+  } catch {}
+  return url;
+}
+
 export function UserReviewAlbum({
-  items,
+  items: initialItems,
   readIds,
   onOpenReview,
+  board = "review",
+  sort = "latest",
+  query = "",
+  totalPages = 1,
+  onNewItemsLoaded,
 }: {
   items: UserReviewItem[];
   readIds: Set<string>;
   onOpenReview: (id: string) => void;
+  board?: string;
+  sort?: string;
+  query?: string;
+  totalPages?: number;
+  onNewItemsLoaded?: (items: UserReviewItem[]) => void;
 }) {
+  const [allItems, setAllItems] = useState<UserReviewItem[]>(initialItems);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hdSrcs, setHdSrcs] = useState<Record<string, string>>({});
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const hasMore = currentPage < totalPages;
+
+  // initialItems 변경 시(게시판/정렬 변경) 목록 초기화
+  useEffect(() => {
+    setAllItems(initialItems);
+    setCurrentPage(1);
+    setHdSrcs({});
+  }, [initialItems]);
+
+  // 480px 백그라운드 교체
+  useEffect(() => {
+    allItems.forEach((item) => {
+      if (hdSrcs[item.id]) return;
+      const fullUrl = getFirstImage(item.thumbnailImage);
+      if (!fullUrl) return;
+      const hdUrl = get480Url(fullUrl);
+      if (hdUrl === (item.thumbnailFirst ?? fullUrl)) return;
+      const img = new Image();
+      img.onload = () => {
+        setHdSrcs((prev) => ({ ...prev, [item.id]: hdUrl }));
+      };
+      img.src = hdUrl;
+    });
+  }, [allItems]);
+
+  // 하단 도달 시 다음 페이지 로드
+  useEffect(() => {
+    if (!hasMore || loadingMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting) return;
+      const nextPage = currentPage + 1;
+      setLoadingMore(true);
+      const params = new URLSearchParams({
+        page: String(nextPage),
+        limit: "20",
+        sort,
+        board,
+      });
+      if (query) params.set("q", query);
+      fetch(`/api/main/user-review?${params.toString()}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: { items?: UserReviewItem[] } | null) => {
+          if (!data?.items?.length) return;
+          setAllItems((prev) => [...prev, ...data.items!]);
+          setCurrentPage(nextPage);
+          onNewItemsLoaded?.(data.items!);
+        })
+        .catch(() => {})
+        .finally(() => setLoadingMore(false));
+    }, { rootMargin: "200px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, currentPage, board, sort, query]);
+
   return (
-    <div className="user-review-album">
-      {items.map((item) => {
-        const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
-        const pinned = item.isPinned || item.isGlobalPinned;
-        if (pinned) {
+    <>
+      <div className="user-review-album">
+        {allItems.map((item) => {
+          const thumb = item.thumbnailFirst ?? getFirstImage(item.thumbnailImage);
+          const displaySrc = hdSrcs[item.id] ?? thumb;
+          const pinned = item.isPinned || item.isGlobalPinned;
+          if (pinned) return null;
           return (
             <button
               key={item.id}
               type="button"
-              className={`user-review-item album is-pinned${item.isGlobalPinned ? " is-global" : ""}${item.isAuthor ? " mine" : ""}`}
+              className={`user-review-item album${item.isAuthor ? " mine" : ""}`}
               onClick={() => onOpenReview(item.id)}
             >
-              <p className="user-review-item-title user-review-item-title-pinned">
-                <span className={`user-review-pin-badge${item.isGlobalPinned ? " is-global" : ""}`}>
-                  {item.isGlobalPinned ? "필독" : "공지"}
-                </span>
-                {item.title}
-              </p>
-            </button>
-          );
-        }
-        return (
-          <button
-            key={item.id}
-            type="button"
-            className={`user-review-item album${item.isAuthor ? " mine" : ""}`}
-            onClick={() => onOpenReview(item.id)}
-          >
-            <div className="user-review-album-thumb">
-              {thumb ? (
-                <img src={thumb} alt="" loading="lazy" />
-              ) : (
-                <span className="user-review-item-thumb-empty" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                </span>
-              )}
-            </div>
-            <p className="user-review-album-title">
-              {!readIds.has(item.id) && <span className="user-review-unread-dot" aria-label="읽지 않음" />}
-              {item.title}
-              <span className="user-review-item-stats">
+              <div className="user-review-album-thumb">
+                {displaySrc ? (
+                  <img src={displaySrc} alt="" loading="lazy" />
+                ) : (
+                  <span className="user-review-item-thumb-empty" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  </span>
+                )}
                 {item.likeCount > 0 && (
-                  <span className="user-review-item-stat">
-                    <svg className="user-review-item-heart" aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11m-4 1v8a2 2 0 0 0 2 2h12.4a2 2 0 0 0 2-1.6l1.2-8A2 2 0 0 0 18.6 9H14V4a2 2 0 0 0-2-2h-.1a2 2 0 0 0-1.9 1.4L7 11"/></svg>
+                  <span className="user-review-album-like-badge">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     {item.likeCount}
                   </span>
                 )}
-                {item.attachedFile && (
-                  <svg className="user-review-item-clip" aria-label="첨부파일" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                )}
-              </span>
-            </p>
-          </button>
-        );
-      })}
-    </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
+      {loadingMore && (
+        <div className="user-review-album-loading">
+          <span className="user-review-album-loading-dot" />
+          <span className="user-review-album-loading-dot" />
+          <span className="user-review-album-loading-dot" />
+        </div>
+      )}
+    </>
   );
 }

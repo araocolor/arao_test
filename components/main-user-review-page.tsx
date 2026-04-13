@@ -1127,13 +1127,26 @@ export function MainUserReviewPage() {
       ) : viewMode === "feed" ? (
         <UserReviewFeed items={items} readIds={readIds} onOpenReview={openReview} />
       ) : (
-        <UserReviewAlbum items={items} readIds={readIds} onOpenReview={openReview} />
+        <UserReviewAlbum
+          items={items}
+          readIds={readIds}
+          onOpenReview={openReview}
+          board={board}
+          sort={sortMode}
+          query={query.trim()}
+          totalPages={totalPages}
+          onNewItemsLoaded={(newItems) => {
+            newItems.forEach((item) => prefetchContentOnly(item.id));
+            prefetchBatchInteractions(newItems.map((item) => item.id));
+          }}
+        />
       )}
 
       <div ref={bottomSentinelRef} aria-hidden="true" />
 
       <div className="user-review-bottom">
         <div className="user-review-pagination-row">
+          {viewMode !== "album" && (
           <div className="user-review-pagination">
             <button
               type="button"
@@ -1162,6 +1175,7 @@ export function MainUserReviewPage() {
               다음
             </button>
           </div>
+          )}
 
           <button
             type="button"
