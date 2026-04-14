@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import Image from "next/image";
 
+const COLOR_CACHE_KEY = "color-items";
+
 type ColorItem = {
   id: string;
   title: string;
@@ -20,9 +22,9 @@ type ColorItem = {
 };
 
 // thumb으로 먼저 표시 후, 페이지 로드 완료 시 mid로 백그라운드 교체
-function ColorCard({ item }: { item: ColorItem }) {
+function ColorCard({ item, onClick }: { item: ColorItem; onClick: () => void }) {
   const thumb = item.img_arao_thumb ?? item.img_arao_mid ?? item.img_arao_full;
-  const mid = item.img_arao_mid ?? item.img_arao_full;
+  const mid = item.img_arao_full ?? item.img_arao_mid;
   const [src, setSrc] = useState(thumb);
   const upgradedRef = useRef(false);
 
@@ -35,7 +37,7 @@ function ColorCard({ item }: { item: ColorItem }) {
   }, [mid, thumb]);
 
   return (
-    <article className="color-card">
+    <article className="color-card" onClick={onClick} style={{ cursor: "pointer" }}>
       <div className="color-card-price-row">
         <p className="color-card-title">{item.title}</p>
         {item.price != null ? (
@@ -82,7 +84,13 @@ export default function ColorPage() {
       const res = await fetch("/api/color?limit=30");
       if (!res.ok) return;
       const data = (await res.json()) as { items: ColorItem[] };
-      setItems(data.items ?? []);
+      const loaded = data.items ?? [];
+      setItems(loaded);
+      try {
+        sessionStorage.setItem(COLOR_CACHE_KEY, JSON.stringify(loaded));
+      } catch {
+        // storage full — ignore
+      }
     } catch {
       // silent
     } finally {
@@ -102,7 +110,13 @@ export default function ColorPage() {
 
         {!loading && items.length > 0 && (
           <div className="color-grid">
-            {items.map((item) => <ColorCard key={item.id} item={item} />)}
+            {items.map((item) => (
+            <ColorCard
+              key={item.id}
+              item={item}
+              onClick={() => router.push(`/color/${item.id}`)}
+            />
+          ))}
           </div>
         )}
       </div>
