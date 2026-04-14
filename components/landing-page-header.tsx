@@ -13,6 +13,7 @@ const BASE_LINKS = [
   { href: "/user_review", label: "커뮤니티" },
   { href: "/manual", label: "설치방법" },
   { href: "/pricing", label: "구매가이드" },
+  { href: "/color", label: "컬러레시피" },
 ] as const;
 
 type LandingPageHeaderProps = {

@@ -28,24 +28,14 @@ export default async function PricingPage() {
               }
             >
               <div className="landing-stack-xs">
-                <span className="landing-section-label">{plan.name}</span>
                 <div className="pricing-price-row">
                   <strong className="pricing-price">{plan.price}</strong>
-                  {plan.unit ? <span className="pricing-unit">{plan.unit}</span> : null}
                 </div>
                 <p className="pricing-copy">{plan.description}</p>
               </div>
 
-              <div className="pricing-feature-list">
-                {plan.features.map((feature) => (
-                  <div key={feature} className="pricing-feature-item">
-                    {feature}
-                  </div>
-                ))}
-              </div>
-
               <Link className="landing-button landing-button-primary" href="/admin">
-                상담 또는 시작하기
+                구매하기
               </Link>
             </article>
           ))}

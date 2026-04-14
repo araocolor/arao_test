@@ -15,6 +15,7 @@ import "./styles/account.css";
 import "./styles/consulting.css";
 import "./styles/notification.css";
 import "./styles/user-review.css";
+import "./styles/color.css";
 
 export const metadata: Metadata = {
   title: "제주의 느낌 알아요 ARAO",

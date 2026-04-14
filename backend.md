@@ -28,9 +28,9 @@ Three client types based on permission level:
 
 ### Core Tables
 
-**`profiles`** — User accounts (synced from Clerk)
+**`profiles`** — User accounts (synced by login email)
 ```sql
-id (uuid, pk)           -- Clerk user ID
+id (uuid, pk)           -- Internal user ID (generated with randomUUID)
 email (text, unique)    -- Email address
 username (text)         -- Display name
 phone (text)            -- Contact number

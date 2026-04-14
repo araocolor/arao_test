@@ -1552,7 +1552,7 @@
   flex-direction: column;
   height: 100dvh;
   background: var(--bg);
-  max-width: 480px;
+  max-width: 820px;
   margin: 0 auto;
 }
 
