@@ -823,11 +823,13 @@
 
   .color-detail-grid > .color-detail-image-wrap {
     order: 1;
+    aspect-ratio: auto;
+    height: clamp(320px, 45vw, 420px);
   }
 
   .color-detail-grid > .color-detail-info {
     order: 2;
-    height: 100%;
+    height: clamp(320px, 45vw, 420px);
   }
 }
 
@@ -1229,7 +1231,14 @@
   }
 
   .color-detail-info {
-    margin-inline: 16px;
+    width: calc(100% - 4px);
+    margin-inline: auto;
+    align-items: center;
+    text-align: center;
+  }
+
+  .color-detail-info > * {
+    width: 100%;
   }
 
   .color-detail-title {
