@@ -56,7 +56,7 @@ export async function getOrdersByUser(
   page: number = 1,
   limit: number = 10
 ): Promise<Order[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
 
   const offset = (page - 1) * limit;
 
