@@ -35,6 +35,9 @@ export async function PUT(
 
   try {
     const body = (await request.json()) as {
+      title?: string;
+      content?: string | null;
+      price?: number | null;
       img_standard_full?: string | null;
       img_standard_mid?: string | null;
       img_standard_thumb?: string | null;
@@ -51,6 +54,9 @@ export async function PUT(
     const { error } = await supabase
       .from("colors")
       .update({
+        ...(body.title !== undefined ? { title: body.title } : {}),
+        ...(body.content !== undefined ? { content: body.content } : {}),
+        ...(body.price !== undefined ? { price: body.price } : {}),
         img_standard_full: body.img_standard_full ?? null,
         img_standard_mid: body.img_standard_mid ?? null,
         img_standard_thumb: body.img_standard_thumb ?? null,

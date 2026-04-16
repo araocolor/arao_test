@@ -39,10 +39,13 @@ export function LandingPageHeader({ brandHref = "/", scrollTopOnLogoClick = fals
         const response = await fetch("/api/account/general", { signal: controller.signal });
         if (!response.ok) {
           setIsAdmin(false);
+          sessionStorage.setItem("user-role", "");
           return;
         }
         const data = (await response.json()) as { role?: string };
-        setIsAdmin(data.role === "admin");
+        const role = data.role ?? "";
+        sessionStorage.setItem("user-role", role);
+        setIsAdmin(role === "admin");
       } catch {
         if (!controller.signal.aborted) {
           setIsAdmin(false);

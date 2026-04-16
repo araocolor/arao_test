@@ -4,6 +4,12 @@ export type ColorItem = {
   content: string | null;
   price: number | null;
   file_link: string | null;
+  img_standard_full: string | null;
+  img_standard_mid: string | null;
+  img_standard_thumb: string | null;
+  img_portrait_full: string | null;
+  img_portrait_mid: string | null;
+  img_portrait_thumb: string | null;
   img_arao_full: string | null;
   img_arao_mid: string | null;
   img_arao_thumb: string | null;

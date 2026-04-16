@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import type { ColorItem } from "@/lib/color-types";
 import { BoardHeader } from "@/components/board-header";
 
 // 이미지 슬롯 정의
@@ -75,6 +76,9 @@ const emptySlot = (): SlotState => ({ file: null, preview: null });
 
 export default function ColorWritePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+  const isEditMode = !!editId;
   const { isSignedIn } = useUser();
 
   const [slots, setSlots] = useState<Record<SlotKey, SlotState>>({
@@ -85,11 +89,58 @@ export default function ColorWritePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [price, setPrice] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [existingFileLink, setExistingFileLink] = useState<string | null>(null);
+  const initialValues = useRef<{ title: string; content: string; price: string; fileLink: string | null } | null>(null);
+  const existingImgUrls = useRef<Record<string, string | null>>({});
   const [fileError, setFileError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savingMsg, setSavingMsg] = useState("저장 중...");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const role = sessionStorage.getItem("user-role");
+    setIsAdmin(role === "admin");
+  }, []);
+
+  // 수정 모드: 기존 데이터 로드
+  useEffect(() => {
+    if (!editId) return;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/color/${editId}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as ColorItem;
+        setTitle(data.title);
+        setContent(data.content ?? "");
+        setPrice(data.price != null ? String(data.price) : "");
+        setExistingFileLink(data.file_link ?? null);
+        setSlots({
+          standard: { file: null, preview: data.img_standard_mid ?? data.img_standard_full ?? data.img_standard_thumb ?? null },
+          portrait: { file: null, preview: data.img_portrait_mid ?? data.img_portrait_full ?? data.img_portrait_thumb ?? null },
+          arao: { file: null, preview: data.img_arao_mid ?? data.img_arao_full ?? data.img_arao_thumb ?? null },
+        });
+        existingImgUrls.current = {
+          standard_full: data.img_standard_full ?? null,
+          standard_mid: data.img_standard_mid ?? null,
+          standard_thumb: data.img_standard_thumb ?? null,
+          portrait_full: data.img_portrait_full ?? null,
+          portrait_mid: data.img_portrait_mid ?? null,
+          portrait_thumb: data.img_portrait_thumb ?? null,
+          arao_full: data.img_arao_full ?? null,
+          arao_mid: data.img_arao_mid ?? null,
+          arao_thumb: data.img_arao_thumb ?? null,
+        };
+        initialValues.current = {
+          title: data.title,
+          content: data.content ?? "",
+          price: data.price != null ? String(data.price) : "",
+          fileLink: data.file_link ?? null,
+        };
+      } catch { /* silent */ }
+    })();
+  }, [editId]);
 
   const inputRefs = useRef<Record<SlotKey, HTMLInputElement | null>>({
     standard: null,
@@ -128,22 +179,43 @@ export default function ColorWritePage() {
     setSaving(true);
 
     try {
-      // 1단계: 글 생성 (이미지 없이)
       setSavingMsg("저장 중...");
-      const res = await fetch("/api/color", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          content: content.trim() || null,
-          price: price ? Number(price.replace(/,/g, "")) : null,
-        }),
-      });
-      if (!res.ok) {
-        const d = (await res.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(d?.message ?? "저장에 실패했습니다.");
+      let postId: string;
+
+      if (isEditMode && editId) {
+        // 수정 모드: 텍스트 필드 먼저 업데이트
+        const res = await fetch(`/api/color/${editId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: title.trim(),
+            content: content.trim() || null,
+            price: price ? Number(price.replace(/,/g, "")) : null,
+          }),
+        });
+        if (!res.ok) {
+          const d = (await res.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(d?.message ?? "수정에 실패했습니다.");
+        }
+        postId = editId;
+      } else {
+        // 신규 모드: 글 생성
+        const res = await fetch("/api/color", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: title.trim(),
+            content: content.trim() || null,
+            price: price ? Number(price.replace(/,/g, "")) : null,
+          }),
+        });
+        if (!res.ok) {
+          const d = (await res.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(d?.message ?? "저장에 실패했습니다.");
+        }
+        const json = (await res.json()) as { id: string };
+        postId = json.id;
       }
-      const { id: postId } = (await res.json()) as { id: string };
       const idPrefix = postId.replace(/-/g, "").slice(0, 3);
       const version = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -191,28 +263,32 @@ export default function ColorWritePage() {
       const urls = batch.length > 0 ? await uploadBatch(batch) : {};
 
       // 3단계: 이미지 + 파일 URL 업데이트
-      if (Object.keys(urls).length > 0 || fileLinkUrl) {
+      const ex = existingImgUrls.current;
+      const hasImgUpdate = Object.keys(urls).length > 0;
+      const hasFileUpdate = fileLinkUrl !== null;
+
+      if (hasImgUpdate || hasFileUpdate || isEditMode) {
         setSavingMsg("마무리 중...");
         const updateRes = await fetch(`/api/color/${postId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            img_standard_full: urls["standard_full"] ?? null,
-            img_standard_mid: urls["standard_mid"] ?? null,
-            img_standard_thumb: urls["standard_thumb"] ?? null,
-            img_portrait_full: urls["portrait_full"] ?? null,
-            img_portrait_mid: urls["portrait_mid"] ?? null,
-            img_portrait_thumb: urls["portrait_thumb"] ?? null,
-            img_arao_full: urls["arao_full"] ?? null,
-            img_arao_mid: urls["arao_mid"] ?? null,
-            img_arao_thumb: urls["arao_thumb"] ?? null,
-            file_link: fileLinkUrl,
+            img_standard_full: urls["standard_full"] ?? ex["standard_full"] ?? null,
+            img_standard_mid: urls["standard_mid"] ?? ex["standard_mid"] ?? null,
+            img_standard_thumb: urls["standard_thumb"] ?? ex["standard_thumb"] ?? null,
+            img_portrait_full: urls["portrait_full"] ?? ex["portrait_full"] ?? null,
+            img_portrait_mid: urls["portrait_mid"] ?? ex["portrait_mid"] ?? null,
+            img_portrait_thumb: urls["portrait_thumb"] ?? ex["portrait_thumb"] ?? null,
+            img_arao_full: urls["arao_full"] ?? ex["arao_full"] ?? null,
+            img_arao_mid: urls["arao_mid"] ?? ex["arao_mid"] ?? null,
+            img_arao_thumb: urls["arao_thumb"] ?? ex["arao_thumb"] ?? null,
+            file_link: fileLinkUrl ?? existingFileLink,
           }),
         });
         if (!updateRes.ok) throw new Error("이미지 저장에 실패했습니다.");
       }
 
-      router.replace("/color");
+      router.replace(isEditMode && editId ? `/color/${editId}` : "/color");
     } catch (e) {
       setError(e instanceof Error ? e.message : "저장 중 오류가 발생했습니다.");
     } finally {
@@ -221,7 +297,19 @@ export default function ColorWritePage() {
     }
   }
 
-  const canSave = title.trim().length > 0 && !saving;
+  const hasSlotChanged = Object.values(slots).some((s) => s.file !== null);
+
+  const isDirty = isEditMode
+    ? (initialValues.current !== null && (
+        title !== initialValues.current.title ||
+        content !== initialValues.current.content ||
+        price !== initialValues.current.price ||
+        attachedFile !== null ||
+        hasSlotChanged
+      ))
+    : true;
+
+  const canSave = title.trim().length > 0 && !saving && isAdmin && isDirty;
 
   return (
     <main className="color-write-shell">
@@ -284,56 +372,54 @@ export default function ColorWritePage() {
           />
         </div>
 
-        {/* 가격 */}
-        <div className="color-write-field">
-          <label className="color-write-label">가격</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            className="color-write-input"
-            placeholder="예: 50000"
-            value={price}
-            onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
-          />
-        </div>
-
-        {/* 파일 첨부 */}
-        <div className="color-write-field">
+        {/* 가격 + 파일첨부 */}
+        <div className="color-write-row">
+          <div className="color-write-field">
+            <label className="color-write-label">가격</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              className="color-write-input"
+              placeholder={isEditMode ? "" : "예: 50000"}
+              value={price}
+              onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
+            />
+          </div>
+          <div className="color-write-field">
           <label className="color-write-label">파일 첨부 (5MB 이하)</label>
-          {attachedFile ? (
-            <div className="write-review-file-badge">
-              <span className="write-review-file-zip-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </span>
-              <span className="write-review-file-name">{attachedFile.name}</span>
+          <button
+            type="button"
+            className="color-write-attach-btn"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="12" y1="18" x2="12" y2="12" />
+              <line x1="9" y1="15" x2="15" y2="15" />
+            </svg>
+            파일 선택
+          </button>
+          {attachedFile && (
+            <div className="color-write-file-info">
+              <span className="color-write-file-name">{attachedFile.name}</span>
+              <span className="color-write-file-size">{(attachedFile.size / 1024).toFixed(1)}KB</span>
               <button
                 type="button"
-                className="write-review-file-remove"
+                className="color-write-file-remove"
                 onClick={() => { setAttachedFile(null); setFileError(null); }}
                 aria-label="파일 제거"
               >✕</button>
             </div>
-          ) : (
-            <button
-              type="button"
-              className="color-write-attach-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="12" y1="18" x2="12" y2="12" />
-                <line x1="9" y1="15" x2="15" y2="15" />
-              </svg>
-              파일 선택
-            </button>
+          )}
+          {!attachedFile && existingFileLink && (
+            <div className="color-write-file-info color-write-file-info--existing">
+              <strong className="color-write-file-name">{(existingFileLink.split("/").pop() ?? "").replace(/^\d+_/, "")}</strong>
+            </div>
           )}
           {fileError && <p className="color-write-error">{fileError}</p>}
           <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileChange} />
+          </div>
         </div>
 
         {/* 내용 */}
@@ -358,7 +444,7 @@ export default function ColorWritePage() {
           onClick={handleSave}
           disabled={!canSave}
         >
-          {saving ? savingMsg : "저장하기"}
+          {saving ? savingMsg : isEditMode ? "수정하기" : "저장하기"}
         </button>
       </footer>
     </main>
