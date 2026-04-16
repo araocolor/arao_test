@@ -113,6 +113,11 @@
   box-shadow: var(--shadow-card);
 }
 
+/* 모바일: 래퍼 안 before는 숨김 */
+.landing-comparison .landing-comparison-item.before {
+  display: none;
+}
+
 .landing-comparison-item::before {
   content: "";
   position: absolute;
@@ -478,9 +483,19 @@
     min-width: 168px;
   }
 
+  /* 태블릿: 모바일 전용 before 숨김, 래퍼 안 before 표시 */
+  .landing-comparison-mobile-only {
+    display: none;
+  }
+
+  .landing-comparison .landing-comparison-item.before {
+    display: block;
+  }
+
   .landing-comparison {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
   }
 
 

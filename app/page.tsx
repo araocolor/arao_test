@@ -17,7 +17,7 @@ export default async function HomePage() {
 
       <div className="landing-shell">
         <article
-          className="landing-comparison-item before"
+          className="landing-comparison-item before landing-comparison-mobile-only"
           style={{ ["--landing-image" as string]: `url("${landingContent.comparison.beforeImage}")` }}
         />
 
@@ -32,10 +32,16 @@ export default async function HomePage() {
           </Link>
         </section>
 
-        <article
-          className="landing-comparison-item after"
-          style={{ ["--landing-image" as string]: `url("${landingContent.comparison.afterImage}")` }}
-        />
+        <div className="landing-comparison">
+          <article
+            className="landing-comparison-item before"
+            style={{ ["--landing-image" as string]: `url("${landingContent.comparison.beforeImage}")` }}
+          />
+          <article
+            className="landing-comparison-item after"
+            style={{ ["--landing-image" as string]: `url("${landingContent.comparison.afterImage}")` }}
+          />
+        </div>
 
 
         <section className="landing-stack-sm" id="pricing">
