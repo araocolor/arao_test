@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
   <title>개인정보처리방침 — ARAO</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,50 +12,45 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 13px;
       line-height: 1.5;
-      color: #e0e0e0;
-      background: #121212;
+      color: #111111;
+      background: #ffffff;
       padding: 24px 16px 40px;
       max-width: 800px;
       margin: 0 auto;
     }
 
-    /* 최상위 제목 */
     h1 {
       font-size: 22px;
       font-weight: 700;
       letter-spacing: -0.3px;
-      border-bottom: 2px solid #555;
+      border-bottom: 2px solid #e0e0e0;
       padding-bottom: 8px;
       margin-bottom: 14px;
-      color: #f0f0f0;
+      color: #111111;
     }
 
-
-    /* 소제목 (## 수준) */
     h2 {
       font-size: 15px;
       font-weight: 700;
       margin-top: 20px;
       margin-bottom: 6px;
       padding-bottom: 4px;
-      border-bottom: 1px solid #333;
-      color: #e8e8e8;
+      border-bottom: 1px solid #e0e0e0;
+      color: #111111;
     }
 
-    /* 본문 */
     p {
-      color: #ccc;
+      color: #444444;
       margin-bottom: 6px;
     }
 
     ul, ol {
       padding-left: 16px;
       margin-bottom: 6px;
-      color: #ccc;
+      color: #444444;
     }
     li { margin-bottom: 2px; }
 
-    /* 표 */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -62,27 +58,26 @@
       font-size: 12px;
     }
     th {
-      background: #2a2a2a;
+      background: #f5f5f7;
       font-weight: 600;
       text-align: left;
       padding: 5px 8px;
-      border: 1px solid #444;
-      color: #e0e0e0;
+      border: 1px solid #e0e0e0;
+      color: #111111;
     }
     td {
       padding: 5px 8px;
-      border: 1px solid #333;
+      border: 1px solid #e0e0e0;
       vertical-align: top;
-      color: #ccc;
+      color: #444444;
     }
-    tr:nth-child(even) td { background: #1a1a1a; }
+    tr:nth-child(even) td { background: #f9f9f9; }
 
-    /* 날짜 정보 */
     .meta {
       margin-top: 24px;
       font-size: 12px;
-      color: #666;
-      border-top: 1px solid #333;
+      color: #888;
+      border-top: 1px solid #e0e0e0;
       padding-top: 10px;
     }
 
@@ -92,72 +87,9 @@
     }
   </style>
 
-  <style>
-    @media (max-width: 768px) {
-      .sheet-backdrop {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        z-index: 100;
-      }
-      .sheet-backdrop.active { display: block; }
-
-      .sheet-panel {
-        position: fixed;
-        left: 0; right: 0; bottom: 0;
-        height: 90%;
-        background: rgba(20, 20, 20, 0.6);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 16px 16px 0 0;
-        z-index: 101;
-        display: flex;
-        flex-direction: column;
-        transform: translateY(100%);
-        transition: transform 0.3s ease;
-        overflow: hidden;
-      }
-      .sheet-panel.active { transform: translateY(0); }
-
-      .sheet-handle-bar {
-        flex-shrink: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 12px 0 8px;
-        cursor: grab;
-        touch-action: none;
-      }
-      .sheet-handle-bar::after {
-        content: '';
-        width: 40px;
-        height: 4px;
-        background: #555;
-        border-radius: 2px;
-      }
-
-      .sheet-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 0 16px 32px;
-        -webkit-overflow-scrolling: touch;
-      }
-    }
-  </style>
 </head>
 <body>
-
-  <!-- 모바일 보텀시트 backdrop -->
-  <div class="sheet-backdrop" id="sheetBackdrop"></div>
-
-  <!-- 모바일 보텀시트 패널 -->
-  <div class="sheet-panel" id="sheetPanel">
-    <div class="sheet-handle-bar" id="sheetHandle"></div>
-    <div class="sheet-content" id="sheetContent">
-      <h1>개인정보처리방침</h1>
+  <h1>개인정보처리방침</h1>
 
   <p>
     아라오(ARAO)(이하 "회사")는 이용자의 개인정보를 중요하게 생각하며 「개인정보 보호법」, 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」, 「전자상거래 등에서의 소비자보호에 관한 법률」 등 관련 법령을 준수합니다. 회사는 온라인 디지털 콘텐츠(컬러프로파일, LUT, 프리셋) 판매 및 관련 서비스 제공 과정에서 이용자의 개인정보를 적법하게 처리하고 안전하게 관리하기 위하여 본 개인정보처리방침을 수립하여 공개합니다. 본 방침은 회사가 운영하는 웹사이트, 회원가입, 로그인, 결제, 고객문의, 이메일 안내, 카카오 메시지 안내 등 서비스 전반에 적용됩니다.
@@ -442,51 +374,6 @@
   <div class="meta">
     공고일자: 2026년 4월 13일&nbsp;&nbsp;|&nbsp;&nbsp;시행일자: 2026년 4월 13일
   </div>
-
-  <button id="closeBtn" style="display:block;margin:16px auto 0;padding:10px 32px;background:#333;color:#ccc;border:none;border-radius:8px;font-size:13px;cursor:pointer;">닫기</button>
-
-    </div><!-- /sheet-content -->
-  </div><!-- /sheet-panel -->
-
-  <script>
-    (function () {
-      var isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      if (!isMobile) return;
-
-      var backdrop = document.getElementById('sheetBackdrop');
-      var panel    = document.getElementById('sheetPanel');
-      var handle   = document.getElementById('sheetHandle');
-
-      // 열기
-      backdrop.classList.add('active');
-      panel.classList.add('active');
-
-      function closeSheet() {
-        panel.classList.remove('active');
-        backdrop.classList.remove('active');
-        setTimeout(function () { history.back(); }, 300);
-      }
-
-      // 배경 터치 → 닫기
-      backdrop.addEventListener('click', closeSheet);
-
-      // 닫기 버튼
-      document.getElementById('closeBtn').addEventListener('click', closeSheet);
-
-      // 핸들 클릭 → 닫기
-      handle.addEventListener('click', closeSheet);
-
-      // 드래그 다운 → 닫기
-      var startY = 0;
-      handle.addEventListener('touchstart', function (e) {
-        startY = e.touches[0].clientY;
-      }, { passive: true });
-      handle.addEventListener('touchend', function (e) {
-        var dy = e.changedTouches[0].clientY - startY;
-        if (dy > 60) closeSheet();
-      }, { passive: true });
-    })();
-  </script>
 
 </body>
 </html>

@@ -5,7 +5,11 @@ import Link from "next/link";
 import { ChevronLeft, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export function ColorOrderHeader() {
+type ColorOrderHeaderProps = {
+  onBack?: () => void;
+};
+
+export function ColorOrderHeader({ onBack }: ColorOrderHeaderProps) {
   const router = useRouter();
 
   return (
@@ -14,7 +18,13 @@ export function ColorOrderHeader() {
         <button
           type="button"
           className="color-order-header-back"
-          onClick={() => router.back()}
+          onClick={() => {
+            if (onBack) {
+              onBack();
+              return;
+            }
+            router.back();
+          }}
           aria-label="뒤로가기"
         >
           <ChevronLeft size={20} strokeWidth={2.5} />
