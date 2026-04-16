@@ -7,6 +7,7 @@ import { OrderFooter } from "@/components/order-footer";
 import type { ColorItem } from "@/lib/color-types";
 
 const COLOR_CACHE_KEY = "color-items";
+const COLOR_PREFETCH_CACHE_KEY = "color-list-cache";
 
 const SLIDE_LABELS: Record<string, string> = {
   standard: "Standard",
@@ -16,13 +17,40 @@ const SLIDE_LABELS: Record<string, string> = {
 
 function getFromCache(id: string): ColorItem | null {
   try {
+    // 1순위: 리스트 방문 시 저장된 full 데이터
     const raw = sessionStorage.getItem(COLOR_CACHE_KEY);
-    if (!raw) return null;
-    const items = JSON.parse(raw) as ColorItem[];
-    return items.find((i) => i.id === id) ?? null;
-  } catch {
-    return null;
-  }
+    if (raw) {
+      const items = JSON.parse(raw) as ColorItem[];
+      const found = items.find((i) => i.id === id);
+      if (found) return found;
+    }
+    // 2순위: 홈 프리캐시 (mid 데이터)
+    const prefetchRaw = sessionStorage.getItem(COLOR_PREFETCH_CACHE_KEY);
+    if (prefetchRaw) {
+      const { data } = JSON.parse(prefetchRaw) as { data: Partial<ColorItem>[] };
+      const found = data.find((i) => i.id === id);
+      if (found) return {
+        id: found.id ?? id,
+        title: found.title ?? "",
+        content: (found.content as string | null) ?? null,
+        price: (found.price as number | null) ?? null,
+        file_link: null,
+        img_standard_full: null,
+        img_standard_mid: null,
+        img_standard_thumb: null,
+        img_portrait_full: null,
+        img_portrait_mid: null,
+        img_portrait_thumb: null,
+        img_arao_full: null,
+        img_arao_mid: found.img_arao_mid ?? null,
+        img_arao_thumb: null,
+        like_count: found.like_count ?? 0,
+        created_at: "",
+        is_admin: false,
+      };
+    }
+  } catch {}
+  return null;
 }
 
 type Slide = { key: string; src: string };
@@ -213,7 +241,10 @@ export default function ColorDetailPage() {
 
   useEffect(() => {
     const cached = getFromCache(id);
-    if (cached) setItem(cached);
+    if (cached) {
+      setItem(cached);
+      setLoading(false);
+    }
 
     void (async () => {
       try {
@@ -239,7 +270,7 @@ export default function ColorDetailPage() {
     <main className="color-detail-shell">
       <ColorOrderHeader />
 
-      {loading && <div className="color-empty">불러오는 중...</div>}
+      {loading && !item && <div className="color-empty">불러오는 중...</div>}
 
       {!loading && !item && (
         <div className="color-empty">
@@ -250,7 +281,7 @@ export default function ColorDetailPage() {
         </div>
       )}
 
-      {!loading && item && (
+      {item && (
         <div className="color-detail-grid">
           {/* 왼쪽: 정보 */}
           <div className="color-detail-info landing-stack-sm">
@@ -267,7 +298,7 @@ export default function ColorDetailPage() {
         </div>
       )}
 
-      {!loading && item && (
+      {item && (
         <OrderFooter
           onBuy={handleBuy}
           buyDisabled={!hasPurchase && !hasDownload}

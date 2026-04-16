@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const { data, count, error } = await supabase
       .from("colors")
       .select(
-        "id, title, price, file_link, img_arao_full, img_arao_mid, img_arao_thumb, img_standard_full, img_portrait_full, like_count, created_at, profile_id, is_admin",
+        "id, title, content, price, file_link, img_arao_full, img_arao_mid, img_arao_thumb, img_standard_full, img_portrait_full, like_count, created_at, profile_id, is_admin",
         { count: "exact" }
       )
       .order("created_at", { ascending: false })

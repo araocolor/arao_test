@@ -96,23 +96,54 @@ function isColorPrefetchLocked(): boolean {
   }
 }
 
-/** 컬러 리스트 캐시 갱신 */
+type ColorPrefetchItem = {
+  id: string;
+  title: string;
+  content: string | null;
+  price: number | null;
+  like_count: number;
+  img_arao_mid: string | null;
+  img_arao_full: string | null;
+  img_portrait_full: string | null;
+  img_standard_full: string | null;
+};
+
+function preloadImages(urls: (string | null)[]): Promise<void> {
+  return Promise.all(
+    urls.filter(Boolean).map(
+      (src) =>
+        new Promise<void>((resolve) => {
+          const img = document.createElement("img");
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = src!;
+        })
+    )
+  ).then(() => undefined);
+}
+
+/** 컬러 리스트 캐시 갱신 + 순차 이미지 프리로드 */
 function refreshColorListCache() {
   if (!canPrefetchReviewList()) return;
   if (isColorPrefetchLocked()) return;
   sessionStorage.setItem(COLOR_PREFETCH_LOCK_KEY, String(Date.now()));
   fetch("/api/color?page=1&limit=20")
     .then((r) => (r.ok ? r.json() : null))
-    .then((json: { items?: Array<{ id: string; title: string; like_count: number; img_arao_mid: string | null }> } | null) => {
+    .then(async (json: { items?: Array<ColorPrefetchItem> } | null) => {
       if (!json?.items) return;
-      const items = json.items.map(({ id, title, like_count, img_arao_mid }) => ({ id, title, like_count, img_arao_mid }));
+      const items = json.items.map(({ id, title, content, price, like_count, img_arao_mid, img_arao_full, img_portrait_full, img_standard_full }) => ({
+        id, title, content: content ?? null, price: price ?? null, like_count, img_arao_mid, img_arao_full, img_portrait_full, img_standard_full,
+      }));
       sessionStorage.setItem("color-list-cache", JSON.stringify({ data: items, ts: Date.now() }));
-      items.forEach((item) => {
-        if (item.img_arao_mid) {
-          const img = document.createElement("img");
-          img.src = item.img_arao_mid;
-        }
-      });
+
+      // 1단계: arao mid (480) — 리스트 즉시 표시용
+      await preloadImages(items.map((i) => i.img_arao_mid));
+      // 2단계: arao full (1024) — 상세 진입 즉시 표시용
+      await preloadImages(items.map((i) => i.img_arao_full));
+      // 3단계: portrait full
+      await preloadImages(items.map((i) => i.img_portrait_full));
+      // 4단계: standard full
+      await preloadImages(items.map((i) => i.img_standard_full));
     })
     .catch(() => {})
     .finally(() => {

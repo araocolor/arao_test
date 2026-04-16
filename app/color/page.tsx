@@ -129,6 +129,12 @@ export default function ColorPage() {
   const router = useRouter();
   const [items, setItems] = useState<ColorItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const role = sessionStorage.getItem("user-role");
+    setIsAdmin(role === "admin");
+  }, []);
 
   // 마운트 직후 캐시 즉시 반영
   useEffect(() => {
@@ -185,6 +191,7 @@ export default function ColorPage() {
         type="button"
         className="color-fab"
         aria-label="글쓰기"
+        disabled={!isAdmin}
         onClick={() => router.push("/color/write")}
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
