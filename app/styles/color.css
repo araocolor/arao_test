@@ -810,7 +810,20 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding-top: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+@media (min-width: 521px) {
+  .color-detail-grid > .color-detail-image-wrap {
+    order: 1;
+  }
+
+  .color-detail-grid > .color-detail-info {
+    order: 2;
+  }
 }
 
 .color-detail-title {
@@ -827,6 +840,9 @@
   color: var(--muted);
   margin: 0;
   white-space: pre-wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
 }
 
 .color-detail-price {
@@ -1208,7 +1224,7 @@
   }
 
   .color-detail-info {
-    padding-inline: 16px;
+    margin-inline: 16px;
   }
 
   .color-detail-title {
