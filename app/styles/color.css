@@ -522,6 +522,11 @@
   transform: scale(0.92);
 }
 
+.color-fab:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* ── 빈 상태 ── */
 
 .color-empty {
@@ -1182,10 +1187,10 @@
   line-height: 1.6;
 }
 
-@media (max-width: 500px) {
+@media (max-width: 520px) {
   .color-detail-grid {
     grid-template-columns: 1fr;
-    padding: 20px 16px 80px;
+    padding: 0 0 80px;
     gap: 24px;
   }
 
@@ -1197,6 +1202,9 @@
 
   .color-detail-image-wrap {
     border-radius: 8px;
+    aspect-ratio: unset;
+    height: 320px;
+    flex-shrink: 0;
   }
 
   .color-detail-title {
@@ -1244,7 +1252,7 @@
   }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 520px) {
   .color-feed-wrap {
     padding: 12px 12px 80px;
     max-width: 100%;
