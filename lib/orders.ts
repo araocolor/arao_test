@@ -72,12 +72,12 @@ export async function getOrdersByUser(
 }
 
 export async function getOrderById(id: string, userId: string): Promise<OrderDetail | null> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
 
   // 1. Get order + verify ownership
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .select("*")
+    .select("*, items:order_items(*)")
     .eq("id", id)
     .eq("user_id", userId)
     .single();
