@@ -1190,7 +1190,7 @@
 @media (max-width: 520px) {
   .color-detail-grid {
     grid-template-columns: 1fr;
-    padding: 0 0 80px;
+    padding: 0 0 calc(56px + env(safe-area-inset-bottom) + 24px);
     gap: 24px;
   }
 
@@ -1202,9 +1202,13 @@
 
   .color-detail-image-wrap {
     border-radius: 8px;
-    aspect-ratio: unset;
-    height: 320px;
+    aspect-ratio: 1 / 1;
+    height: auto;
     flex-shrink: 0;
+  }
+
+  .color-detail-info {
+    padding-inline: 16px;
   }
 
   .color-detail-title {
