@@ -817,12 +817,17 @@
 }
 
 @media (min-width: 521px) {
+  .color-detail-grid {
+    align-items: stretch;
+  }
+
   .color-detail-grid > .color-detail-image-wrap {
     order: 1;
   }
 
   .color-detail-grid > .color-detail-info {
     order: 2;
+    height: 100%;
   }
 }
 
@@ -1217,7 +1222,7 @@
   }
 
   .color-detail-image-wrap {
-    border-radius: 8px;
+    border-radius: 0;
     aspect-ratio: 1 / 1;
     height: auto;
     flex-shrink: 0;
