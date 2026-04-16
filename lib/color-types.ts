@@ -4,6 +4,7 @@ export type ColorItem = {
   content: string | null;
   price: number | null;
   file_link: string | null;
+  purchased?: boolean;
   img_standard_full: string | null;
   img_standard_mid: string | null;
   img_standard_thumb: string | null;

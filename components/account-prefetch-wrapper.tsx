@@ -8,6 +8,7 @@ import { useGalleryPrefetch } from "@/hooks/use-gallery-prefetch";
 import { setCached } from "@/hooks/use-prefetch-cache";
 import { GALLERY_CATEGORIES } from "@/lib/gallery-categories";
 import { REVIEW_LIST_CACHE_TTL, COLOR_LIST_CACHE_TTL } from "@/lib/cache-config";
+import { getCachedPurchasedColorIds, refreshPurchasedColorIdsCache } from "@/lib/color-purchase-cache";
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 const COLOR_PREFETCH_LOCK_KEY = "color-list-prefetch-lock";
@@ -101,6 +102,8 @@ type ColorPrefetchItem = {
   title: string;
   content: string | null;
   price: number | null;
+  file_link: string | null;
+  purchased?: boolean;
   like_count: number;
   img_arao_mid: string | null;
   img_arao_full: string | null;
@@ -131,8 +134,8 @@ function refreshColorListCache() {
     .then((r) => (r.ok ? r.json() : null))
     .then(async (json: { items?: Array<ColorPrefetchItem> } | null) => {
       if (!json?.items) return;
-      const items = json.items.map(({ id, title, content, price, like_count, img_arao_mid, img_arao_full, img_portrait_full, img_standard_full }) => ({
-        id, title, content: content ?? null, price: price ?? null, like_count, img_arao_mid, img_arao_full, img_portrait_full, img_standard_full,
+      const items = json.items.map(({ id, title, content, price, file_link, purchased, like_count, img_arao_mid, img_arao_full, img_portrait_full, img_standard_full }) => ({
+        id, title, content: content ?? null, price: price ?? null, file_link: file_link ?? null, purchased: purchased ?? undefined, like_count, img_arao_mid, img_arao_full, img_portrait_full, img_standard_full,
       }));
       sessionStorage.setItem("color-list-cache", JSON.stringify({ data: items, ts: Date.now() }));
 
@@ -180,7 +183,10 @@ export function AccountPrefetchWrapper({ children }: { children: ReactNode }) {
     if (isStale("color-list-cache", COLOR_LIST_CACHE_TTL)) {
       refreshColorListCache();
     }
-  }, []);
+    if (isSignedIn && !getCachedPurchasedColorIds()) {
+      void refreshPurchasedColorIdsCache();
+    }
+  }, [isSignedIn]);
 
   return <>{children}</>;
 }

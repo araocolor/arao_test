@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { LandingPageHeader } from "@/components/landing-page-header";
+import { markPurchasedColorId } from "@/lib/color-purchase-cache";
 
 export default function ColorOrderSuccessPage() {
   const { id } = useParams<{ id: string }>();
@@ -58,6 +59,7 @@ export default function ColorOrderSuccessPage() {
           throw new Error(data.message ?? "결제 승인에 실패했습니다.");
         }
 
+        markPurchasedColorId(id);
         setApproved(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "결제 승인에 실패했습니다.");

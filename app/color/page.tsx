@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import Image from "next/image";
+import { getCachedPurchasedColorIds, refreshPurchasedColorIdsCache } from "@/lib/color-purchase-cache";
 
 const COLOR_CACHE_KEY = "color-items";
 const COLOR_PREFETCH_CACHE_KEY = "color-list-cache";
@@ -14,6 +15,7 @@ type ColorItem = {
   content: string | null;
   price: number | null;
   file_link: string | null;
+  purchased?: boolean;
   img_arao_full: string | null;
   img_arao_mid: string | null;
   img_arao_thumb: string | null;
@@ -25,6 +27,10 @@ type ColorItem = {
 type PrefetchItem = {
   id: string;
   title: string;
+  content: string | null;
+  price: number | null;
+  file_link: string | null;
+  purchased?: boolean;
   like_count: number;
   img_arao_mid: string | null;
 };
@@ -108,13 +114,14 @@ function getInitialItems(): { items: ColorItem[]; hasCache: boolean } {
         items: prefetched.map((p) => ({
           id: p.id,
           title: p.title,
+          content: p.content ?? null,
+          price: p.price ?? null,
+          file_link: p.file_link ?? null,
+          purchased: typeof p.purchased === "boolean" ? p.purchased : undefined,
           like_count: p.like_count,
           img_arao_mid: p.img_arao_mid,
           img_arao_full: null,
           img_arao_thumb: null,
-          content: null,
-          price: null,
-          file_link: null,
           created_at: "",
           is_admin: false,
         })),
@@ -143,6 +150,11 @@ export default function ColorPage() {
       setItems(cached);
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (getCachedPurchasedColorIds()) return;
+    void refreshPurchasedColorIdsCache();
   }, []);
 
   const load = useCallback(async () => {

@@ -5,6 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { ColorOrderHeader } from "@/components/order-header";
 import { OrderFooter } from "@/components/order-footer";
 import type { ColorItem } from "@/lib/color-types";
+import {
+  getCachedPurchasedColorIds,
+  refreshPurchasedColorIdsCache,
+} from "@/lib/color-purchase-cache";
 
 const COLOR_CACHE_KEY = "color-items";
 const COLOR_PREFETCH_CACHE_KEY = "color-list-cache";
@@ -34,7 +38,8 @@ function getFromCache(id: string): ColorItem | null {
         title: found.title ?? "",
         content: (found.content as string | null) ?? null,
         price: (found.price as number | null) ?? null,
-        file_link: null,
+        file_link: (found.file_link as string | null) ?? null,
+        purchased: typeof found.purchased === "boolean" ? found.purchased : undefined,
         img_standard_full: null,
         img_standard_mid: null,
         img_standard_thumb: null,
@@ -233,6 +238,7 @@ export default function ColorDetailPage() {
   const [item, setItem] = useState<ColorItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [purchasedColorIds, setPurchasedColorIds] = useState<string[]>([]);
 
   useEffect(() => {
     const role = sessionStorage.getItem("user-role");
@@ -257,13 +263,39 @@ export default function ColorDetailPage() {
     })();
   }, [id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const cached = getCachedPurchasedColorIds({ includeExpired: true });
+    if (cached && !cancelled) {
+      setPurchasedColorIds(cached);
+    }
+
+    void (async () => {
+      const latest = await refreshPurchasedColorIdsCache();
+      if (!cancelled && latest) {
+        setPurchasedColorIds(latest);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const hasPurchase = item !== null && item.price != null && item.price > 0;
-  const hasDownload = item !== null && !hasPurchase && !!item.file_link;
+  const hasDownload = item !== null && !!item.file_link;
+  const hasPurchased = item !== null && purchasedColorIds.includes(item.id);
+  const showDownload = (hasPurchase && hasDownload && hasPurchased) || (!hasPurchase && hasDownload);
 
   const handleBuy = () => {
     if (!item) return;
-    if (hasPurchase) router.push(`/color/${item.id}/order`);
-    else if (hasDownload) window.location.href = item.file_link!;
+    if (showDownload && item.file_link) {
+      window.location.href = item.file_link;
+      return;
+    }
+    if (hasPurchase) {
+      router.push(`/color/${item.id}/order`);
+    }
   };
 
   return (
@@ -302,7 +334,11 @@ export default function ColorDetailPage() {
         <OrderFooter
           onBuy={handleBuy}
           buyDisabled={!hasPurchase && !hasDownload}
-          buyLabel={hasPurchase ? "구매하기" : hasDownload ? "다운로드" : "가격 준비중"}
+          buyLabel={
+            hasPurchase
+              ? showDownload ? "다운로드" : "구매하기"
+              : hasDownload ? "다운로드" : "가격 준비중"
+          }
         />
       )}
     </main>
