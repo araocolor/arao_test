@@ -10,15 +10,34 @@ export default function ColorOrderSuccessPage() {
   const searchParams = useSearchParams();
   const pgToken = searchParams.get("pg_token");
   const orderId = searchParams.get("orderId");
-  const requestedRef = useRef(false);
+  const approvedRef = useRef(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [approved, setApproved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function clearRedirectTimer() {
+    if (!redirectTimerRef.current) return;
+    clearTimeout(redirectTimerRef.current);
+    redirectTimerRef.current = null;
+  }
+
+  function moveToProduct() {
+    clearRedirectTimer();
+    router.replace(`/color/${id}`);
+  }
+
+  function moveToOrderDetail() {
+    if (!orderId) return;
+    clearRedirectTimer();
+    router.push(`/account/orders?open=${orderId}`);
+  }
+
   useEffect(() => {
-    if (requestedRef.current || !pgToken || !orderId) {
+    if (approvedRef.current || !pgToken || !orderId) {
       return;
     }
 
-    requestedRef.current = true;
+    approvedRef.current = true;
 
     void (async () => {
       try {
@@ -35,24 +54,73 @@ export default function ColorOrderSuccessPage() {
           throw new Error(data.message ?? "결제 승인에 실패했습니다.");
         }
 
-        router.replace(`/account/orders/${orderId}`);
+        setApproved(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "결제 승인에 실패했습니다.");
       }
     })();
   }, [id, orderId, pgToken, router]);
 
+  useEffect(() => {
+    if (!approved || error) return;
+    clearRedirectTimer();
+    redirectTimerRef.current = setTimeout(() => {
+      router.replace(`/color/${id}`);
+    }, 1500);
+
+    return () => {
+      clearRedirectTimer();
+    };
+  }, [approved, error, id, router]);
+
+  useEffect(() => {
+    return () => {
+      clearRedirectTimer();
+    };
+  }, []);
+
   return (
     <main className="color-detail-shell">
       <LandingPageHeader />
       <div className="color-order-state">
-        {!error ? (
+        {!error && !approved ? (
           <>
             <h1 className="color-detail-title">결제를 확인하고 있습니다</h1>
-            <p className="color-order-copy">잠시만 기다려 주세요. 승인 완료 후 주문 상세로 이동합니다.</p>
+            <p className="color-order-copy">잠시만 기다려 주세요. 승인 완료 후 안내 화면이 표시됩니다.</p>
           </>
+        ) : null}
+
+        {!error && approved ? (
+          <section className="color-order-success-card">
+            <div className="color-order-success-check" aria-hidden="true">✓</div>
+            <h1 className="color-order-success-title">결제완료 성공 !!! 😉</h1>
+            <p className="color-order-copy">결제가 정상 처리되었습니다. 잠시 후 자동으로 이동합니다.</p>
+            {orderId && (
+              <p className="color-order-success-order">
+                주문번호 <strong>{orderId}</strong>
+              </p>
+            )}
+            <div className="color-order-actions">
+              <button
+                type="button"
+                className="landing-button landing-button-primary color-order-pay-btn"
+                onClick={moveToOrderDetail}
+                disabled={!orderId}
+              >
+                결제 상세 보기
+              </button>
+              <button
+                type="button"
+                className="color-order-secondary-btn"
+                onClick={moveToProduct}
+              >
+                계속 둘러보기
+              </button>
+            </div>
+          </section>
         ) : (
-          <>
+          error && (
+            <>
             <h1 className="color-detail-title">결제 확인에 실패했습니다</h1>
             <p className="color-order-error">{error}</p>
             <div className="color-order-actions">
@@ -73,7 +141,8 @@ export default function ColorOrderSuccessPage() {
                 </button>
               )}
             </div>
-          </>
+            </>
+          )
         )}
       </div>
     </main>
