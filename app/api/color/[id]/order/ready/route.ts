@@ -74,6 +74,15 @@ export async function POST(
       return NextResponse.json({ message: "결제 준비 저장에 실패했습니다." }, { status: 500 });
     }
 
+    await admin.from("order_items").insert({
+      order_id: order.id,
+      color_id: id,
+      product_name: item.title,
+      unit_price: totalAmount,
+      quantity: 1,
+      image_url: item.img_arao_thumb ?? item.img_arao_mid ?? item.img_arao_full ?? null,
+    });
+
     try {
       const appUrl = getAppUrl(request);
       const ready = await requestKakaoReady({

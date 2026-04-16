@@ -12,6 +12,16 @@ export type Product = {
   created_at: string;
 };
 
+export type OrderItem = {
+  id: string;
+  order_id: string;
+  color_id: string | null;
+  product_name: string | null;
+  unit_price: number | null;
+  quantity: number;
+  image_url: string | null;
+};
+
 export type Order = {
   id: string;
   user_id: string;
@@ -20,6 +30,7 @@ export type Order = {
   currency: string;
   payment_provider: string | null;
   created_at: string;
+  items?: OrderItem[];
 };
 
 export type Payment = {
@@ -51,13 +62,13 @@ export async function getOrdersByUser(
 
   const { data, error } = await supabase
     .from("orders")
-    .select("*")
+    .select("*, items:order_items(*)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) throw error;
-  return data || [];
+  return (data as Order[]) || [];
 }
 
 export async function getOrderById(id: string, userId: string): Promise<OrderDetail | null> {
