@@ -104,20 +104,13 @@
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
-.landing-comparison {
+.landing-comparison-item {
+  position: relative;
+  aspect-ratio: 1 / 1;
   width: 100%;
   overflow: hidden;
   border-radius: 28px;
   box-shadow: var(--shadow-card);
-}
-
-.landing-comparison-item {
-  position: relative;
-  min-height: 240px;
-  display: flex;
-  align-items: flex-start;
-  padding: 16px;
-  overflow: hidden;
 }
 
 .landing-comparison-item::before {
@@ -147,9 +140,6 @@
   background-position: center;
 }
 
-.landing-comparison-item + .landing-comparison-item {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
 
 .landing-comparison-label,
 .landing-comparison-text {
@@ -493,20 +483,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .landing-comparison-item {
-    min-height: 56vh;
-    padding: 24px;
-  }
-
-  .landing-comparison-item + .landing-comparison-item {
-    border-top: 0;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .landing-comparison-text {
-    max-width: 280px;
-    font-size: 15px;
-  }
 
   .landing-reviews {
     grid-template-columns: repeat(4, minmax(0, 1fr));

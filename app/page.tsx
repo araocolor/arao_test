@@ -16,6 +16,11 @@ export default async function HomePage() {
       <LandingPageHeader />
 
       <div className="landing-shell">
+        <article
+          className="landing-comparison-item before"
+          style={{ ["--landing-image" as string]: `url("${landingContent.comparison.beforeImage}")` }}
+        />
+
         <section className="landing-hero landing-stack-sm" id="intro">
           <img src="/apple-touch-icon.png" alt="ARAO" style={{ width: 40, height: 40, borderRadius: 10, display: "block", margin: "0 auto" }} />
           <span className="landing-section-label">{landingContent.hero.badge}</span>
@@ -27,25 +32,11 @@ export default async function HomePage() {
           </Link>
         </section>
 
-        <section className="landing-stack-sm" id="gallery">
-          <span className="landing-section-label">{landingContent.comparison.sectionTitle}</span>
-          <div className="landing-comparison">
-            <article
-              className="landing-comparison-item before landing-stack-sm"
-              style={{ ["--landing-image" as string]: `url("${landingContent.comparison.beforeImage}")` }}
-            >
-              <div className="landing-comparison-label">{landingContent.comparison.beforeLabel}</div>
-              <p className="landing-comparison-text">{landingContent.comparison.beforeText}</p>
-            </article>
-            <article
-              className="landing-comparison-item after landing-stack-sm"
-              style={{ ["--landing-image" as string]: `url("${landingContent.comparison.afterImage}")` }}
-            >
-              <div className="landing-comparison-label">{landingContent.comparison.afterLabel}</div>
-              <p className="landing-comparison-text">{landingContent.comparison.afterText}</p>
-            </article>
-          </div>
-        </section>
+        <article
+          className="landing-comparison-item after"
+          style={{ ["--landing-image" as string]: `url("${landingContent.comparison.afterImage}")` }}
+        />
+
 
         <section className="landing-stack-sm" id="pricing">
           <Link href="/user_review" className="landing-review-section-link">
