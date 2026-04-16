@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import type { ColorItem } from "@/lib/color-types";
@@ -74,7 +74,7 @@ type SlotState = {
 
 const emptySlot = (): SlotState => ({ file: null, preview: null });
 
-export default function ColorWritePage() {
+function ColorWritePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("id");
@@ -448,5 +448,13 @@ export default function ColorWritePage() {
         </button>
       </footer>
     </main>
+  );
+}
+
+export default function ColorWritePage() {
+  return (
+    <Suspense fallback={<div className="color-empty">불러오는 중...</div>}>
+      <ColorWritePageContent />
+    </Suspense>
   );
 }
