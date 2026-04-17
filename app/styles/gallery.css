@@ -69,7 +69,7 @@
   }
 }
 
-@media (min-width: 820px) {
+@media (min-width: 520px) {
   .gallery-hero-image-wrap {
     aspect-ratio: 3 / 2 !important;
   }
