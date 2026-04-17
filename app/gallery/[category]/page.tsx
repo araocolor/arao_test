@@ -29,7 +29,10 @@ export default async function GalleryDetailPage({
   const title = item.title || label;
 
   return (
-    <main className="landing-page gallery-page">
+    <main
+      className="landing-page gallery-page"
+      style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
+    >
       <LandingPageHeader />
 
       <div className="gallery-detail-shell">
