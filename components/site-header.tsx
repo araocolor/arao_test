@@ -24,6 +24,7 @@ type SiteHeaderProps = {
   isAdmin?: boolean;
   isSignedIn?: boolean;
   version?: number;
+  hideOnScrollMode?: "default" | "terms";
 };
 
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
@@ -77,6 +78,7 @@ export function SiteHeader({
   isAdmin,
   isSignedIn,
   version,
+  hideOnScrollMode = "default",
 }: SiteHeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
@@ -87,6 +89,7 @@ export function SiteHeader({
   const touchStartY = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
   const lastScrollYRef = useRef(0);
+  const lastScrollTsRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
   const email = useHeaderSessionStore((state) => state.email);
   const role = useHeaderSessionStore((state) => state.role);
@@ -145,29 +148,58 @@ export function SiteHeader({
     return () => { document.body.style.overflow = ""; };
   }, [drawerOpen]);
 
-  // 태블릿 이상에서만: 아래로 스크롤 시 헤더 숨김, 위로 스크롤 시 다시 표시
+  // 헤더 숨김 로직: 기본(default) / terms 스타일(빠른 상향 스크롤에서만 표시)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const mediaQuery = window.matchMedia("(min-width: 820px)");
-    const minDelta = 6;
-    const minScrollTop = 72;
+    const defaultMinDelta = 6;
+    const defaultMinScrollTop = 72;
+    const termsShowTopY = 12;
+    const termsHideDownDelta = 4;
+    const termsFastUpwardSpeed = 3.5; // px/ms
 
     const applyByScroll = () => {
       const currentY = window.scrollY;
-      if (!fullWidth || !mediaQuery.matches || drawerOpen || profilePanelOpen) {
+      const nowTs = performance.now();
+
+      if (!fullWidth || drawerOpen || profilePanelOpen) {
         setHideOnScroll(false);
         lastScrollYRef.current = currentY;
+        lastScrollTsRef.current = nowTs;
         return;
       }
 
-      const delta = currentY - lastScrollYRef.current;
-      if (currentY <= minScrollTop || delta < -minDelta) {
-        setHideOnScroll(false);
-      } else if (delta > minDelta) {
-        setHideOnScroll(true);
+      if (hideOnScrollMode === "terms") {
+        const deltaY = currentY - lastScrollYRef.current;
+        const elapsedMs = Math.max(1, nowTs - lastScrollTsRef.current);
+        const upwardSpeed = deltaY < 0 ? Math.abs(deltaY) / elapsedMs : 0;
+
+        if (currentY <= termsShowTopY) {
+          setHideOnScroll(false);
+        } else if (deltaY > termsHideDownDelta) {
+          setHideOnScroll(true);
+        } else if (deltaY < 0 && upwardSpeed >= termsFastUpwardSpeed) {
+          setHideOnScroll(false);
+        }
+      } else {
+        if (!mediaQuery.matches) {
+          setHideOnScroll(false);
+          lastScrollYRef.current = currentY;
+          lastScrollTsRef.current = nowTs;
+          return;
+        }
+
+        const delta = currentY - lastScrollYRef.current;
+        if (currentY <= defaultMinScrollTop || delta < -defaultMinDelta) {
+          setHideOnScroll(false);
+        } else if (delta > defaultMinDelta) {
+          setHideOnScroll(true);
+        }
       }
+
       lastScrollYRef.current = currentY;
+      lastScrollTsRef.current = nowTs;
     };
 
     const onScroll = () => {
@@ -183,6 +215,7 @@ export function SiteHeader({
     };
 
     lastScrollYRef.current = window.scrollY;
+    lastScrollTsRef.current = performance.now();
     applyByScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
@@ -195,14 +228,15 @@ export function SiteHeader({
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
     };
-  }, [drawerOpen, fullWidth, profilePanelOpen]);
+  }, [drawerOpen, fullWidth, hideOnScrollMode, profilePanelOpen]);
 
   const closeDrawer = () => { setDrawerOpen(false); setProfilePanelOpen(false); };
   const shouldHideHeader = fullWidth && hideOnScroll;
+  const hideClassName = hideOnScrollMode === "terms" ? "header-scroll-hidden-terms" : "header-scroll-hidden";
 
   return (
     <>
-      <header className={shouldHideHeader ? "header header-full header-scroll-hidden" : (fullWidth ? "header header-full" : "header")}>
+      <header className={shouldHideHeader ? `header header-full ${hideClassName}` : (fullWidth ? "header header-full" : "header")}>
         <div className={fullWidth ? "header-inner" : "header-inner-inline"}>
           <button
             aria-expanded={drawerOpen}

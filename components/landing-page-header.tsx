@@ -20,9 +20,14 @@ const BASE_LINKS = [
 type LandingPageHeaderProps = {
   brandHref?: string;
   scrollTopOnLogoClick?: boolean;
+  hideOnScrollMode?: "default" | "terms";
 };
 
-export function LandingPageHeader({ brandHref = "/", scrollTopOnLogoClick = false }: LandingPageHeaderProps) {
+export function LandingPageHeader({
+  brandHref = "/",
+  scrollTopOnLogoClick = false,
+  hideOnScrollMode = "default",
+}: LandingPageHeaderProps) {
   const { isSignedIn } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -75,6 +80,7 @@ export function LandingPageHeader({ brandHref = "/", scrollTopOnLogoClick = fals
       isSignedIn={isSignedIn ?? false}
       version={4}
       links={links}
+      hideOnScrollMode={hideOnScrollMode}
     />
   );
 }

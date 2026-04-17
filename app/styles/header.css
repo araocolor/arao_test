@@ -12,13 +12,20 @@
   margin-right: calc(50% - 50vw);
   background: rgba(245, 245, 247, 0.96);
   backdrop-filter: blur(14px);
-  transition: top 220ms ease;
+  transform: translateY(0);
+  opacity: 1;
+  transition: top 220ms ease, transform 220ms ease, opacity 220ms ease;
 }
 
 @media (min-width: 820px) {
   .header-full.header-scroll-hidden {
     top: -96px;
   }
+}
+
+.header-full.header-scroll-hidden-terms {
+  transform: translateY(-100%);
+  opacity: 0;
 }
 
 /* ── Board Header ── */

@@ -19,7 +19,7 @@ export default async function GalleryPage() {
       className="landing-page gallery-page"
       style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
     >
-      <LandingPageHeader />
+      <LandingPageHeader hideOnScrollMode="terms" />
 
       <div className="landing-shell">
         <Suspense>
