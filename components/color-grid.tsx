@@ -1,9 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Bookmark } from "lucide-react";
 import type { ColorItem } from "@/lib/color-types";
+
+type ColorSortMode = "bookmark" | "download" | "purchase";
+type ColorViewMode = "album" | "card";
+
+function toTimestamp(value: string): number {
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function compareByRecent(a: ColorItem, b: ColorItem): number {
+  return toTimestamp(b.created_at) - toTimestamp(a.created_at);
+}
 
 function ColorCard({ item, onClick }: { item: ColorItem; onClick: () => void }) {
   const mid = item.img_arao_mid ?? item.img_arao_thumb ?? null;
@@ -42,9 +55,7 @@ function ColorCard({ item, onClick }: { item: ColorItem; onClick: () => void }) 
           <div className="color-card-image-placeholder">이미지 없음</div>
         )}
         <div className="color-card-heart">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
+          <Bookmark size={16} strokeWidth={2} fill="currentColor" />
           <span>{item.like_count}</span>
         </div>
         {item.content && (
@@ -74,6 +85,9 @@ function preloadImages(urls: (string | null | undefined)[]): Promise<void> {
 export function ColorGrid({ items }: { items: ColorItem[] }) {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [sortMode, setSortMode] = useState<ColorSortMode>("bookmark");
+  const [viewMode, setViewMode] = useState<ColorViewMode>("album");
 
   useEffect(() => {
     const role = sessionStorage.getItem("user-role");
@@ -102,13 +116,123 @@ export function ColorGrid({ items }: { items: ColorItem[] }) {
     router.push(`/color/${item.id}`);
   };
 
+  const visibleItems = useMemo(() => {
+    const normalizedKeyword = searchKeyword.trim().toLowerCase();
+    const filtered = normalizedKeyword
+      ? items.filter((item) => {
+          const title = item.title.toLowerCase();
+          const content = (item.content ?? "").toLowerCase();
+          const productCode = (item.product_code ?? "").toLowerCase();
+          return (
+            title.includes(normalizedKeyword) ||
+            content.includes(normalizedKeyword) ||
+            productCode.includes(normalizedKeyword)
+          );
+        })
+      : items;
+
+    const sorted = [...filtered];
+    sorted.sort((a, b) => {
+      if (sortMode === "bookmark") {
+        if (b.like_count !== a.like_count) {
+          return b.like_count - a.like_count;
+        }
+        return compareByRecent(a, b);
+      }
+
+      if (sortMode === "download") {
+        const downloadA = a.file_link ? 1 : 0;
+        const downloadB = b.file_link ? 1 : 0;
+        if (downloadB !== downloadA) {
+          return downloadB - downloadA;
+        }
+        if (b.like_count !== a.like_count) {
+          return b.like_count - a.like_count;
+        }
+        return compareByRecent(a, b);
+      }
+
+      const purchasableA = (a.price ?? 0) > 0 ? 1 : 0;
+      const purchasableB = (b.price ?? 0) > 0 ? 1 : 0;
+      if (purchasableB !== purchasableA) {
+        return purchasableB - purchasableA;
+      }
+      if ((b.price ?? 0) !== (a.price ?? 0)) {
+        return (b.price ?? 0) - (a.price ?? 0);
+      }
+      return compareByRecent(a, b);
+    });
+
+    return sorted;
+  }, [items, searchKeyword, sortMode]);
+
   return (
     <>
-      <div className="color-grid">
-        {items.map((item) => (
-          <ColorCard key={item.id} item={item} onClick={() => handleClick(item)} />
-        ))}
-      </div>
+      <section className="color-search-card" aria-label="컬러 검색 및 정렬">
+        <div className="color-search-head">
+          <p className="color-search-title">컬러 검색</p>
+          <span className="color-search-count">{visibleItems.length}개</span>
+        </div>
+        <div className="color-search-controls">
+          <input
+            type="search"
+            className="color-search-input"
+            placeholder="제목, 내용, 상품코드 검색"
+            value={searchKeyword}
+            onChange={(event) => setSearchKeyword(event.target.value)}
+            aria-label="컬러 검색"
+          />
+          <div className="color-view-toggle" role="group" aria-label="보기 방식">
+            <button
+              type="button"
+              className={`color-view-btn${viewMode === "album" ? " is-active" : ""}`}
+              onClick={() => setViewMode("album")}
+              aria-label="앨범형 보기"
+              title="앨범형"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1.2" />
+                <rect x="14" y="3" width="7" height="7" rx="1.2" />
+                <rect x="3" y="14" width="7" height="7" rx="1.2" />
+                <rect x="14" y="14" width="7" height="7" rx="1.2" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={`color-view-btn${viewMode === "card" ? " is-active" : ""}`}
+              onClick={() => setViewMode("card")}
+              aria-label="카드형 보기"
+              title="카드형"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <line x1="7" y1="9" x2="17" y2="9" />
+                <line x1="7" y1="13" x2="14" y2="13" />
+              </svg>
+            </button>
+          </div>
+          <select
+            className="color-sort-select"
+            value={sortMode}
+            onChange={(event) => setSortMode(event.target.value as ColorSortMode)}
+            aria-label="정렬 방식"
+          >
+            <option value="bookmark">북마크순</option>
+            <option value="download">다운로드순</option>
+            <option value="purchase">구매순</option>
+          </select>
+        </div>
+      </section>
+
+      {visibleItems.length === 0 ? (
+        <div className="color-empty">검색 결과가 없습니다.</div>
+      ) : (
+        <div className={`color-grid${viewMode === "card" ? " color-grid-card" : ""}`}>
+          {visibleItems.map((item) => (
+            <ColorCard key={item.id} item={item} onClick={() => handleClick(item)} />
+          ))}
+        </div>
+      )}
       <button
         type="button"
         className="color-fab"

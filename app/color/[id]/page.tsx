@@ -399,6 +399,7 @@ export default function ColorDetailPage() {
 
       {item && (
         <OrderFooter
+          wishIcon="bookmark"
           onBuy={handleBuy}
           buyDisabled={!hasPurchase && !hasDownload}
           buyLabel={
