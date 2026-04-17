@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LandingContent } from "@/lib/landing-content";
 
 const QNA_CACHE_KEY = "user-review-list-cache-qna";
@@ -23,6 +23,9 @@ type LandingPageFooterProps = {
 
 export function LandingPageFooter({ content }: LandingPageFooterProps) {
   const footerRef = useRef<HTMLElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [legalSheet, setLegalSheet] = useState<null | "terms" | "privacy">(null);
+  const [legalSheetVisible, setLegalSheetVisible] = useState(false);
 
   useEffect(() => {
     const el = footerRef.current;
@@ -45,6 +48,44 @@ export function LandingPageFooter({ content }: LandingPageFooterProps) {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!legalSheet) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const rafId = window.requestAnimationFrame(() => setLegalSheetVisible(true));
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [legalSheet]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  function openLegalSheet(type: "terms" | "privacy") {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setLegalSheet(type);
+  }
+
+  function closeLegalSheet() {
+    setLegalSheetVisible(false);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setLegalSheet(null);
+      closeTimerRef.current = null;
+    }, 220);
+  }
 
   return (
     <footer className="landing-footer" id="help" ref={footerRef}>
@@ -81,16 +122,62 @@ export function LandingPageFooter({ content }: LandingPageFooterProps) {
       </div>
       <nav className="landing-footer-links">
         {content.links.map((link) => {
-          const href =
-            link.label === "개인정보처리방침" ? "/privacy.html" :
-            link.label === "이용약관" ? "/terms.html" : link.href;
+          const legalType =
+            link.label === "개인정보처리방침" ? "privacy" :
+            link.label === "이용약관" ? "terms" : null;
+          if (legalType) {
+            return (
+              <button
+                key={link.label}
+                type="button"
+                className="landing-footer-link landing-footer-link-button"
+                onClick={() => openLegalSheet(legalType)}
+              >
+                {link.label}
+              </button>
+            );
+          }
           return (
-            <a key={link.label} className="landing-footer-link" href={href}>
+            <a key={link.label} className="landing-footer-link" href={link.href}>
               {link.label}
             </a>
           );
         })}
       </nav>
+      {legalSheet && (
+        <>
+          <div
+            className={`landing-legal-sheet-backdrop${legalSheetVisible ? " is-open" : ""}`}
+            onClick={closeLegalSheet}
+            aria-hidden="true"
+          />
+          <section
+            className={`landing-legal-sheet${legalSheetVisible ? " is-open" : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={legalSheet === "terms" ? "이용약관" : "개인정보처리방침"}
+          >
+            <button
+              type="button"
+              className="landing-legal-sheet-handle"
+              onClick={closeLegalSheet}
+              aria-label="슬라이드 닫기"
+            >
+              <span />
+            </button>
+            <iframe
+              src={legalSheet === "terms" ? "/terms.html" : "/privacy.html"}
+              className="landing-legal-sheet-iframe"
+              title={legalSheet === "terms" ? "이용약관" : "개인정보처리방침"}
+            />
+            <div className="landing-legal-sheet-actions">
+              <button type="button" className="landing-legal-sheet-close-btn" onClick={closeLegalSheet}>
+                닫기
+              </button>
+            </div>
+          </section>
+        </>
+      )}
     </footer>
   );
 }
