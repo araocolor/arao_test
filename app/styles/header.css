@@ -124,7 +124,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  width: min(100%, 480px);
+  width: min(100%, 820px);
   margin: 0 auto;
   padding: 14px 16px;
 }

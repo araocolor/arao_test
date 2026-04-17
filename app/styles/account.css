@@ -354,9 +354,9 @@
 .account-footer-nav {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100vw;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100vw, 820px);
   height: 80px;
   background: rgba(245, 245, 247, 0.96);
   backdrop-filter: blur(14px);
