@@ -121,12 +121,31 @@ type HomeEntryLoaderProps = {
   children: ReactNode;
 };
 
+function hasLandingCache(): boolean {
+  try {
+    return !!(
+      sessionStorage.getItem("color-items") ||
+      sessionStorage.getItem("color-list-cache") ||
+      sessionStorage.getItem("user-review-list-cache-arao")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function HomeEntryLoader({ children }: HomeEntryLoaderProps) {
   const [ready, setReady] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     prefetchHomeFastPack();
+
+    // 캐시 있으면 즉시 표시, 없으면 1초 대기
+    if (hasLandingCache()) {
+      setReady(true);
+      return;
+    }
+
     timeoutRef.current = setTimeout(() => {
       setReady(true);
       timeoutRef.current = null;

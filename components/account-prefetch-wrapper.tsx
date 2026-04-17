@@ -141,12 +141,6 @@ function refreshColorListCache() {
 
       // 1단계: arao mid (480) — 리스트 즉시 표시용
       await preloadImages(items.map((i) => i.img_arao_mid));
-      // 2단계: arao full (1024) — 상세 진입 즉시 표시용
-      await preloadImages(items.map((i) => i.img_arao_full));
-      // 3단계: portrait full
-      await preloadImages(items.map((i) => i.img_portrait_full));
-      // 4단계: standard full
-      await preloadImages(items.map((i) => i.img_standard_full));
     })
     .catch(() => {})
     .finally(() => {

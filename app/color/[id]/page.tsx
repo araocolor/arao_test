@@ -13,6 +13,18 @@ import {
 const COLOR_CACHE_KEY = "color-items";
 const COLOR_PREFETCH_CACHE_KEY = "color-list-cache";
 
+type InstantSnap = { id: string; title: string; thumb: string | null };
+
+function getInstantSnap(id: string): InstantSnap | null {
+  try {
+    const raw = sessionStorage.getItem(`color-detail-instant-${id}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as InstantSnap;
+  } catch {
+    return null;
+  }
+}
+
 const SLIDE_LABELS: Record<string, string> = {
   standard: "Standard",
   arao: "Arao",
@@ -239,11 +251,23 @@ export default function ColorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [purchasedColorIds, setPurchasedColorIds] = useState<string[]>([]);
+  const [instantSnap, setInstantSnap] = useState<InstantSnap | null>(null);
+  const [snapMidSrc, setSnapMidSrc] = useState<string | null>(null);
+  const midUpgradedRef = useRef(false);
 
   useEffect(() => {
     const role = sessionStorage.getItem("user-role");
     setIsAdmin(role === "admin");
   }, []);
+
+  // 즉시 snap 로드 (캐시 없을 때만 사용)
+  useEffect(() => {
+    const cached = getFromCache(id);
+    if (!cached) {
+      const snap = getInstantSnap(id);
+      if (snap) setInstantSnap(snap);
+    }
+  }, [id]);
 
   useEffect(() => {
     const cached = getFromCache(id);
@@ -258,6 +282,7 @@ export default function ColorDetailPage() {
         if (!res.ok) return;
         const data = (await res.json()) as ColorItem;
         setItem(data);
+        setInstantSnap(null);
       } catch { /* silent */ }
       finally { setLoading(false); }
     })();
@@ -298,11 +323,53 @@ export default function ColorDetailPage() {
     }
   };
 
+  // snap 표시 중 mid 이미지 백그라운드 프리로드 후 조용히 교체
+  useEffect(() => {
+    if (!instantSnap || midUpgradedRef.current) return;
+    // COLOR_PREFETCH_CACHE_KEY에서 mid URL 가져오기
+    try {
+      const raw = sessionStorage.getItem("color-list-cache");
+      if (raw) {
+        const { data } = JSON.parse(raw) as { data: Array<{ id: string; img_arao_mid?: string | null }> };
+        const found = Array.isArray(data) ? data.find((d) => d.id === id) : null;
+        const midUrl = found?.img_arao_mid ?? null;
+        if (midUrl && midUrl !== instantSnap.thumb) {
+          midUpgradedRef.current = true;
+          const img = new window.Image();
+          img.onload = () => setSnapMidSrc(midUrl);
+          img.src = midUrl;
+        }
+      }
+    } catch {}
+  }, [instantSnap, id]);
+
   return (
     <main className="color-detail-shell">
       <ColorOrderHeader />
 
-      {loading && !item && <div className="color-empty">불러오는 중...</div>}
+      {/* 캐시 없을 때 즉시 snap으로 먼저 표시 */}
+      {!item && instantSnap && (
+        <div className="color-detail-grid color-detail-grid-instant">
+          <div className="color-detail-info landing-stack-sm">
+            <span className="landing-section-label">COLOR</span>
+            <h1 className="color-detail-title">{instantSnap.title}</h1>
+          </div>
+          <div className="color-detail-image-wrap">
+            {(snapMidSrc ?? instantSnap.thumb) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={snapMidSrc ?? instantSnap.thumb!}
+                alt={instantSnap.title}
+                className="color-detail-image"
+              />
+            ) : (
+              <div className="color-card-image-placeholder">불러오는 중...</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {loading && !item && !instantSnap && <div className="color-empty">불러오는 중...</div>}
 
       {!loading && !item && (
         <div className="color-empty">
