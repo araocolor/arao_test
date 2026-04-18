@@ -187,7 +187,7 @@ export function GeneralSettingsForm({
     setAvatarMessage(null);
 
     if (!previewImage) {
-      setAvatarMessage("파일을 선택해주세요.");
+      setAvatarMessage("프로필 사진을 등록하세요");
       setSavingKey(null);
       return;
     }
@@ -212,6 +212,7 @@ export function GeneralSettingsForm({
       clearCached(getGeneralCacheKey(email));
       window.dispatchEvent(new CustomEvent("avatar-updated", { detail: { iconImage: previewImage } }));
     }
+
     setIsEditingAvatar(false);
     setPreviewImage(null);
     setSavingKey(null);
@@ -341,6 +342,7 @@ export function GeneralSettingsForm({
   const hasUsernameInput = usernameInput.trim().length > 0;
   const hasPhoneInput = phoneInput.trim().length > 0;
   const hasPasswordInput = passwordInput.trim().length > 0;
+  const avatarNotice = avatarMessage ?? "프로필 사진을 등록하세요";
 
   return (
     <div className="account-settings stack">
@@ -379,7 +381,7 @@ export function GeneralSettingsForm({
               ref={avatarButtonRef}
               className="account-avatar-edit-button"
               type="button"
-              disabled={savingKey === "avatar-delete"}
+              disabled={savingKey === "avatar-delete" || savingKey === "avatar"}
               onClick={() => {
                 if (iconImage) {
                   void deleteAvatar();
@@ -412,21 +414,28 @@ export function GeneralSettingsForm({
                     className="account-avatar-input-hidden"
                     onChange={handleAvatarFileChange}
                   />
-                  <button
-                    type="button"
-                    className="account-avatar-file-button"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    파일 선택
-                  </button>
-                  <div className="account-avatar-help">jpg, png, gif 파일을 업로드 하세요</div>
-                  <div className="account-avatar-actions">
+                  <div className="muted account-avatar-message">{avatarNotice}</div>
+                  {!previewImage && (
+                    <>
+                      <button
+                        type="button"
+                        className="account-avatar-file-button"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        프로필사진
+                      </button>
+                      <div className="account-avatar-help">jpg, png, gif 파일을 업로드 하세요</div>
+                    </>
+                  )}
+                  <div className={`account-avatar-actions${previewImage ? " is-compact" : ""}`}>
                     <button
                       type="submit"
                       className="account-avatar-upload-button"
-                      disabled={savingKey === "avatar"}
+                      disabled={savingKey === "avatar" || !previewImage}
                     >
-                      {savingKey === "avatar" ? "업로드 중..." : "업로드"}
+                      {savingKey === "avatar"
+                        ? (previewImage ? "확인 중..." : "업로드 중...")
+                        : (previewImage ? "확인" : "업로드")}
                     </button>
                     <button
                       type="button"
@@ -439,7 +448,6 @@ export function GeneralSettingsForm({
                       취소
                     </button>
                   </div>
-                  {avatarMessage && <div className="muted">{avatarMessage}</div>}
                 </form>
               </div>
             )}
