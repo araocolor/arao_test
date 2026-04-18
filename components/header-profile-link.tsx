@@ -114,6 +114,7 @@ export function HeaderProfileLink() {
   const hydrateHeaderSession = useHeaderSessionStore((state) => state.hydrateForUser);
   const setHeaderBadgeCount = useHeaderSessionStore((state) => state.setBadgeCount);
   const setHeaderAvatar = useHeaderSessionStore((state) => state.setAvatar);
+  const setHeaderUsername = useHeaderSessionStore((state) => state.setUsername);
   const setHeaderEmail = useHeaderSessionStore((state) => state.setEmail);
   const setHeaderRole = useHeaderSessionStore((state) => state.setRole);
   const clearActiveHeaderSession = useHeaderSessionStore((state) => state.clearActiveUserCache);
@@ -152,7 +153,11 @@ export function HeaderProfileLink() {
       const img = payload.iconImage ?? null;
       setHeaderAvatar(img);
     }
-    if (payload.username !== undefined) setUsername(payload.username ?? null);
+    if (payload.username !== undefined) {
+      const nextUsername = payload.username ?? null;
+      setUsername(nextUsername);
+      setHeaderUsername(nextUsername);
+    }
     if (payload.email !== undefined) {
       setEmail(payload.email ?? null);
       setHeaderEmail(payload.email ?? null);

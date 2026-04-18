@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { GalleryComment } from "@/lib/gallery-interactions";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { buildSignInHrefFromCurrentLocation } from "@/lib/auth-redirect";
 
 function maskEmail(email: string): string {
   const atIndex = email.indexOf("@");
@@ -640,7 +641,7 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
             onFocus={(e) => {
               if (!isSignedIn) {
                 e.target.blur();
-                router.push("/sign-in");
+                router.push(buildSignInHrefFromCurrentLocation());
               }
             }}
           />

@@ -42,12 +42,12 @@ export async function GET() {
 function validateUsername(username: string) {
   const trimmed = username.trim();
 
-  if (trimmed.length < 2) {
-    return { error: "이름은 2자 이상이어야 합니다." };
+  if (trimmed.length < 4) {
+    return { error: "아이디는 4자 이상이어야 합니다." };
   }
 
-  if (trimmed.length > 5) {
-    return { error: "이름은 5자 이하여야 합니다." };
+  if (trimmed.length > 8) {
+    return { error: "아이디는 8자 이하여야 합니다." };
   }
 
   if (!/^[a-z0-9._\-\uAC00-\uD7A3\u3131-\u314E\u314F-\u3163]+$/i.test(trimmed)) {

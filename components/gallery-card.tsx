@@ -8,6 +8,7 @@ import type { GalleryExtraImage } from "@/lib/landing-content";
 import { GalleryCommentSheet } from "@/components/gallery-comment-sheet";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { buildSignInHrefFromCurrentLocation } from "@/lib/auth-redirect";
 
 type GalleryCardProps = {
   category: string;
@@ -140,12 +141,22 @@ export function GalleryCard({
     return `가입일 ${y}.${m}.${day}`;
   }
 
+  function openCommentSheet() {
+    if (isSignedIn === false) {
+      router.push(buildSignInHrefFromCurrentLocation());
+      return;
+    }
+    if (isSignedIn === true) {
+      setCommentSheetOpen(true);
+    }
+  }
+
   useEffect(() => {
     if (autoOpenComments) {
       cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      setCommentSheetOpen(true);
+      openCommentSheet();
     }
-  }, [autoOpenComments, openTimestamp]);
+  }, [autoOpenComments, openTimestamp, isSignedIn]);
 
   useEffect(() => {
     return () => {
@@ -269,7 +280,7 @@ export function GalleryCard({
 
   const handleLike = async () => {
     if (!isSignedIn) {
-      router.push("/sign-in");
+      router.push(buildSignInHrefFromCurrentLocation());
       return;
     }
     if (likeLoading) return;
@@ -406,7 +417,7 @@ export function GalleryCard({
 
   const openUserProfilePage = async (profileId: string, username: string | null) => {
     if (!isSignedIn) {
-      router.push("/sign-in");
+      router.push(buildSignInHrefFromCurrentLocation());
       return;
     }
 
@@ -528,7 +539,7 @@ export function GalleryCard({
             <span className="gallery-action-count gallery-action-like-count">{likeCount}</span>
           )}
 
-          <button className="gallery-action-btn" onClick={() => setCommentSheetOpen(true)}>
+          <button className="gallery-action-btn" onClick={openCommentSheet}>
             <svg
               width="24"
               height="24"

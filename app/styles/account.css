@@ -42,6 +42,78 @@
   align-items: stretch;
 }
 
+.account-username-input-fixed {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  font-size: 14px;
+}
+
+.account-username-input-fixed::placeholder {
+  font-size: 14px;
+}
+
+.account-username-message {
+  text-align: center;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: -6px;
+  padding: 0;
+}
+
+.account-general-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 16px;
+  color: #111;
+  background: #fff;
+}
+
+.account-general-btn {
+  border: 1px solid rgba(107, 114, 128, 0.9);
+  background: rgba(107, 114, 128, 0.9);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.account-general-btn:disabled {
+  border-color: #d1d5db;
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: default;
+}
+
+.account-register-pill-btn {
+  border: 1px solid #020c1a;
+  border-radius: 999px;
+  background: #020c1a;
+  color: #ffffff;
+  padding: 0 18px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.account-register-pill-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .account-password-line {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -175,12 +247,10 @@
 }
 
 .account-notification-toggle {
-  border: 1px solid #d1d5db;
-  background: #f3f4f6;
+  border: 0;
+  background: transparent;
   color: #374151;
-  border-radius: 999px;
-  height: 34px;
-  padding: 0 10px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -188,9 +258,7 @@
 }
 
 .account-notification-toggle.is-on {
-  border-color: #2563eb;
-  background: #eff6ff;
-  color: #1d4ed8;
+  color: #111;
 }
 
 .account-notification-toggle:disabled {
@@ -199,9 +267,9 @@
 }
 
 .account-notification-toggle-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .account-notification-toggle-track {
@@ -214,7 +282,11 @@
 }
 
 .account-notification-toggle.is-on .account-notification-toggle-track {
-  background: #60a5fa;
+  background: #22c55e;
+}
+
+.account-notification-toggle.is-on .account-notification-toggle-thumb {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 .account-notification-toggle-thumb {
@@ -244,6 +316,12 @@
 
 .account-phone-display {
   gap: 8px;
+}
+
+.account-withdraw-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 50px;
 }
 
 .account-delete-inline {

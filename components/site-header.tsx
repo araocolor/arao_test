@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -52,6 +52,42 @@ function isReviewPrefetchLocked(): boolean {
   }
 }
 
+function createTempIdFromEmail(email: string | null): string {
+  const localPart = (email?.split("@")[0] ?? "").trim();
+  const prefix = `${localPart}xxx`.slice(0, 3);
+  const specialChars = ["*", "+", "@", "!", "#", "$", "%", "&"];
+  const letters = "abcdefghijklmnopqrstuvwxyz";
+
+  let seedSource = email ?? "guest";
+  if (!seedSource) seedSource = "guest";
+  let seed = 0;
+  for (let i = 0; i < seedSource.length; i += 1) {
+    seed = (seed * 31 + seedSource.charCodeAt(i)) >>> 0;
+  }
+
+  const nextRand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed;
+  };
+
+  const tail = [
+    specialChars[nextRand() % specialChars.length],
+    specialChars[nextRand() % specialChars.length],
+    specialChars[nextRand() % specialChars.length],
+    letters[nextRand() % letters.length],
+    letters[nextRand() % letters.length],
+  ];
+
+  for (let i = tail.length - 1; i > 0; i -= 1) {
+    const j = nextRand() % (i + 1);
+    const tmp = tail[i];
+    tail[i] = tail[j];
+    tail[j] = tmp;
+  }
+
+  return `${prefix}${tail.join("")}`;
+}
+
 // 메뉴 항목별 아이콘
 const MENU_ICONS: Record<string, ReactNode> = {
   "/about": <Sparkles width={20} height={20} strokeWidth={1.7} />,
@@ -91,8 +127,14 @@ export function SiteHeader({
   const lastScrollYRef = useRef(0);
   const lastScrollTsRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
+  const username = useHeaderSessionStore((state) => state.username);
   const email = useHeaderSessionStore((state) => state.email);
   const role = useHeaderSessionStore((state) => state.role);
+  const hasUsername = !!(username && username.trim().length > 0);
+  const usernameLabel = useMemo(() => {
+    if (hasUsername) return username as string;
+    return createTempIdFromEmail(email);
+  }, [hasUsername, username, email]);
 
   function handlePanelTouchStart(e: React.TouchEvent) {
     isDragging.current = true;
@@ -231,6 +273,13 @@ export function SiteHeader({
   }, [drawerOpen, fullWidth, hideOnScrollMode, profilePanelOpen]);
 
   const closeDrawer = () => { setDrawerOpen(false); setProfilePanelOpen(false); };
+  const handleAvatarClick = () => {
+    if (isSignedIn) {
+      setProfilePanelOpen((v) => !v);
+    } else {
+      window.location.href = "/sign-in";
+    }
+  };
   const shouldHideHeader = fullWidth && hideOnScroll;
   const hideClassName = hideOnScrollMode === "terms" ? "header-scroll-hidden-terms" : "header-scroll-hidden";
 
@@ -385,17 +434,28 @@ export function SiteHeader({
             <button
               type="button"
               className="nav-drawer-avatar-btn"
-              onClick={() => {
-                if (isSignedIn) {
-                  setProfilePanelOpen((v) => !v);
-                } else {
-                  window.location.href = "/sign-in";
-                }
-              }}
+              onClick={handleAvatarClick}
               aria-label="사용자 메뉴"
             >
               {mobileProfile}
             </button>
+            {isSignedIn && (
+              <div className="nav-drawer-avatar-meta">
+                <span className="nav-drawer-avatar-label">{usernameLabel}</span>
+                {!hasUsername && (
+                  <button
+                    type="button"
+                    className="nav-drawer-id-edit-btn"
+                    onClick={() => {
+                      closeDrawer();
+                      window.location.href = "/account/general";
+                    }}
+                  >
+                    아이디수정
+                  </button>
+                )}
+              </div>
+            )}
             {mobileFooterLogout}
             {mobileLeading ?? leading}
           </div>

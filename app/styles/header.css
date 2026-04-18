@@ -724,6 +724,37 @@
   box-sizing: border-box;
 }
 
+.nav-drawer-avatar-label {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: left;
+}
+
+.nav-drawer-avatar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.nav-drawer-avatar-meta .nav-drawer-id-edit-btn {
+  margin-left: auto;
+}
+
+.nav-drawer-id-edit-btn {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .nav-drawer-profile-panel {
   position: absolute;
   bottom: 73px;

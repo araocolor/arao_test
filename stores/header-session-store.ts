@@ -6,11 +6,13 @@ type HeaderSessionStore = {
   activeUserId: string | null;
   badgeCount: number;
   avatar: string | null;
+  username: string | null;
   email: string | null;
   role: string | null;
   hydrateForUser: (userId: string | null | undefined) => void;
   setBadgeCount: (count: number) => void;
   setAvatar: (avatar: string | null) => void;
+  setUsername: (username: string | null) => void;
   setEmail: (email: string | null) => void;
   setRole: (role: string | null) => void;
   clearActiveUserCache: () => void;
@@ -28,6 +30,10 @@ function getBadgeKey(userId: string): string {
 
 function getAvatarKey(userId: string): string {
   return `header-avatar:${userId}`;
+}
+
+function getUsernameKey(userId: string): string {
+  return `header-username:${userId}`;
 }
 
 function readBadgeFromStorage(userId: string): number {
@@ -52,22 +58,34 @@ function readAvatarFromStorage(userId: string): string | null {
   }
 }
 
+function readUsernameFromStorage(userId: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(getUsernameKey(userId));
+    return raw && raw.trim().length > 0 ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
 export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
   activeUserId: null,
   badgeCount: 0,
   avatar: null,
+  username: null,
   email: null,
   role: null,
 
   hydrateForUser: (userId) => {
     const normalized = normalizeUserId(userId);
     if (!normalized) {
-      set({ activeUserId: null, badgeCount: 0, avatar: null, email: null });
+      set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, email: null, role: null });
       return;
     }
     const badgeCount = readBadgeFromStorage(normalized);
     const avatar = readAvatarFromStorage(normalized);
-    set({ activeUserId: normalized, badgeCount, avatar });
+    const username = readUsernameFromStorage(normalized);
+    set({ activeUserId: normalized, badgeCount, avatar, username });
   },
 
   setBadgeCount: (count) => {
@@ -91,6 +109,17 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
     } catch {}
   },
 
+  setUsername: (username) => {
+    const activeUserId = get().activeUserId;
+    const normalizedUsername = username && username.trim().length > 0 ? username : null;
+    set({ username: normalizedUsername });
+    if (!activeUserId || typeof window === "undefined") return;
+    try {
+      if (normalizedUsername) localStorage.setItem(getUsernameKey(activeUserId), normalizedUsername);
+      else localStorage.removeItem(getUsernameKey(activeUserId));
+    } catch {}
+  },
+
   setEmail: (email) => {
     set({ email: email && email.trim().length > 0 ? email : null });
   },
@@ -105,8 +134,9 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
       try {
         localStorage.removeItem(getBadgeKey(activeUserId));
         localStorage.removeItem(getAvatarKey(activeUserId));
+        localStorage.removeItem(getUsernameKey(activeUserId));
       } catch {}
     }
-    set({ activeUserId: null, badgeCount: 0, avatar: null, email: null, role: null });
+    set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, email: null, role: null });
   },
 }));

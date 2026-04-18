@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState, useRef, useEffect } from "react";
-import Link from "next/link";
 import { clearCached } from "@/hooks/use-prefetch-cache";
 
 type GeneralSettingsFormProps = {
@@ -282,6 +281,134 @@ export function GeneralSettingsForm({
       </div>
 
       <div className="account-settings-row">
+        <div className="account-settings-copy">
+          <h3>아이디</h3>
+          {username ? (
+            <div className="muted">로그인 서비스는 ID &amp; 이메일 모두 가능</div>
+          ) : null}
+        </div>
+        <div className="account-username-section">
+          <div className="account-avatar-column">
+            {iconImage ? (
+              <img src={iconImage} alt={username || "avatar"} className="account-username-avatar" />
+            ) : !username ? (
+              <span className="account-username-avatar-placeholder" aria-hidden="true">
+                <svg
+                  className="account-username-register-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="9.2" />
+                  <circle cx="12" cy="9" r="3" />
+                  <path d="M7.2 17.2c1.4-2.1 2.9-3 4.8-3s3.4.9 4.8 3" />
+                </svg>
+              </span>
+            ) : (
+              <span className="account-avatar-default" aria-hidden="true">
+                <span className="account-avatar-circle-icon" />
+              </span>
+            )}
+            <button
+              ref={avatarButtonRef}
+              className="account-avatar-edit-button"
+              type="button"
+              onClick={() => {
+                setIsEditingAvatar((v) => !v);
+                setAvatarMessage(null);
+              }}
+            >
+              edit
+            </button>
+
+            {isEditingAvatar && (
+              <div className="account-avatar-popover" ref={avatarPopoverRef}>
+                <form onSubmit={submitAvatar}>
+                  {previewImage && (
+                    <div className="account-avatar-preview-container">
+                      <img src={previewImage} alt="미리보기" className="account-avatar-preview" />
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    name="avatar-file"
+                    accept="image/jpeg,image/png,image/gif"
+                    className="account-avatar-input-hidden"
+                    onChange={handleAvatarFileChange}
+                  />
+                  <button
+                    type="button"
+                    className="account-avatar-file-button"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    파일 선택
+                  </button>
+                  <div className="account-avatar-help">jpg, png, gif 파일을 업로드 하세요</div>
+                  <div className="account-avatar-actions">
+                    <button
+                      type="submit"
+                      className="account-avatar-upload-button"
+                      disabled={savingKey === "avatar"}
+                    >
+                      {savingKey === "avatar" ? "업로드 중..." : "업로드"}
+                    </button>
+                    <button
+                      type="button"
+                      className="account-avatar-cancel-button"
+                      onClick={() => {
+                        setIsEditingAvatar(false);
+                        setPreviewImage(null);
+                      }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                  {avatarMessage && <div className="muted">{avatarMessage}</div>}
+                </form>
+              </div>
+            )}
+          </div>
+
+          {username ? (
+            <div className="account-username-info">
+              <div className="account-username-row">
+                <div className="account-setting-static account-username-static">{username}</div>
+                <div className="account-user-role">{role === "admin" ? "관리자" : "사용자"}</div>
+              </div>
+              <div className="account-created-date">
+                가입일: {formatDate(createdAt)}
+              </div>
+            </div>
+          ) : (
+            <form className="account-inline-form" onSubmit={submitUsername}>
+              <div className="account-inline-row">
+                <input
+                  className="account-general-input"
+                  type="text"
+                  value={usernameInput}
+                  onChange={(event) => setUsernameInput(event.target.value)}
+                  placeholder="아이디등록 (4~8자 이내)"
+                  maxLength={8}
+                />
+                <button
+                  className="account-general-btn"
+                  type="submit"
+                  disabled={savingKey === "username" || !hasUsernameInput}
+                >
+                  {savingKey === "username" ? "등록 중..." : "등록"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+        {usernameMessage ? <div className="account-username-message">{usernameMessage}</div> : null}
+      </div>
+
+      <div className="account-settings-row">
         <div className="account-notification-row-main">
           <div className="account-settings-copy">
             <h3>알림 설정</h3>
@@ -308,148 +435,20 @@ export function GeneralSettingsForm({
 
       <div className="account-settings-row">
         <div className="account-settings-copy">
-          <h3>사용자 아이디</h3>
-          {username ? (
-            <div className="muted">로그인 서비스는 ID &amp; 이메일 모두 가능</div>
-          ) : null}
-        </div>
-        {username ? (
-          <div className="account-username-section">
-            <div className="account-avatar-column">
-              {iconImage ? (
-                <img src={iconImage} alt={username} className="account-username-avatar" />
-              ) : (
-                <span className="account-avatar-default" aria-hidden="true">
-                  <span className="account-avatar-circle-icon" />
-                </span>
-              )}
-              <button
-                ref={avatarButtonRef}
-                className="account-avatar-edit-button"
-                type="button"
-                onClick={() => {
-                  setIsEditingAvatar((v) => !v);
-                  setAvatarMessage(null);
-                }}
-              >
-                edit
-              </button>
-
-              {isEditingAvatar && (
-                <div className="account-avatar-popover" ref={avatarPopoverRef}>
-                  <form onSubmit={submitAvatar}>
-                    {previewImage && (
-                      <div className="account-avatar-preview-container">
-                        <img src={previewImage} alt="미리보기" className="account-avatar-preview" />
-                      </div>
-                    )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      name="avatar-file"
-                      accept="image/jpeg,image/png,image/gif"
-                      className="account-avatar-input-hidden"
-                      onChange={handleAvatarFileChange}
-                    />
-                    <button
-                      type="button"
-                      className="account-avatar-file-button"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      파일 선택
-                    </button>
-                    <div className="account-avatar-help">jpg, png, gif 파일을 업로드 하세요</div>
-                    <div className="account-avatar-actions">
-                      <button
-                        type="submit"
-                        className="account-avatar-upload-button"
-                        disabled={savingKey === "avatar"}
-                      >
-                        {savingKey === "avatar" ? "업로드 중..." : "업로드"}
-                      </button>
-                      <button
-                        type="button"
-                        className="account-avatar-cancel-button"
-                        onClick={() => {
-                          setIsEditingAvatar(false);
-                          setPreviewImage(null);
-                        }}
-                      >
-                        취소
-                      </button>
-                    </div>
-                    {avatarMessage && <div className="muted">{avatarMessage}</div>}
-                  </form>
-                </div>
-              )}
-            </div>
-            <div className="account-username-info">
-              <div className="account-username-row">
-                <div className="account-setting-static account-username-static">{username}</div>
-                <div className="account-user-role">{role === 'admin' ? '관리자' : '사용자'}</div>
-              </div>
-              <div className="account-created-date">
-                가입일: {formatDate(createdAt)}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="account-username-avatar-placeholder" aria-hidden="true">
-              <svg
-                className="account-username-register-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="9.2" />
-                <circle cx="12" cy="9" r="3" />
-                <path d="M7.2 17.2c1.4-2.1 2.9-3 4.8-3s3.4.9 4.8 3" />
-              </svg>
-            </div>
-            <form className="account-inline-form" onSubmit={submitUsername}>
-              <div className="account-inline-row">
-                <input
-                  className="admin-input"
-                  type="text"
-                  value={usernameInput}
-                  onChange={(event) => setUsernameInput(event.target.value)}
-                  placeholder="이름을 입력하세요 (2~5자)"
-                  maxLength={5}
-                />
-                <button
-                  className={`admin-save-button account-state-button${hasUsernameInput ? " account-action-button-active" : ""}`}
-                  type="submit"
-                  disabled={savingKey === "username" || !hasUsernameInput}
-                >
-                  {savingKey === "username" ? "등록 중..." : "등록"}
-                </button>
-              </div>
-            </form>
-          </>
-        )}
-        {usernameMessage ? <div className="muted">{usernameMessage}</div> : null}
-      </div>
-
-      <div className="account-settings-row">
-        <div className="account-settings-copy">
           <h3>연락처</h3>
         </div>
         {!phone || isEditingPhone ? (
           <form className="account-inline-form" onSubmit={submitPhone}>
             <div className="account-inline-row">
               <input
-                className="admin-input"
+                className="account-general-input"
                 type="tel"
                 value={phoneInput}
                 onChange={(event) => setPhoneInput(event.target.value)}
                 placeholder="01012345678"
               />
               <button
-                className={`admin-save-button account-state-button${hasPhoneInput ? " account-action-button-active" : ""}`}
+                className="account-general-btn"
                 type="submit"
                 disabled={savingKey === "phone" || !hasPhoneInput}
               >
@@ -464,7 +463,7 @@ export function GeneralSettingsForm({
               <span>{formatMaskedPhone(phone)}</span>
             </div>
             <button
-              className="admin-save-button"
+              className="account-general-btn"
               type="button"
               onClick={() => {
                 setPhoneInput(phone);
@@ -490,7 +489,7 @@ export function GeneralSettingsForm({
           <div className="account-password-line">
             <div className="account-password-input-wrap">
               <input
-                className="admin-input account-password-input"
+                className="account-general-input account-password-input"
                 type={showPassword ? "text" : "password"}
                 value={passwordInput}
                 onChange={(event) => setPasswordInput(event.target.value)}
@@ -518,7 +517,7 @@ export function GeneralSettingsForm({
             </div>
             <div className="account-password-actions">
               <button
-                className={`account-primary-button account-state-button${hasPasswordInput ? " account-action-button-active" : ""}`}
+                className="account-general-btn"
                 type="submit"
                 disabled={savingKey === "password" || !hasPasswordInput}
               >
@@ -537,16 +536,6 @@ export function GeneralSettingsForm({
         {passwordMessage ? <div className="muted">{passwordMessage}</div> : null}
       </div>
 
-      <div className="account-settings-row account-mobile-extra-section">
-        <div className="account-settings-copy">
-        </div>
-      </div>
-
-      <div className="account-settings-row">
-        <Link className="account-delete-inline" href="/account/withdraw">
-          회원탈퇴
-        </Link>
-      </div>
     </div>
   );
 }
