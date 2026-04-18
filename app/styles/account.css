@@ -1006,43 +1006,56 @@
   flex-shrink: 0;
 }
 
-.account-avatar-modern-icon {
-  color: #6b7280;
-  width: 17px;
-  height: 17px;
-}
-
-.account-avatar-modern-icon-lg {
-  width: 19px;
-  height: 19px;
-}
-
-.account-avatar-any-icon {
-  font-size: 16px;
-  line-height: 1;
-  color: inherit;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.account-avatar-circle-icon {
+.account-avatar-default-head {
+  position: absolute;
+  top: 7px;
+  left: 50%;
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  border: 1.6px solid currentColor;
-  display: inline-block;
+  background: #fcd34d;
+  border-radius: 999px;
+  transform: translateX(-50%);
 }
 
-.account-avatar-circle-icon-lg {
-  width: 16px;
+.account-avatar-default-body {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 26px;
   height: 16px;
+  background: #fcd34d;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  transform: translateX(-50%);
 }
 
 .account-username-register-icon {
   width: 30px;
   height: 30px;
   color: #8e8e93;
+}
+
+.account-username-register-fallback {
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
+  border: 1px solid rgba(17, 17, 17, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.account-username-register-fallback-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .account-avatar-edit-button {

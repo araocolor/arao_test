@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState, useRef, useEffect } from "react";
+import { UserRound } from "lucide-react";
 import { clearCached } from "@/hooks/use-prefetch-cache";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 
@@ -217,6 +218,30 @@ export function GeneralSettingsForm({
     setAvatarMessage("업로드 완료");
   }
 
+  async function deleteAvatar() {
+    setSavingKey("avatar-delete");
+    setAvatarMessage(null);
+
+    const response = await fetch("/api/account/avatar", {
+      method: "DELETE",
+    });
+    const data = (await response.json()) as { message?: string };
+
+    if (!response.ok) {
+      setAvatarMessage(data.message ?? "아이콘 삭제 중 오류가 발생했습니다.");
+      setSavingKey(null);
+      return;
+    }
+
+    setIconImage("");
+    setPreviewImage(null);
+    setIsEditingAvatar(false);
+    clearCached(getGeneralCacheKey(email));
+    window.dispatchEvent(new CustomEvent("avatar-updated", { detail: { iconImage: null } }));
+    setAvatarMessage("삭제 완료");
+    setSavingKey(null);
+  }
+
   function formatPhoneForInput(value: string) {
     const digits = value.replace(/\D/g, "").slice(0, 11);
     if (digits.length > 7) {
@@ -338,37 +363,37 @@ export function GeneralSettingsForm({
           <div className="account-avatar-column">
             {iconImage ? (
               <img src={iconImage} alt={username || "avatar"} className="account-username-avatar" />
-            ) : !username ? (
-              <span className="account-username-avatar-placeholder" aria-hidden="true">
-                <svg
-                  className="account-username-register-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="9.2" />
-                  <circle cx="12" cy="9" r="3" />
-                  <path d="M7.2 17.2c1.4-2.1 2.9-3 4.8-3s3.4.9 4.8 3" />
-                </svg>
-              </span>
             ) : (
-              <span className="account-avatar-default" aria-hidden="true">
-                <span className="account-avatar-circle-icon" />
+              <span className="account-username-avatar-placeholder" aria-hidden="true">
+                <span className="account-username-register-fallback">
+                  <UserRound
+                    className="account-username-register-fallback-icon"
+                    width={18}
+                    height={18}
+                    strokeWidth={1.8}
+                  />
+                </span>
               </span>
             )}
             <button
               ref={avatarButtonRef}
               className="account-avatar-edit-button"
               type="button"
+              disabled={savingKey === "avatar-delete"}
               onClick={() => {
+                if (iconImage) {
+                  void deleteAvatar();
+                  return;
+                }
                 setIsEditingAvatar((v) => !v);
                 setAvatarMessage(null);
               }}
             >
-              edit
+              {iconImage
+                ? savingKey === "avatar-delete"
+                  ? "삭제 중..."
+                  : "삭제"
+                : "업로드"}
             </button>
 
             {isEditingAvatar && (
