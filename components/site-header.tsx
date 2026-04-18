@@ -130,7 +130,40 @@ export function SiteHeader({
   const username = useHeaderSessionStore((state) => state.username);
   const email = useHeaderSessionStore((state) => state.email);
   const role = useHeaderSessionStore((state) => state.role);
+  const setSessionUsername = useHeaderSessionStore((state) => state.setUsername);
   const hasUsername = !!(username && username.trim().length > 0);
+  const [idInputFocused, setIdInputFocused] = useState(false);
+  const [idInputValue, setIdInputValue] = useState("");
+  const [idErrorMsg, setIdErrorMsg] = useState("");
+  const [idSubmitting, setIdSubmitting] = useState(false);
+
+  async function handleIdSubmit() {
+    const value = idInputValue.trim();
+    if (!/^[A-Za-z0-9]{4,8}$/.test(value)) {
+      setIdErrorMsg("4-8자 영어, 숫자 조합");
+      return;
+    }
+    setIdSubmitting(true);
+    try {
+      const res = await fetch("/api/account/general", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "username", username: value }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setIdErrorMsg(data?.message || "아이디 저장 실패");
+        return;
+      }
+      setIdErrorMsg("");
+      setSessionUsername(data?.username ?? value);
+      setIdInputValue("");
+    } catch {
+      setIdErrorMsg("네트워크 오류");
+    } finally {
+      setIdSubmitting(false);
+    }
+  }
   const usernameLabel = useMemo(() => {
     if (hasUsername) return username as string;
     return createTempIdFromEmail(email);
@@ -394,10 +427,10 @@ export function SiteHeader({
             {role === "admin" && <span style={{ display: "inline-block", marginLeft: 6, fontSize: 11, fontWeight: 600, color: "#fff", background: "red", borderRadius: 20, padding: "1px 6px", lineHeight: "18px" }}>admin</span>}
           </div>
           <nav className="nav-drawer-list">
-            <Link href="/account/general" className="nav-drawer-link" onClick={closeDrawer}>
-              <span className="nav-drawer-icon"><Settings2 width={20} height={20} strokeWidth={1.7} /></span>
-              사용자설정
-            </Link>
+            <div className="nav-drawer-logout-wrap" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><LogOut width={20} height={20} strokeWidth={1.7} /></span>
+              {mobileLogout}
+            </div>
             <Link href="/user_review?board=arao" className="nav-drawer-link" onClick={closeDrawer}>
               <span className="nav-drawer-icon"><Camera width={20} height={20} strokeWidth={1.7} /></span>
               아라오사진
@@ -421,12 +454,14 @@ export function SiteHeader({
               </Link>
             )}
             <hr className="nav-drawer-divider" />
-            <div className="nav-drawer-logout-wrap" onClick={closeDrawer}>
-              <span className="nav-drawer-icon"><LogOut width={20} height={20} strokeWidth={1.7} /></span>
-              {mobileLogout}
-            </div>
+            <Link href="/account/general" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><Settings2 width={20} height={20} strokeWidth={1.7} /></span>
+              사용자설정
+            </Link>
           </nav>
         </div>
+
+        <div className="nav-drawer-footer-top" style={idErrorMsg ? { color: "#e53935" } : undefined}>{idErrorMsg ? idErrorMsg : idInputFocused ? "4-8자 영어, 숫자 조합" : ""}</div>
 
         {/* 하단 로그인/로그아웃 */}
         <div className="nav-drawer-footer" onClick={!isSignedIn ? () => { window.location.href = "/sign-in"; } : undefined} style={!isSignedIn ? { cursor: "pointer" } : undefined}>
@@ -441,18 +476,28 @@ export function SiteHeader({
             </button>
             {isSignedIn && (
               <div className="nav-drawer-avatar-meta">
-                <span className="nav-drawer-avatar-label">{usernameLabel}</span>
-                {!hasUsername && (
-                  <button
-                    type="button"
-                    className="nav-drawer-id-edit-btn"
-                    onClick={() => {
-                      closeDrawer();
-                      window.location.href = "/account/general";
-                    }}
-                  >
-                    아이디수정
-                  </button>
+                {hasUsername ? (
+                  <span className="nav-drawer-avatar-label">{usernameLabel}</span>
+                ) : (
+                  <div className="nav-drawer-id-input-wrap">
+                    <input
+                      type="text"
+                      className="nav-drawer-id-input"
+                      placeholder="아이디 등록"
+                      value={idInputValue}
+                      onChange={(e) => { setIdInputValue(e.target.value); setIdErrorMsg(""); }}
+                      onFocus={() => { setIdInputFocused(true); if (profilePanelOpen) setProfilePanelOpen(false); }}
+                      onBlur={() => setIdInputFocused(false)}
+                    />
+                    <button
+                      type="button"
+                      className="nav-drawer-id-edit-btn"
+                      disabled={idSubmitting}
+                      onClick={handleIdSubmit}
+                    >
+                      확인
+                    </button>
+                  </div>
                 )}
               </div>
             )}

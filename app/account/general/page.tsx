@@ -16,6 +16,8 @@ interface GeneralData {
   iconImage?: string;
   role: string;
   createdAt: string;
+  usernameChangeCount?: number;
+  usernameRegisteredAt?: string | null;
 }
 
 function getGeneralCacheKey(email?: string | null) {
@@ -95,6 +97,8 @@ export default function AccountGeneralPage() {
         iconImage={data.iconImage}
         role={data.role}
         createdAt={data.createdAt}
+        usernameChangeCount={data.usernameChangeCount ?? 0}
+        usernameRegisteredAt={data.usernameRegisteredAt ?? null}
       />
     </div>
   );

@@ -669,8 +669,15 @@
   overflow: visible;
 }
 
+.nav-drawer-footer-top {
+  text-align: center;
+  padding: 8px 24px;
+  color: #111111;
+  font-size: 14px;
+}
+
 .nav-drawer-footer {
-  padding: 16px 24px;
+  padding: 16px 12px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   display: flex;
@@ -741,6 +748,36 @@
 
 .nav-drawer-avatar-meta .nav-drawer-id-edit-btn {
   margin-left: auto;
+}
+
+.nav-drawer-id-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.nav-drawer-id-input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 64px 8px 12px;
+  font-size: 16px;
+  color: #ffffff;
+  outline: none;
+  width: 100%;
+}
+
+.nav-drawer-id-input-wrap .nav-drawer-id-edit-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+}
+
+.nav-drawer-id-input::placeholder {
+  color: #9a9a9a;
 }
 
 .nav-drawer-id-edit-btn {

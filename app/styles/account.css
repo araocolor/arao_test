@@ -72,6 +72,29 @@
   background: #fff;
 }
 
+.account-phone-input-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.account-phone-prefix {
+  position: absolute;
+  left: 12px;
+  color: #6b7280;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.account-phone-input {
+  padding-left: 48px;
+}
+
+.account-phone-input[readonly] {
+  color: #6b7280;
+}
+
 .account-general-btn {
   border: 1px solid rgba(107, 114, 128, 0.9);
   background: rgba(107, 114, 128, 0.9);
@@ -90,6 +113,11 @@
   background: #e5e7eb;
   color: #6b7280;
   cursor: default;
+}
+
+.account-general-btn.account-general-btn-active {
+  border-color: #111111;
+  background: #111111;
 }
 
 .account-register-pill-btn {

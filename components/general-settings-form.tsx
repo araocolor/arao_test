@@ -2,6 +2,7 @@
 
 import { FormEvent, useState, useRef, useEffect } from "react";
 import { clearCached } from "@/hooks/use-prefetch-cache";
+import { useHeaderSessionStore } from "@/stores/header-session-store";
 
 type GeneralSettingsFormProps = {
   email: string;
@@ -13,6 +14,8 @@ type GeneralSettingsFormProps = {
   iconImage?: string;
   role: string;
   createdAt: string;
+  usernameChangeCount?: number;
+  usernameRegisteredAt?: string | null;
 };
 
 function getGeneralCacheKey(email?: string | null) {
@@ -29,7 +32,19 @@ export function GeneralSettingsForm({
   iconImage: initialIconImage,
   role,
   createdAt,
+  usernameChangeCount: initialUsernameChangeCount = 0,
+  usernameRegisteredAt: initialUsernameRegisteredAt = null,
 }: GeneralSettingsFormProps) {
+  const [usernameChangeCount, setUsernameChangeCount] = useState(initialUsernameChangeCount);
+  const [usernameRegisteredAt, setUsernameRegisteredAt] = useState<string | null>(initialUsernameRegisteredAt);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const setSessionUsername = useHeaderSessionStore((state) => state.setUsername);
+
+  const isWithinEditWindow = (() => {
+    if (!usernameRegisteredAt) return false;
+    return Date.now() - new Date(usernameRegisteredAt).getTime() < 24 * 60 * 60 * 1000;
+  })();
+  const canEditUsername = isWithinEditWindow && usernameChangeCount < 5;
   const [username, setUsername] = useState(initialUsername ?? "");
   const [hasPassword, setHasPassword] = useState(initialHasPassword);
   const [phone, setPhone] = useState(initialPhone ?? "");
@@ -51,6 +66,7 @@ export function GeneralSettingsForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarPopoverRef = useRef<HTMLDivElement>(null);
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
+  const phoneEditFormRef = useRef<HTMLFormElement>(null);
 
   async function submitUsername(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,7 +78,7 @@ export function GeneralSettingsForm({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "username", username: usernameInput }),
     });
-    const data = (await response.json()) as { message?: string; username?: string };
+    const data = (await response.json()) as { message?: string; username?: string; usernameChangeCount?: number };
 
     if (!response.ok) {
       setUsernameMessage(data.message ?? "아이디 등록 중 오류가 발생했습니다.");
@@ -70,9 +86,19 @@ export function GeneralSettingsForm({
       return;
     }
 
-    setUsername(data.username ?? usernameInput.trim().toLowerCase());
+    const wasFirstRegistration = !username;
+    const newUsername = data.username ?? usernameInput.trim().toLowerCase();
+    setUsername(newUsername);
+    setSessionUsername(newUsername);
     setUsernameInput("");
-    setUsernameMessage("비밀번호를 설정하세요");
+    if (typeof data.usernameChangeCount === "number") {
+      setUsernameChangeCount(data.usernameChangeCount);
+    }
+    if ((data as { usernameRegisteredAt?: string | null }).usernameRegisteredAt !== undefined) {
+      setUsernameRegisteredAt((data as { usernameRegisteredAt?: string | null }).usernameRegisteredAt ?? null);
+    }
+    setIsEditingUsername(false);
+    setUsernameMessage(wasFirstRegistration ? "비밀번호를 설정하세요" : "아이디가 변경되었습니다.");
     setSavingKey(null);
   }
 
@@ -191,14 +217,22 @@ export function GeneralSettingsForm({
     setAvatarMessage("업로드 완료");
   }
 
-  function formatMaskedPhone(value: string) {
-    const digits = value.replace(/\D/g, "");
-
-    if (digits.length !== 11) {
-      return value;
+  function formatPhoneForInput(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length > 7) {
+      return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
     }
+    if (digits.length > 3) {
+      return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    }
+    return digits;
+  }
 
-    return `+82 10-${digits.slice(3, 4)}***-${digits.slice(7, 8)}***`;
+  function beginPhoneEditing() {
+    if (!phone || isEditingPhone) return;
+    setPhoneInput(formatPhoneForInput(phone));
+    setPhoneMessage(null);
+    setIsEditingPhone(true);
   }
 
   function formatDate(dateString: string): string {
@@ -232,6 +266,21 @@ export function GeneralSettingsForm({
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [isEditingAvatar]);
+
+  useEffect(() => {
+    if (!isEditingPhone) return;
+
+    function handlePhoneOutsideClick(e: PointerEvent) {
+      const target = e.target as Node;
+      if (phoneEditFormRef.current?.contains(target)) return;
+      setPhoneInput("");
+      setPhoneMessage(null);
+      setIsEditingPhone(false);
+    }
+
+    document.addEventListener("pointerdown", handlePhoneOutsideClick);
+    return () => document.removeEventListener("pointerdown", handlePhoneOutsideClick);
+  }, [isEditingPhone]);
 
   function handleAvatarFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -283,9 +332,7 @@ export function GeneralSettingsForm({
       <div className="account-settings-row">
         <div className="account-settings-copy">
           <h3>아이디</h3>
-          {username ? (
-            <div className="muted">로그인 서비스는 ID &amp; 이메일 모두 가능</div>
-          ) : null}
+          <div className="muted">아이디 등록후 커뮤니티와 댓글 사용가능</div>
         </div>
         <div className="account-username-section">
           <div className="account-avatar-column">
@@ -373,14 +420,24 @@ export function GeneralSettingsForm({
             )}
           </div>
 
-          {username ? (
+          {username && !isEditingUsername ? (
             <div className="account-username-info">
               <div className="account-username-row">
                 <div className="account-setting-static account-username-static">{username}</div>
                 <div className="account-user-role">{role === "admin" ? "관리자" : "사용자"}</div>
+                {canEditUsername && (
+                  <button
+                    type="button"
+                    className="account-general-btn"
+                    onClick={() => { setIsEditingUsername(true); setUsernameMessage(null); setUsernameInput(""); }}
+                  >
+                    수정
+                  </button>
+                )}
               </div>
               <div className="account-created-date">
                 가입일: {formatDate(createdAt)}
+                {canEditUsername ? ` · 아이디 수정 ${usernameChangeCount}/5회` : ""}
               </div>
             </div>
           ) : (
@@ -391,7 +448,7 @@ export function GeneralSettingsForm({
                   type="text"
                   value={usernameInput}
                   onChange={(event) => setUsernameInput(event.target.value)}
-                  placeholder="아이디등록 (4~8자 이내)"
+                  placeholder={username ? "새 아이디 (4~8자)" : "아이디등록 (4~8자 이내)"}
                   maxLength={8}
                 />
                 <button
@@ -399,8 +456,17 @@ export function GeneralSettingsForm({
                   type="submit"
                   disabled={savingKey === "username" || !hasUsernameInput}
                 >
-                  {savingKey === "username" ? "등록 중..." : "등록"}
+                  {savingKey === "username" ? (username ? "변경 중..." : "등록 중...") : username ? "변경" : "등록"}
                 </button>
+                {username && (
+                  <button
+                    type="button"
+                    className="account-general-btn"
+                    onClick={() => { setIsEditingUsername(false); setUsernameInput(""); setUsernameMessage(null); }}
+                  >
+                    취소
+                  </button>
+                )}
               </div>
             </form>
           )}
@@ -436,17 +502,31 @@ export function GeneralSettingsForm({
       <div className="account-settings-row">
         <div className="account-settings-copy">
           <h3>연락처</h3>
+          <div className="muted">업데이트 소식 및 인증 보안 (선택)</div>
         </div>
-        {!phone || isEditingPhone ? (
-          <form className="account-inline-form" onSubmit={submitPhone}>
+        {!phone ? (
+          <form ref={phoneEditFormRef} className="account-inline-form" onSubmit={submitPhone}>
             <div className="account-inline-row">
-              <input
-                className="account-general-input"
-                type="tel"
-                value={phoneInput}
-                onChange={(event) => setPhoneInput(event.target.value)}
-                placeholder="01012345678"
-              />
+              <div className="account-phone-input-wrap">
+                <span className="account-phone-prefix">+82</span>
+                <input
+                  className="account-general-input account-phone-input"
+                  type="tel"
+                  value={phoneInput}
+                  onChange={(event) => {
+                    const digits = event.target.value.replace(/\D/g, "").slice(0, 11);
+                    let formatted = digits;
+                    if (digits.length > 7) {
+                      formatted = `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+                    } else if (digits.length > 3) {
+                      formatted = `${digits.slice(0, 3)}-${digits.slice(3)}`;
+                    }
+                    setPhoneInput(formatted);
+                  }}
+                  placeholder="010-1234-5678"
+                  maxLength={13}
+                />
+              </div>
               <button
                 className="account-general-btn"
                 type="submit"
@@ -457,23 +537,50 @@ export function GeneralSettingsForm({
             </div>
           </form>
         ) : (
-          <div className="account-inline-row">
-            <div className="account-setting-static account-phone-display">
-              <span aria-hidden="true">📞</span>
-              <span>{formatMaskedPhone(phone)}</span>
+          <form ref={phoneEditFormRef} className="account-inline-form" onSubmit={submitPhone}>
+            <div className="account-inline-row">
+              <div className="account-phone-input-wrap">
+                <span className="account-phone-prefix">+82</span>
+                <input
+                  className="account-general-input account-phone-input"
+                  type="tel"
+                  value={isEditingPhone ? phoneInput : formatPhoneForInput(phone)}
+                  onFocus={beginPhoneEditing}
+                  onChange={(event) => {
+                    if (!isEditingPhone) return;
+                    const digits = event.target.value.replace(/\D/g, "").slice(0, 11);
+                    let formatted = digits;
+                    if (digits.length > 7) {
+                      formatted = `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+                    } else if (digits.length > 3) {
+                      formatted = `${digits.slice(0, 3)}-${digits.slice(3)}`;
+                    }
+                    setPhoneInput(formatted);
+                  }}
+                  placeholder="010-1234-5678"
+                  maxLength={13}
+                  readOnly={!isEditingPhone}
+                />
+              </div>
+              {isEditingPhone ? (
+                <button
+                  className="account-general-btn account-general-btn-active"
+                  type="submit"
+                  disabled={savingKey === "phone" || !hasPhoneInput}
+                >
+                  {savingKey === "phone" ? "수정 중..." : "수정"}
+                </button>
+              ) : (
+                <button
+                  className="account-general-btn"
+                  type="button"
+                  onClick={beginPhoneEditing}
+                >
+                  수정
+                </button>
+              )}
             </div>
-            <button
-              className="account-general-btn"
-              type="button"
-              onClick={() => {
-                setPhoneInput(phone);
-                setPhoneMessage(null);
-                setIsEditingPhone(true);
-              }}
-            >
-              수정
-            </button>
-          </div>
+          </form>
         )}
         {phoneMessage ? <div className="muted">{phoneMessage}</div> : null}
       </div>

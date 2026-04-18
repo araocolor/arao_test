@@ -36,6 +36,8 @@ export async function GET() {
     iconImage: profile.icon_image ?? null,
     role: profile.role,
     createdAt: profile.created_at,
+    usernameChangeCount: (profile as { username_change_count?: number }).username_change_count ?? 0,
+    usernameRegisteredAt: (profile as { username_registered_at?: string | null }).username_registered_at ?? null,
   });
 }
 
@@ -93,8 +95,20 @@ export async function POST(request: Request) {
   const supabase = createSupabaseAdminClient();
 
   if (body.action === "username") {
-    if (profile.username) {
-      return NextResponse.json({ message: "이미 아이디가 등록되어 있습니다." }, { status: 400 });
+    const currentCount = (profile as { username_change_count?: number }).username_change_count ?? 0;
+    const registeredAt = (profile as { username_registered_at?: string | null }).username_registered_at ?? null;
+    const isFirstRegistration = !profile.username;
+
+    if (!isFirstRegistration) {
+      if (currentCount >= 5) {
+        return NextResponse.json({ message: "아이디 수정 횟수를 모두 사용했습니다." }, { status: 400 });
+      }
+      if (registeredAt) {
+        const elapsedMs = Date.now() - new Date(registeredAt).getTime();
+        if (elapsedMs >= 24 * 60 * 60 * 1000) {
+          return NextResponse.json({ message: "아이디 수정 가능 기간이 지났습니다." }, { status: 400 });
+        }
+      }
     }
 
     const usernameResult = validateUsername(body.username ?? "");
@@ -102,9 +116,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: usernameResult.error }, { status: 400 });
     }
 
+    const updatePayload: { username: string; username_change_count?: number; username_registered_at?: string } = {
+      username: usernameResult.value,
+    };
+    if (isFirstRegistration) {
+      updatePayload.username_registered_at = new Date().toISOString();
+    } else {
+      updatePayload.username_change_count = currentCount + 1;
+    }
+
     const { error } = await supabase
       .from("profiles")
-      .update({ username: usernameResult.value })
+      .update(updatePayload)
       .eq("id", profile.id);
 
     if (error) {
@@ -113,7 +136,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ message }, { status: 400 });
     }
 
-    return NextResponse.json({ username: usernameResult.value });
+    return NextResponse.json({
+      username: usernameResult.value,
+      usernameChangeCount: isFirstRegistration ? currentCount : currentCount + 1,
+      usernameRegisteredAt: isFirstRegistration ? updatePayload.username_registered_at : registeredAt,
+    });
   }
 
   if (body.action === "password") {
