@@ -692,6 +692,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  width: 100%;
 }
 
 .nav-drawer-footer .header-profile-link {
@@ -707,12 +708,16 @@
   gap: 8px;
   background: none;
   border: none;
-  padding: 0;
+  padding: 0 10px 0 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 400;
   color: #ffffff;
   cursor: pointer;
   text-align: left;
+}
+
+.nav-drawer-footer .header-menu-label {
+  margin-left: auto;
 }
 
 .nav-drawer-avatar-btn {
@@ -731,12 +736,40 @@
   box-sizing: border-box;
 }
 
+.nav-drawer-avatar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.nav-drawer-profile-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #ffffff;
+  cursor: pointer;
+  text-align: left;
+}
+
 .nav-drawer-avatar-label {
   color: #ffffff;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1;
   text-align: left;
+  white-space: nowrap;
 }
 
 .nav-drawer-avatar-meta {
@@ -744,6 +777,7 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
 }
 
 .nav-drawer-avatar-meta .nav-drawer-id-edit-btn {
@@ -752,13 +786,13 @@
 
 .nav-drawer-id-input-wrap {
   position: relative;
-  width: 100%;
+  width: 80%;
 }
 
 .nav-drawer-id-input {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 8px 64px 8px 12px;
   font-size: 16px;
   color: #ffffff;
@@ -790,6 +824,82 @@
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
+}
+
+.nav-drawer-id-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 16px 96px;
+  background: rgba(17, 17, 17, 0.16);
+  box-sizing: border-box;
+}
+
+.nav-drawer-id-modal {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 22px;
+  padding: 18px 16px 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 16px 40px rgba(17, 17, 17, 0.18);
+  backdrop-filter: blur(14px);
+}
+
+.nav-drawer-id-modal-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #111111;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.nav-drawer-id-modal-text strong {
+  font-weight: 700;
+}
+
+.nav-drawer-id-modal-error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #e53935;
+  text-align: center;
+}
+
+.nav-drawer-id-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.nav-drawer-id-modal-btn {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nav-drawer-id-modal-btn-cancel {
+  background: #ededf0;
+  color: #111111;
+}
+
+.nav-drawer-id-modal-btn-confirm {
+  background: #111111;
+  color: #ffffff;
+}
+
+.nav-drawer-id-modal-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .nav-drawer-profile-panel {
@@ -854,10 +964,13 @@
   background: none;
   border: none;
   padding: 0;
-  font-size: 14px;
+  font-size: 17pt;
   font-weight: 400;
   color: var(--text);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .nav-drawer-profile-panel-bottom {
@@ -867,12 +980,15 @@
   right: 0;
   padding: 0 24px calc(16px + env(safe-area-inset-bottom));
   background: var(--surface);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .nav-drawer-profile-panel-bottom .header-logout-button,
 .nav-drawer-profile-panel-bottom .header-menu-label {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--text);
   background: none;
   border: none;
@@ -880,7 +996,12 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  line-height: 1;
   gap: 8px;
+}
+
+.nav-drawer-profile-panel-bottom .nav-drawer-logout-wrap {
+  padding: 0;
 }
 
 @media (max-width: 820px) {

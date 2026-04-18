@@ -74,8 +74,8 @@ export function LandingPageHeader({
       mobileLeading={<LandingAuthControlsCompact />}
       mobileNotif={<HeaderProfileLink />}
       mobileProfile={<HeaderDrawerAvatar />}
-      mobileLogout={<HeaderLogoutButton />}
-      mobileFooterLogout={isSignedIn ? null : <HeaderLogoutButton />}
+      mobileLogout={null}
+      mobileFooterLogout={<HeaderLogoutButton />}
       isAdmin={isAdmin}
       isSignedIn={isSignedIn ?? false}
       version={4}

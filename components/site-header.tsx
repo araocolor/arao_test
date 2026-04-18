@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, LogOut, ShieldCheck, Camera } from "lucide-react";
+import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, ShieldCheck, Camera } from "lucide-react";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 
@@ -135,11 +135,28 @@ export function SiteHeader({
   const [idInputFocused, setIdInputFocused] = useState(false);
   const [idInputValue, setIdInputValue] = useState("");
   const [idErrorMsg, setIdErrorMsg] = useState("");
+  const [idConfirmErrorMsg, setIdConfirmErrorMsg] = useState("");
+  const [idChecking, setIdChecking] = useState(false);
   const [idSubmitting, setIdSubmitting] = useState(false);
+  const [idConfirmOpen, setIdConfirmOpen] = useState(false);
+  const [pendingUsername, setPendingUsername] = useState("");
 
-  async function handleIdSubmit() {
-    const value = idInputValue.trim();
-    if (!/^[A-Za-z0-9]{4,8}$/.test(value)) {
+  function getUsernameSaveError(message?: string) {
+    if (!message) return "아이디 저장 실패";
+    if (message.includes("이미 사용 중")) return "해당 아이디는 등록할 수 없어요.";
+    return message;
+  }
+
+  function getUsernameCheckError(message?: string) {
+    if (!message) return "중복 확인 실패";
+    if (message.includes("등록할 수 없어요")) return message;
+    if (message.includes("이미 사용 중")) return "해당 아이디는 등록할 수 없어요.";
+    return message;
+  }
+
+  async function submitUsername(value: string) {
+    const nextValue = value.trim();
+    if (!/^[A-Za-z0-9]{4,8}$/.test(nextValue)) {
       setIdErrorMsg("4-8자 영어, 숫자 조합");
       return;
     }
@@ -148,21 +165,59 @@ export function SiteHeader({
       const res = await fetch("/api/account/general", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "username", username: value }),
+        body: JSON.stringify({ action: "username", username: nextValue }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setIdErrorMsg(data?.message || "아이디 저장 실패");
+        setIdConfirmErrorMsg(getUsernameSaveError(data?.message));
         return;
       }
       setIdErrorMsg("");
-      setSessionUsername(data?.username ?? value);
+      setIdConfirmErrorMsg("");
+      setSessionUsername(data?.username ?? nextValue);
       setIdInputValue("");
+      setIdConfirmOpen(false);
+      setPendingUsername("");
     } catch {
       setIdErrorMsg("네트워크 오류");
     } finally {
       setIdSubmitting(false);
     }
+  }
+
+  async function openIdConfirm() {
+    const value = idInputValue.trim();
+    if (!/^[A-Za-z0-9]{4,8}$/.test(value)) {
+      setIdErrorMsg("4-8자 영어, 숫자 조합");
+      return;
+    }
+    setIdErrorMsg("");
+    setIdConfirmErrorMsg("");
+    setIdChecking(true);
+    try {
+      const res = await fetch("/api/account/general", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "username-check", username: value }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      if (!res.ok) {
+        setIdErrorMsg(getUsernameCheckError(data?.message));
+        return;
+      }
+      setPendingUsername(value);
+      setIdConfirmOpen(true);
+    } catch {
+      setIdErrorMsg("네트워크 오류");
+    } finally {
+      setIdChecking(false);
+    }
+  }
+
+  function closeIdConfirm() {
+    setIdConfirmOpen(false);
+    setPendingUsername("");
+    setIdConfirmErrorMsg("");
   }
   const usernameLabel = useMemo(() => {
     if (hasUsername) return username as string;
@@ -427,10 +482,6 @@ export function SiteHeader({
             {role === "admin" && <span style={{ display: "inline-block", marginLeft: 6, fontSize: 11, fontWeight: 600, color: "#fff", background: "red", borderRadius: 20, padding: "1px 6px", lineHeight: "18px" }}>admin</span>}
           </div>
           <nav className="nav-drawer-list">
-            <div className="nav-drawer-logout-wrap" onClick={closeDrawer}>
-              <span className="nav-drawer-icon"><LogOut width={20} height={20} strokeWidth={1.7} /></span>
-              {mobileLogout}
-            </div>
             <Link href="/user_review?board=arao" className="nav-drawer-link" onClick={closeDrawer}>
               <span className="nav-drawer-icon"><Camera width={20} height={20} strokeWidth={1.7} /></span>
               아라오사진
@@ -466,45 +517,99 @@ export function SiteHeader({
         {/* 하단 로그인/로그아웃 */}
         <div className="nav-drawer-footer" onClick={!isSignedIn ? () => { window.location.href = "/sign-in"; } : undefined} style={!isSignedIn ? { cursor: "pointer" } : undefined}>
           <div className="nav-drawer-footer-row">
-            <button
-              type="button"
-              className="nav-drawer-avatar-btn"
-              onClick={handleAvatarClick}
-              aria-label="사용자 메뉴"
-            >
-              {mobileProfile}
-            </button>
             {isSignedIn && (
-              <div className="nav-drawer-avatar-meta">
-                {hasUsername ? (
-                  <span className="nav-drawer-avatar-label">{usernameLabel}</span>
-                ) : (
-                  <div className="nav-drawer-id-input-wrap">
-                    <input
-                      type="text"
-                      className="nav-drawer-id-input"
-                      placeholder="아이디 등록"
-                      value={idInputValue}
-                      onChange={(e) => { setIdInputValue(e.target.value); setIdErrorMsg(""); }}
-                      onFocus={() => { setIdInputFocused(true); if (profilePanelOpen) setProfilePanelOpen(false); }}
-                      onBlur={() => setIdInputFocused(false)}
-                    />
-                    <button
-                      type="button"
-                      className="nav-drawer-id-edit-btn"
-                      disabled={idSubmitting}
-                      onClick={handleIdSubmit}
-                    >
-                      확인
-                    </button>
+              hasUsername ? (
+                <button
+                  type="button"
+                  className="nav-drawer-profile-trigger"
+                  onClick={handleAvatarClick}
+                  aria-label="사용자 메뉴"
+                >
+                  <span className="nav-drawer-avatar-icon">{mobileProfile}</span>
+                  <span className="nav-drawer-avatar-meta">
+                    <span className="nav-drawer-avatar-label">{usernameLabel}</span>
+                  </span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="nav-drawer-avatar-btn"
+                    onClick={handleAvatarClick}
+                    aria-label="사용자 메뉴"
+                  >
+                    {mobileProfile}
+                  </button>
+                  <div className="nav-drawer-avatar-meta">
+                    <div className="nav-drawer-id-input-wrap">
+                      <input
+                        type="text"
+                        className="nav-drawer-id-input"
+                        placeholder="아이디 등록"
+                        value={idInputValue}
+                        onChange={(e) => { setIdInputValue(e.target.value); setIdErrorMsg(""); }}
+                        onFocus={() => { setIdInputFocused(true); if (profilePanelOpen) setProfilePanelOpen(false); }}
+                        onBlur={() => setIdInputFocused(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            void openIdConfirm();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="nav-drawer-id-edit-btn"
+                        disabled={idChecking || idSubmitting}
+                        onClick={() => { void openIdConfirm(); }}
+                      >
+                        {idChecking ? "확인 중..." : "확인"}
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
+                </>
+              )
             )}
             {mobileFooterLogout}
             {mobileLeading ?? leading}
           </div>
         </div>
+
+        {idConfirmOpen && (
+          <div
+            className="nav-drawer-id-modal-backdrop"
+            onClick={closeIdConfirm}
+            aria-hidden="true"
+          >
+            <div
+              className="nav-drawer-id-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="아이디 확인"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="nav-drawer-id-modal-text">
+                입력한 아이디가 <strong>{pendingUsername}</strong> 맞나요?
+              </p>
+              {idConfirmErrorMsg && (
+                <p className="nav-drawer-id-modal-error">{idConfirmErrorMsg}</p>
+              )}
+              <div className="nav-drawer-id-modal-actions">
+                <button type="button" className="nav-drawer-id-modal-btn nav-drawer-id-modal-btn-cancel" onClick={closeIdConfirm}>
+                  취소
+                </button>
+                <button
+                  type="button"
+                  className="nav-drawer-id-modal-btn nav-drawer-id-modal-btn-confirm"
+                  disabled={idSubmitting}
+                  onClick={() => void submitUsername(pendingUsername)}
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

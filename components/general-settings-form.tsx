@@ -585,7 +585,7 @@ export function GeneralSettingsForm({
         {phoneMessage ? <div className="muted">{phoneMessage}</div> : null}
       </div>
 
-      <div className="account-settings-row">
+      <div className="account-settings-row" hidden aria-hidden="true" style={{ display: "none" }}>
         <div className="account-settings-copy">
           <h3>{hasPassword ? "비밀번호 👌" : "비밀번호"}</h3>
           {!hasPassword ? (

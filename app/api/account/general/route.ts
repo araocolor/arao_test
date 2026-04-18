@@ -59,6 +59,21 @@ function validateUsername(username: string) {
   return { value: trimmed };
 }
 
+async function isUsernameTaken(supabase: ReturnType<typeof createSupabaseAdminClient>, username: string, currentProfileId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .neq("id", currentProfileId)
+    .maybeSingle();
+
+  if (error) {
+    return { error };
+  }
+
+  return { taken: !!data };
+}
+
 function normalizePhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
 
@@ -94,6 +109,24 @@ export async function POST(request: Request) {
   };
   const supabase = createSupabaseAdminClient();
 
+  if (body.action === "username-check") {
+    const usernameResult = validateUsername(body.username ?? "");
+    if ("error" in usernameResult) {
+      return NextResponse.json({ message: usernameResult.error }, { status: 400 });
+    }
+
+    const takenResult = await isUsernameTaken(supabase, usernameResult.value, profile.id);
+    if ("error" in takenResult) {
+      return NextResponse.json({ message: "아이디 중복 확인 중 오류가 발생했습니다." }, { status: 400 });
+    }
+
+    if (takenResult.taken) {
+      return NextResponse.json({ message: "해당 아이디는 등록할 수 없어요." }, { status: 409 });
+    }
+
+    return NextResponse.json({ available: true, username: usernameResult.value });
+  }
+
   if (body.action === "username") {
     const currentCount = (profile as { username_change_count?: number }).username_change_count ?? 0;
     const registeredAt = (profile as { username_registered_at?: string | null }).username_registered_at ?? null;
@@ -114,6 +147,14 @@ export async function POST(request: Request) {
     const usernameResult = validateUsername(body.username ?? "");
     if ("error" in usernameResult) {
       return NextResponse.json({ message: usernameResult.error }, { status: 400 });
+    }
+
+    const takenResult = await isUsernameTaken(supabase, usernameResult.value, profile.id);
+    if ("error" in takenResult) {
+      return NextResponse.json({ message: "아이디 중복 확인 중 오류가 발생했습니다." }, { status: 400 });
+    }
+    if (takenResult.taken) {
+      return NextResponse.json({ message: "해당 아이디는 등록할 수 없어요." }, { status: 409 });
     }
 
     const updatePayload: { username: string; username_change_count?: number; username_registered_at?: string } = {
