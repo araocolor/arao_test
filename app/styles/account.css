@@ -467,7 +467,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: min(100vw, 820px);
-  height: 80px;
+  height: 70px;
   background: rgba(17, 17, 17, 0.8);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);

@@ -7,39 +7,34 @@ type ConsultingSectionProps = {
   initialInquiries?: Inquiry[];
 };
 
-type View = "list" | "detail" | "create" | "edit";
+type View = "list" | "create" | "edit";
 
 export function ConsultingSection({
   initialInquiries = [],
 }: ConsultingSectionProps) {
   const [view, setView] = useState<View>("list");
-  const [type, setType] = useState<"consulting" | "general">("consulting");
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [repliesMap, setRepliesMap] = useState<Record<string, InquiryReply[]>>({});
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
-  const [replies, setReplies] = useState<InquiryReply[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // 폼 상태
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 수정 폼 상태
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
 
-  // 목록 조회
   useEffect(() => {
     loadInquiries();
-  }, [type]);
+  }, []);
 
   async function loadInquiries() {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `/api/account/consulting?type=${type}&limit=100`
-      );
+      const response = await fetch(`/api/account/consulting?limit=100`);
       if (response.ok) {
         const data = (await response.json()) as {
           inquiries: Inquiry[];
@@ -54,31 +49,36 @@ export function ConsultingSection({
     }
   }
 
-  // 상세 조회
-  async function loadInquiryDetail(inquiryId: string) {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/account/consulting/${inquiryId}`);
-      if (response.ok) {
-        const data = (await response.json()) as {
-          inquiry: Inquiry;
-          replies: InquiryReply[];
-        };
-        setSelectedInquiry(data.inquiry);
-        setReplies(data.replies);
-        setView("detail");
+  async function toggleExpand(inquiry: Inquiry) {
+    if (expandedId === inquiry.id) {
+      setExpandedId(null);
+      return;
+    }
 
-        // 답변을 읽었으므로 알림 카운트 즉시 갱신
-        window.dispatchEvent(new Event("notification-refresh"));
+    setExpandedId(inquiry.id);
+
+    if (!repliesMap[inquiry.id]) {
+      try {
+        const response = await fetch(`/api/account/consulting/${inquiry.id}`);
+        if (response.ok) {
+          const data = (await response.json()) as {
+            inquiry: Inquiry;
+            replies: InquiryReply[];
+          };
+          setRepliesMap((prev) => ({ ...prev, [inquiry.id]: data.replies }));
+          setInquiries((prev) =>
+            prev.map((it) =>
+              it.id === inquiry.id ? { ...it, has_unread_reply: false } : it
+            )
+          );
+          window.dispatchEvent(new Event("notification-refresh"));
+        }
+      } catch (error) {
+        console.error("Failed to load inquiry detail:", error);
       }
-    } catch (error) {
-      console.error("Failed to load inquiry detail:", error);
-    } finally {
-      setIsLoading(false);
     }
   }
 
-  // 상담 작성
   async function handleCreateInquiry(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -89,7 +89,7 @@ export function ConsultingSection({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type,
+          type: "consulting",
           title: formTitle,
           content: formContent,
         }),
@@ -97,24 +97,23 @@ export function ConsultingSection({
 
       if (!response.ok) {
         const data = (await response.json()) as { message?: string };
-        setMessage(data.message ?? "상담 등록 중 오류가 발생했습니다.");
+        setMessage(data.message ?? "문의 등록 중 오류가 발생했습니다.");
         return;
       }
 
-      setMessage("상담이 등록되었습니다.");
+      setMessage("문의가 등록되었습니다.");
       setFormTitle("");
       setFormContent("");
       setView("list");
       await loadInquiries();
     } catch (error) {
       console.error("Failed to create inquiry:", error);
-      setMessage("상담 등록 중 오류가 발생했습니다.");
+      setMessage("문의 등록 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // 상담 수정
   async function handleEditInquiry(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedInquiry) return;
@@ -153,14 +152,11 @@ export function ConsultingSection({
     }
   }
 
-  // 상담 종료
-  async function handleCloseInquiry() {
-    if (!selectedInquiry) return;
-
+  async function handleCloseInquiry(inquiry: Inquiry) {
     try {
       setIsSubmitting(true);
       const response = await fetch(
-        `/api/account/consulting/${selectedInquiry.id}`,
+        `/api/account/consulting/${inquiry.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -169,16 +165,14 @@ export function ConsultingSection({
       );
 
       if (response.ok) {
-        setMessage("상담이 종료되었습니다.");
-        setView("list");
+        setMessage("문의가 종료되었습니다.");
+        setExpandedId(null);
         await loadInquiries();
-
-        // 상담 종료 시 알림 카운트 즉시 갱신
         window.dispatchEvent(new Event("notification-refresh"));
       }
     } catch (error) {
       console.error("Failed to close inquiry:", error);
-      setMessage("상담 종료 중 오류가 발생했습니다.");
+      setMessage("문의 종료 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }
@@ -216,38 +210,10 @@ export function ConsultingSection({
 
   return (
     <div className="consulting-section">
-      {/* 탭 */}
-      <div className="consulting-tabs">
-        <button
-          className={`consulting-tab ${type === "consulting" ? "active" : ""}`}
-          onClick={() => {
-            setType("consulting");
-            setView("list");
-            setMessage(null);
-          }}
-        >
-          1:1 상담
-        </button>
-        <button
-          className={`consulting-tab ${type === "general" ? "active" : ""}`}
-          onClick={() => {
-            setType("general");
-            setView("list");
-            setMessage(null);
-          }}
-        >
-          일반 문의
-        </button>
-      </div>
-
-      {/* 목록 뷰 */}
       {view === "list" && (
         <div className="consulting-list">
           <div className="consulting-header">
-            <h3>
-              {type === "consulting" ? "1:1 상담" : "일반 문의"} (
-              {inquiries.length})
-            </h3>
+            <h3>1:1 문의 ({inquiries.length})</h3>
             <button
               className="consulting-btn-create"
               onClick={() => {
@@ -257,144 +223,132 @@ export function ConsultingSection({
                 setView("create");
               }}
             >
-              + 새로 작성
+              + 새 문의
             </button>
           </div>
 
           {inquiries.length === 0 ? (
-            <div className="consulting-empty">
-              아직 등록된 {type === "consulting" ? "상담" : "문의"}이 없습니다.
-            </div>
+            <div className="consulting-empty">아직 등록된 문의가 없습니다.</div>
           ) : (
             <div className="consulting-items">
-              {inquiries.map((inquiry) => (
-                <button
-                  key={inquiry.id}
-                  className="consulting-item"
-                  onClick={() => loadInquiryDetail(inquiry.id)}
-                >
-                  <div className="consulting-item-header">
-                    <h4>{inquiry.title}</h4>
-                    <span className={`consulting-status ${getStatusClass(inquiry.status)}`}>
-                      {getStatusLabel(inquiry.status)}
-                    </span>
-                  </div>
-                  <p className="consulting-item-date">
-                    {new Date(inquiry.created_at).toLocaleDateString("ko-KR")}
-                  </p>
-                  {inquiry.has_unread_reply && (
-                    <span className="consulting-item-badge">답변 있음</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+              {inquiries.map((inquiry) => {
+                const isOpen = expandedId === inquiry.id;
+                const replies = repliesMap[inquiry.id] ?? [];
+                const canModify =
+                  inquiry.status !== "closed" && inquiry.status !== "resolved";
 
-      {/* 상세 뷰 */}
-      {view === "detail" && selectedInquiry && (
-        <div className="consulting-detail">
-          <button className="consulting-btn-back" onClick={() => setView("list")}>
-            ← 목록으로 돌아가기
-          </button>
-
-          <div className="consulting-detail-header">
-            <div>
-              <h3>{selectedInquiry.title}</h3>
-              <p className="consulting-detail-meta">
-                {new Date(selectedInquiry.created_at).toLocaleDateString(
-                  "ko-KR",
-                  {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }
-                )}{" "}
-                • <span className={`consulting-status ${getStatusClass(selectedInquiry.status)}`}>
-                  {getStatusLabel(selectedInquiry.status)}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <div className="consulting-detail-content">
-            <div className="consulting-section-box">
-              <h4>상담 내용</h4>
-              <p>{selectedInquiry.content}</p>
-            </div>
-
-            {replies.length > 0 && (
-              <div className="consulting-replies">
-                <h4>답변 ({replies.length})</h4>
-                {replies.map((reply, index) => (
+                return (
                   <div
-                    key={reply.id}
-                    className={`consulting-reply ${
-                      reply.author_role === "admin"
-                        ? "consulting-reply-admin"
-                        : "consulting-reply-customer"
-                    }`}
+                    key={inquiry.id}
+                    className={`consulting-item${isOpen ? " expanded" : ""}`}
                   >
-                    <div className="consulting-reply-meta">
-                      <span className="consulting-reply-author">
-                        {reply.author_role === "admin" ? "📞 관리자" : "👤 고객"}
-                      </span>
-                      <span className="consulting-reply-date">
-                        {new Date(reply.created_at).toLocaleDateString("ko-KR", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    <p>{reply.content}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                    <button
+                      type="button"
+                      className="consulting-item-summary"
+                      onClick={() => toggleExpand(inquiry)}
+                      aria-expanded={isOpen}
+                    >
+                      <div className="consulting-item-header">
+                        <h4>{inquiry.title}</h4>
+                        <span
+                          className={`consulting-status ${getStatusClass(inquiry.status)}`}
+                        >
+                          {getStatusLabel(inquiry.status)}
+                        </span>
+                      </div>
+                      <p className="consulting-item-date">
+                        {new Date(inquiry.created_at).toLocaleDateString("ko-KR")}
+                      </p>
+                      {inquiry.has_unread_reply && (
+                        <span className="consulting-item-badge">답변 있음</span>
+                      )}
+                    </button>
 
-          {selectedInquiry.status !== "closed" && selectedInquiry.status !== "resolved" && (
-            <div className="consulting-btn-group">
-              <button
-                className="consulting-btn-edit"
-                onClick={() => {
-                  setEditTitle(selectedInquiry.title);
-                  setEditContent(selectedInquiry.content);
-                  setMessage(null);
-                  setView("edit");
-                }}
-                disabled={isSubmitting}
-              >
-                수정
-              </button>
-              <button
-                className="consulting-btn-close"
-                onClick={handleCloseInquiry}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "처리 중..." : "상담 종료"}
-              </button>
+                    {isOpen && (
+                      <div className="consulting-item-body">
+                        <div className="consulting-section-box">
+                          <h4>문의 내용</h4>
+                          <p>{inquiry.content}</p>
+                        </div>
+
+                        {replies.length > 0 && (
+                          <div className="consulting-replies">
+                            <h4>답변 ({replies.length})</h4>
+                            {replies.map((reply) => (
+                              <div
+                                key={reply.id}
+                                className={`consulting-reply ${
+                                  reply.author_role === "admin"
+                                    ? "consulting-reply-admin"
+                                    : "consulting-reply-customer"
+                                }`}
+                              >
+                                <div className="consulting-reply-meta">
+                                  <span className="consulting-reply-author">
+                                    {reply.author_role === "admin"
+                                      ? "관리자"
+                                      : "고객"}
+                                  </span>
+                                  <span className="consulting-reply-date">
+                                    {new Date(reply.created_at).toLocaleDateString(
+                                      "ko-KR",
+                                      {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }
+                                    )}
+                                  </span>
+                                </div>
+                                <p>{reply.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {canModify && (
+                          <div className="consulting-btn-group">
+                            <button
+                              className="consulting-btn-edit"
+                              onClick={() => {
+                                setSelectedInquiry(inquiry);
+                                setEditTitle(inquiry.title);
+                                setEditContent(inquiry.content);
+                                setMessage(null);
+                                setView("edit");
+                              }}
+                              disabled={isSubmitting}
+                            >
+                              수정
+                            </button>
+                            <button
+                              className="consulting-btn-close"
+                              onClick={() => handleCloseInquiry(inquiry)}
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting ? "처리 중..." : "문의 종료"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       )}
 
-      {/* 작성 폼 */}
       {view === "create" && (
         <div className="consulting-create">
           <button className="consulting-btn-back" onClick={() => setView("list")}>
             ← 취소
           </button>
 
-          <h3>
-            새 {type === "consulting" ? "상담" : "문의"} 작성
-          </h3>
+          <h3>새 문의 작성</h3>
 
           <form onSubmit={handleCreateInquiry} className="consulting-form">
             <div className="consulting-form-group">
@@ -421,9 +375,7 @@ export function ConsultingSection({
               />
             </div>
 
-            {message && (
-              <div className="consulting-message">{message}</div>
-            )}
+            {message && <div className="consulting-message">{message}</div>}
 
             <button
               type="submit"
@@ -436,14 +388,13 @@ export function ConsultingSection({
         </div>
       )}
 
-      {/* 수정 폼 */}
       {view === "edit" && selectedInquiry && (
         <div className="consulting-create">
-          <button className="consulting-btn-back" onClick={() => setView("detail")}>
+          <button className="consulting-btn-back" onClick={() => setView("list")}>
             ← 취소
           </button>
 
-          <h3>상담 수정</h3>
+          <h3>문의 수정</h3>
 
           <form onSubmit={handleEditInquiry} className="consulting-form">
             <div className="consulting-form-group">
@@ -470,9 +421,7 @@ export function ConsultingSection({
               />
             </div>
 
-            {message && (
-              <div className="consulting-message">{message}</div>
-            )}
+            {message && <div className="consulting-message">{message}</div>}
 
             <button
               type="submit"
