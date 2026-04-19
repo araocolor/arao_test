@@ -5,6 +5,7 @@ export type Profile = {
   id: string;
   email: string;
   role: string;
+  tier: string;
   notification_enabled: boolean;
   full_name: string | null;
   phone: string | null;
@@ -20,7 +21,7 @@ type SyncProfileInput = {
 };
 
 const PROFILE_SELECT_COLUMNS =
-  "id, email, role, notification_enabled, full_name, phone, username, password_hash, icon_image, created_at";
+  "id, email, role, tier, notification_enabled, full_name, phone, username, password_hash, icon_image, created_at";
 const PROFILE_SELECT_COLUMNS_LEGACY =
   "id, email, role, full_name, phone, username, password_hash, icon_image, created_at";
 
@@ -29,6 +30,7 @@ function normalizeProfile(row: any): Profile {
     id: row.id,
     email: row.email,
     role: row.role,
+    tier: row.tier ?? "general",
     notification_enabled: row.notification_enabled ?? true,
     full_name: row.full_name ?? null,
     phone: row.phone ?? null,
@@ -91,7 +93,7 @@ export async function syncProfile({ email, fullName }: SyncProfileInput) {
   const insertPayload: Record<string, unknown> = {
     id: randomUUID(),
     email: normalizedEmail,
-    role: "customer",
+    role: "member",
     full_name: fullName ?? null,
   };
   if (hasNotificationColumn) {
@@ -111,7 +113,7 @@ export async function syncProfile({ email, fullName }: SyncProfileInput) {
       .insert({
         id: insertPayload.id,
         email: normalizedEmail,
-        role: "customer",
+        role: "member",
         full_name: fullName ?? null,
       })
       .select(PROFILE_SELECT_COLUMNS_LEGACY)

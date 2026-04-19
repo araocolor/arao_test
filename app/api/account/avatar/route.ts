@@ -15,7 +15,12 @@ export async function GET() {
   const profile = await syncProfile({ email, fullName });
 
   return NextResponse.json(
-    { iconImage: profile?.icon_image ?? null, username: profile?.username ?? null },
+    {
+      iconImage: profile?.icon_image ?? null,
+      username: profile?.username ?? null,
+      tier: profile?.tier ?? "general",
+      role: profile?.role ?? "member",
+    },
     { headers: { "Cache-Control": "private, max-age=60" } }
   );
 }

@@ -83,6 +83,45 @@ export async function POST(
       .update({ status: "completed" })
       .eq("order_id", orderId);
 
+    // tier 승격: 결제완료된 주문의 color.product_code로 판별
+    try {
+      const { data: orderItem } = await admin
+        .from("order_items")
+        .select("color_id")
+        .eq("order_id", orderId)
+        .maybeSingle<{ color_id: string | null }>();
+
+      if (orderItem?.color_id) {
+        const { data: color } = await admin
+          .from("colors")
+          .select("product_code")
+          .eq("id", orderItem.color_id)
+          .maybeSingle<{ product_code: string | null }>();
+
+        const { data: currentProfile } = await admin
+          .from("profiles")
+          .select("tier")
+          .eq("id", profile.id)
+          .maybeSingle<{ tier: string | null }>();
+
+        const isArao = color?.product_code === "arao";
+        const currentTier = currentProfile?.tier ?? "general";
+
+        let nextTier = currentTier;
+        if (isArao) {
+          nextTier = "premium";
+        } else if (currentTier !== "premium") {
+          nextTier = "pro";
+        }
+
+        if (nextTier !== currentTier) {
+          await admin.from("profiles").update({ tier: nextTier }).eq("id", profile.id);
+        }
+      }
+    } catch (tierError) {
+      console.error("tier promotion error:", tierError);
+    }
+
     return NextResponse.json({ ok: true, orderId });
   } catch (error) {
     console.error("POST /api/color/[id]/order/approve error:", error);

@@ -117,6 +117,7 @@ export function HeaderProfileLink() {
   const setHeaderUsername = useHeaderSessionStore((state) => state.setUsername);
   const setHeaderEmail = useHeaderSessionStore((state) => state.setEmail);
   const setHeaderRole = useHeaderSessionStore((state) => state.setRole);
+  const setHeaderTier = useHeaderSessionStore((state) => state.setTier);
   const clearActiveHeaderSession = useHeaderSessionStore((state) => state.clearActiveUserCache);
 
   // 드로어 상태
@@ -181,10 +182,17 @@ export function HeaderProfileLink() {
     try {
       const response = await fetch("/api/account/avatar");
       if (response.ok) {
-        const data = (await response.json()) as { iconImage?: string | null; username?: string | null };
+        const data = (await response.json()) as {
+          iconImage?: string | null;
+          username?: string | null;
+          tier?: string | null;
+          role?: string | null;
+        };
         const img = data.iconImage ?? null;
         setHeaderAvatar(img);
         setHeaderUsername(data.username ?? null);
+        setHeaderTier(data.tier ?? null);
+        if (data.role !== undefined) setHeaderRole(data.role ?? null);
       }
     } catch (error) {
       console.error("Failed to fetch avatar:", error);

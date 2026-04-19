@@ -10,6 +10,7 @@ type HeaderSessionStore = {
   usernameReady: boolean;
   email: string | null;
   role: string | null;
+  tier: string | null;
   hydrateForUser: (userId: string | null | undefined) => void;
   setBadgeCount: (count: number) => void;
   setAvatar: (avatar: string | null) => void;
@@ -17,6 +18,7 @@ type HeaderSessionStore = {
   setUsernameReady: (ready: boolean) => void;
   setEmail: (email: string | null) => void;
   setRole: (role: string | null) => void;
+  setTier: (tier: string | null) => void;
   clearActiveUserCache: () => void;
 };
 
@@ -78,11 +80,12 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
   usernameReady: false,
   email: null,
   role: null,
+  tier: null,
 
   hydrateForUser: (userId) => {
     const normalized = normalizeUserId(userId);
     if (!normalized) {
-      set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, usernameReady: false, email: null, role: null });
+      set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, usernameReady: false, email: null, role: null, tier: null });
       return;
     }
     const badgeCount = readBadgeFromStorage(normalized);
@@ -135,6 +138,10 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
     set({ role: role && role.trim().length > 0 ? role : null });
   },
 
+  setTier: (tier) => {
+    set({ tier: tier && tier.trim().length > 0 ? tier : null });
+  },
+
   clearActiveUserCache: () => {
     const activeUserId = get().activeUserId;
     if (activeUserId && typeof window !== "undefined") {
@@ -144,6 +151,6 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
         localStorage.removeItem(getUsernameKey(activeUserId));
       } catch {}
     }
-    set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, usernameReady: false, email: null, role: null });
+    set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, usernameReady: false, email: null, role: null, tier: null });
   },
 }));
