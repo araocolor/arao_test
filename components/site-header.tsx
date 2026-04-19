@@ -319,14 +319,13 @@ export function SiteHeader({
       setAvatarToastVisible(false);
       return;
     }
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
     const showTimer = setTimeout(() => {
       setAvatarToastVisible(true);
-      const hideTimer = setTimeout(() => setAvatarToastVisible(false), 5000);
-      (showTimer as unknown as { hideTimer?: ReturnType<typeof setTimeout> }).hideTimer = hideTimer;
+      hideTimer = setTimeout(() => setAvatarToastVisible(false), 5000);
     }, 1000);
     return () => {
       clearTimeout(showTimer);
-      const hideTimer = (showTimer as unknown as { hideTimer?: ReturnType<typeof setTimeout> }).hideTimer;
       if (hideTimer) clearTimeout(hideTimer);
     };
   }, [drawerOpen, isSignedIn, avatar]);
