@@ -7,6 +7,7 @@ import type { GalleryComment } from "@/lib/gallery-interactions";
 import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { buildSignInHrefFromCurrentLocation } from "@/lib/auth-redirect";
+import { TierBadge } from "@/components/tier-badge";
 
 function maskEmail(email: string): string {
   const atIndex = email.indexOf("@");
@@ -298,6 +299,7 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
       author_icon_image: null,
       // 임시 댓글에서는 이메일 fallback을 숨겨 아이디로만 표시되게 유지
       author_email: null,
+      author_tier: null,
     };
 
     // 즉시 UI 반영
@@ -440,6 +442,7 @@ export function GalleryCommentSheet({ category, index, onClose, onCommentAdded, 
                 : c.author_email
                   ? maskEmail(c.author_email)
                   : "익명"}
+              <TierBadge tier={c.author_tier} />
             </span>
             {relativeTime && <span className="gallery-comment-time">{relativeTime}</span>}
           </span>

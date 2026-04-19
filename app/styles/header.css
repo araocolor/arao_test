@@ -577,6 +577,7 @@
   transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
   overflow: hidden;
+  box-shadow: inset -8px 0 12px -6px rgba(0, 0, 0, 0.25);
 }
 
 .nav-drawer.is-open {
@@ -592,10 +593,89 @@
   flex-shrink: 0;
 }
 
-.nav-drawer-logo {
+.nav-drawer-login-pill {
   display: inline-flex;
   align-items: center;
-  filter: grayscale(1);
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(17, 17, 17, 0.8);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.nav-drawer-login-pill:hover {
+  background: rgba(17, 17, 17, 0.95);
+}
+
+.nav-drawer-header .nav-drawer-avatar-label {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.nav-drawer-header .nav-drawer-profile-trigger {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.nav-drawer-header .header-profile-link,
+.nav-drawer-header .header-profile-avatar {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+}
+
+.nav-drawer-header .nav-drawer-avatar-icon[data-tier="pro"],
+.nav-drawer-header .nav-drawer-avatar-icon[data-tier="premium"] {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #1D9BF0;
+}
+
+.nav-drawer-header .nav-drawer-avatar-icon[data-tier="premium"] {
+  box-shadow: 0 0 0 2px #D4AF37;
+}
+
+.nav-drawer-header .nav-drawer-avatar-icon[data-tier="pro"] .header-profile-link,
+.nav-drawer-header .nav-drawer-avatar-icon[data-tier="premium"] .header-profile-link {
+  border: none;
+  background: transparent;
+}
+
+
+.nav-drawer-header .nav-drawer-avatar-meta {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.nav-drawer-avatar-email {
+  font-size: 13px;
+  color: #888;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.nav-drawer-avatar-role {
+  font-size: 12px;
+  color: #aaa;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.nav-drawer-avatar-role[data-role="admin"] {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e53935;
+  color: #fff;
+  font-weight: 600;
 }
 
 .nav-drawer-close {
@@ -722,7 +802,7 @@
 }
 
 .nav-drawer-footer .header-menu-label {
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .nav-drawer-footer .header-login-avatar-fallback {

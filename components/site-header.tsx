@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, ShieldCheck, BadgeCheck } from "lucide-react";
+import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, ShieldCheck } from "lucide-react";
+import { TierBadge } from "@/components/tier-badge";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 
@@ -249,6 +250,14 @@ export function SiteHeader({
     setPanelDragY(0);
   }
 
+  // 드로어 열릴 때 프로필 패널 자동 오픈 (0.5초 후)
+  useEffect(() => {
+    if (drawerOpen && isSignedIn && hasUsername) {
+      const timer = setTimeout(() => setProfilePanelOpen(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [drawerOpen, isSignedIn, hasUsername]);
+
   // 드로어 열릴 때 body 스크롤 잠금 + 커뮤니티 prefetch
   useEffect(() => {
     if (drawerOpen) {
@@ -445,9 +454,34 @@ export function SiteHeader({
       >
         {/* 드로어 헤더 */}
         <div className="nav-drawer-header">
-          <Link href={brandHref} className="nav-drawer-logo" onClick={closeDrawer}>
-            <Image src="/logo.svg" alt="ARAO" width={72} height={26} />
-          </Link>
+          {!isSignedIn ? (
+            <button
+              type="button"
+              className="nav-drawer-login-pill"
+              onClick={() => { closeDrawer(); window.location.href = "/sign-in"; }}
+            >
+              로그인
+            </button>
+          ) : usernameReady && hasUsername ? (
+            <button
+              type="button"
+              className="nav-drawer-profile-trigger"
+              onClick={handleAvatarClick}
+              aria-label="사용자 메뉴"
+            >
+              <span className="nav-drawer-avatar-icon" data-tier={tier ?? undefined}>{mobileProfile}</span>
+              <span className="nav-drawer-avatar-meta">
+                <span className="nav-drawer-avatar-label">
+                  {usernameLabel}
+                  <TierBadge tier={tier} size={18} />
+                </span>
+                {email && <span className="nav-drawer-avatar-email">{email}</span>}
+                {role && <span className="nav-drawer-avatar-role" data-role={role}>{role}</span>}
+              </span>
+            </button>
+          ) : (
+            <span />
+          )}
           <button
             type="button"
             className="nav-drawer-close"
@@ -463,25 +497,35 @@ export function SiteHeader({
 
         {/* 메뉴 목록 */}
         <nav className="nav-drawer-list">
-          {links.map((link) => (
-            <div key={link.href}>
-              {link.divider && <hr className="nav-drawer-divider" />}
-              <Link
-                href={link.href}
-                className="nav-drawer-link"
-                onClick={closeDrawer}
-              >
-                <span className="nav-drawer-icon" aria-hidden="true">
-                  {MENU_ICONS[link.href] ?? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="9" />
-                    </svg>
-                  )}
-                </span>
-                {link.label}
-              </Link>
-            </div>
-          ))}
+          {links.map((link) => {
+            const isAccountSettings = link.href === "/account/general" && isSignedIn && hasUsername;
+            return (
+              <div key={link.href}>
+                {link.divider && <hr className="nav-drawer-divider" />}
+                <Link
+                  href={link.href}
+                  className="nav-drawer-link"
+                  onClick={(e) => {
+                    if (isAccountSettings) {
+                      e.preventDefault();
+                      setProfilePanelOpen((v) => !v);
+                    } else {
+                      closeDrawer();
+                    }
+                  }}
+                >
+                  <span className="nav-drawer-icon" aria-hidden="true">
+                    {MENU_ICONS[link.href] ?? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                      </svg>
+                    )}
+                  </span>
+                  {link.label}
+                </Link>
+              </div>
+            );
+          })}
         </nav>
 
         {/* 사용자 서브패널 */}
@@ -499,26 +543,22 @@ export function SiteHeader({
           <div className="nav-drawer-profile-panel-handle" onClick={() => setProfilePanelOpen(false)}>
             <span className="nav-drawer-profile-panel-handle-bar" />
           </div>
-          {role === "admin" && (
-            <div style={{ padding: "5px 24px 0" }}>
-              <span style={{ display: "inline-block", fontSize: 11, fontWeight: 600, color: "#fff", background: "red", borderRadius: 20, padding: "1px 6px", lineHeight: "18px" }}>admin</span>
-            </div>
-          )}
-          <div className="nav-drawer-profile-panel-email" style={role === "admin" ? { paddingTop: 4 } : undefined}>
-            {email ?? ""}
-          </div>
           <nav className="nav-drawer-list">
-            <Link href="/account/orders" className="nav-drawer-link" onClick={closeDrawer}>
-              <span className="nav-drawer-icon"><CreditCard width={20} height={20} strokeWidth={1.7} /></span>
-              결제내역
+            <Link href="/account/general" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><Settings2 width={20} height={20} strokeWidth={1.7} /></span>
+              개인정보관리
             </Link>
             <Link href="/account/consulting" className="nav-drawer-link" onClick={closeDrawer}>
               <span className="nav-drawer-icon"><MessageCircle width={20} height={20} strokeWidth={1.7} /></span>
-              이용문의
+              상담/문의
             </Link>
-            <Link href="/user_review?board=qna" className="nav-drawer-link" onClick={closeDrawer}>
-              <span className="nav-drawer-icon"><HelpCircle width={20} height={20} strokeWidth={1.7} /></span>
-              도움말
+            <Link href="/account/orders" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><CreditCard width={20} height={20} strokeWidth={1.7} /></span>
+              주문관리
+            </Link>
+            <Link href="/account/mycolor" className="nav-drawer-link" onClick={closeDrawer}>
+              <span className="nav-drawer-icon"><BookOpen width={20} height={20} strokeWidth={1.7} /></span>
+              컬러레시피
             </Link>
             {isAdmin && (
               <Link href="/admin" className="nav-drawer-link" onClick={closeDrawer}>
@@ -526,11 +566,6 @@ export function SiteHeader({
                 관리자
               </Link>
             )}
-            <hr className="nav-drawer-divider" />
-            <Link href="/account/general" className="nav-drawer-link" onClick={closeDrawer}>
-              <span className="nav-drawer-icon"><Settings2 width={20} height={20} strokeWidth={1.7} /></span>
-              사용자설정
-            </Link>
           </nav>
         </div>
 
@@ -571,68 +606,46 @@ export function SiteHeader({
         <div className="nav-drawer-footer-top" style={idErrorMsg ? { color: "#e53935" } : undefined}>{idErrorMsg ? idErrorMsg : idInputFocused ? "4-8자 영어, 숫자 조합" : ""}</div>
 
         {/* 하단 로그인/로그아웃 */}
-        <div className="nav-drawer-footer" onClick={!isSignedIn ? () => { window.location.href = "/sign-in"; } : undefined} style={!isSignedIn ? { cursor: "pointer" } : undefined}>
+        <div className="nav-drawer-footer">
           <div className="nav-drawer-footer-row">
-            {isSignedIn && usernameReady && (
-              hasUsername ? (
+            {isSignedIn && usernameReady && !hasUsername && (
+              <>
                 <button
                   type="button"
-                  className="nav-drawer-profile-trigger"
+                  className="nav-drawer-avatar-btn"
                   onClick={handleAvatarClick}
                   aria-label="사용자 메뉴"
                 >
-                  <span className="nav-drawer-avatar-icon">{mobileProfile}</span>
-                  <span className="nav-drawer-avatar-meta">
-                    <span className="nav-drawer-avatar-label">
-                      {usernameLabel}
-                      {tier === "pro" && (
-                        <BadgeCheck width={14} height={14} strokeWidth={2} color="#fff" fill="#1D9BF0" style={{ marginLeft: 4, verticalAlign: "middle" }} />
-                      )}
-                      {tier === "premium" && (
-                        <BadgeCheck width={14} height={14} strokeWidth={2} color="#fff" fill="#D4AF37" style={{ marginLeft: 4, verticalAlign: "middle" }} />
-                      )}
-                    </span>
-                  </span>
+                  {mobileProfile}
                 </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="nav-drawer-avatar-btn"
-                    onClick={handleAvatarClick}
-                    aria-label="사용자 메뉴"
-                  >
-                    {mobileProfile}
-                  </button>
-                  <div className="nav-drawer-avatar-meta">
-                    <div className="nav-drawer-id-input-wrap">
-                      <input
-                        type="text"
-                        className="nav-drawer-id-input"
-                        placeholder="아이디 등록"
-                        value={idInputValue}
-                        onChange={(e) => { setIdInputValue(e.target.value); setIdErrorMsg(""); }}
-                        onFocus={() => { setIdInputFocused(true); if (profilePanelOpen) setProfilePanelOpen(false); }}
-                        onBlur={() => setIdInputFocused(false)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            void openIdConfirm();
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="nav-drawer-id-edit-btn"
-                        disabled={idChecking || idSubmitting}
-                        onClick={() => { void openIdConfirm(); }}
-                      >
-                        {idChecking ? "확인 중..." : "확인"}
-                      </button>
-                    </div>
+                <div className="nav-drawer-avatar-meta">
+                  <div className="nav-drawer-id-input-wrap">
+                    <input
+                      type="text"
+                      className="nav-drawer-id-input"
+                      placeholder="아이디 등록"
+                      value={idInputValue}
+                      onChange={(e) => { setIdInputValue(e.target.value); setIdErrorMsg(""); }}
+                      onFocus={() => { setIdInputFocused(true); if (profilePanelOpen) setProfilePanelOpen(false); }}
+                      onBlur={() => setIdInputFocused(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void openIdConfirm();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="nav-drawer-id-edit-btn"
+                      disabled={idChecking || idSubmitting}
+                      onClick={() => { void openIdConfirm(); }}
+                    >
+                      {idChecking ? "확인 중..." : "확인"}
+                    </button>
                   </div>
-                </>
-              )
+                </div>
+              </>
             )}
             {mobileFooterLogout}
             {mobileLeading ?? leading}

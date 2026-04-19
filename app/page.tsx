@@ -46,7 +46,7 @@ export default async function HomePage() {
             </div>
 
 
-            <section className="landing-stack-sm" id="pricing">
+            {/* <section className="landing-stack-sm" id="pricing">
               <Link href="/user_review" className="landing-review-section-link">
                 <span className="landing-section-label">{landingContent.reviews.sectionTitle}</span>
               </Link>
@@ -74,7 +74,7 @@ export default async function HomePage() {
                   </Link>
                 ))}
               </div>
-            </section>
+            </section> */}
 
             <LandingVideoSection
               label={landingContent.video.sectionTitle}

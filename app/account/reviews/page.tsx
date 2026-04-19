@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getReviews } from "@/lib/reviews";
+import { TierBadge } from "@/components/tier-badge";
 
 export default async function AccountReviewsPage({
   searchParams,
@@ -50,7 +51,7 @@ export default async function AccountReviewsPage({
                     {review.title}
                   </Link>
                 </td>
-                <td>{review.author_username || review.author_fullname || "익명"}</td>
+                <td>{review.author_username || review.author_fullname || "익명"}<TierBadge tier={review.author_tier} /></td>
                 <td>{new Date(review.created_at).toLocaleDateString("ko-KR")}</td>
                 <td>❤️ {review.like_count}</td>
               </tr>

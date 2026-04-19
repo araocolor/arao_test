@@ -15,6 +15,7 @@ export type Review = {
 export type ReviewWithAuthor = Review & {
   author_username: string | null;
   author_fullname: string | null;
+  author_tier: string | null;
 };
 
 export type ReviewReply = {
@@ -24,6 +25,7 @@ export type ReviewReply = {
   content: string;
   created_at: string;
   author_username: string | null;
+  author_tier: string | null;
 };
 
 /**
@@ -48,16 +50,16 @@ export async function getReviews(
   }
 
   const profileIds = [...new Set((data ?? []).map((r) => r.profile_id))];
-  const profileMap: Record<string, { username: string | null; full_name: string | null }> = {};
+  const profileMap: Record<string, { username: string | null; full_name: string | null; tier: string | null }> = {};
 
   if (profileIds.length > 0) {
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, username, full_name")
+      .select("id, username, full_name, tier")
       .in("id", profileIds);
 
     (profiles ?? []).forEach((p) => {
-      profileMap[p.id] = { username: p.username, full_name: p.full_name };
+      profileMap[p.id] = { username: p.username, full_name: p.full_name, tier: p.tier ?? null };
     });
   }
 
@@ -65,6 +67,7 @@ export async function getReviews(
     ...r,
     author_username: profileMap[r.profile_id]?.username || null,
     author_fullname: profileMap[r.profile_id]?.full_name || null,
+    author_tier: profileMap[r.profile_id]?.tier || null,
   })) as ReviewWithAuthor[];
 
   return { reviews, total: count ?? 0 };
@@ -79,12 +82,12 @@ export async function getReviewById(id: string): Promise<{ review: ReviewWithAut
   const [reviewRes, repliesRes] = await Promise.all([
     supabase
       .from("reviews")
-      .select("*, profile:profile_id(username, full_name)")
+      .select("*, profile:profile_id(username, full_name, tier)")
       .eq("id", id)
       .single(),
     supabase
       .from("review_replies")
-      .select("*, profile:profile_id(username)")
+      .select("*, profile:profile_id(username, tier)")
       .eq("review_id", id)
       .order("created_at", { ascending: true }),
   ]);
@@ -98,12 +101,14 @@ export async function getReviewById(id: string): Promise<{ review: ReviewWithAut
     ...reviewRes.data,
     author_username: reviewRes.data?.profile?.username || null,
     author_fullname: reviewRes.data?.profile?.full_name || null,
+    author_tier: reviewRes.data?.profile?.tier || null,
     profile: undefined,
   } as ReviewWithAuthor;
 
   const replies = (repliesRes.data ?? []).map((r) => ({
     ...r,
     author_username: r.profile?.username || null,
+    author_tier: r.profile?.tier || null,
     profile: undefined,
   })) as ReviewReply[];
 
@@ -335,7 +340,7 @@ export async function getReviewReplies(reviewId: string): Promise<ReviewReply[]>
 
   const { data, error } = await supabase
     .from("review_replies")
-    .select("*, profile:profile_id(username)")
+    .select("*, profile:profile_id(username, tier)")
     .eq("review_id", reviewId)
     .order("created_at", { ascending: true });
 
@@ -347,6 +352,7 @@ export async function getReviewReplies(reviewId: string): Promise<ReviewReply[]>
   return (data ?? []).map((r) => ({
     ...r,
     author_username: r.profile?.username || null,
+    author_tier: r.profile?.tier || null,
     profile: undefined,
   })) as ReviewReply[];
 }

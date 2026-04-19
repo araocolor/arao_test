@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { TierBadge } from "@/components/tier-badge";
 
 type Comment = {
   id: string;
@@ -13,6 +14,7 @@ type Comment = {
   createdAt: string;
   parentId: string | null;
   authorId: string;
+  authorTier?: string | null;
   iconImage: string | null;
   isMine?: boolean;
   likeCount: number;
@@ -559,6 +561,7 @@ export function UserContentInteractions({
           createdAt: rawComment.createdAt ?? new Date().toISOString(),
           parentId: rawComment.parentId ?? null,
           authorId: rawComment.authorId ?? "익명",
+          authorTier: rawComment.authorTier ?? null,
           iconImage: rawComment.iconImage ?? null,
           isMine: rawComment.isMine ?? true,
           likeCount: sanitizeCount(rawComment.likeCount) ?? 0,
@@ -688,6 +691,7 @@ export function UserContentInteractions({
                   <div className="user-content-comment-author-row">
                     <span className="user-content-comment-author">
                       {comment.authorId}
+                      <TierBadge tier={comment.authorTier} />
                       {isReviewAuthor(comment.authorId) && (
                         <span className="user-content-comment-author-badge" aria-label="작성자">작성자</span>
                       )}
@@ -762,6 +766,7 @@ export function UserContentInteractions({
                       <div className="user-content-comment-author-row">
                         <span className="user-content-comment-author">
                           {reply.authorId}
+                          <TierBadge tier={reply.authorTier} />
                           {isReviewAuthor(reply.authorId) && (
                             <span className="user-content-comment-author-badge" aria-label="작성자">작성자</span>
                           )}

@@ -11,10 +11,9 @@ const BASE_LINKS = [
   { href: "/about", label: "ARAO 소개" },
   { href: "/gallery", label: "갤러리" },
   { href: "/user_review", label: "커뮤니티" },
-  { href: "/manual", label: "설치방법" },
-  { href: "/pricing", label: "구매가이드" },
   { href: "/color", label: "컬러레시피" },
-  { href: "/account/general", label: "사용자설정" },
+  { href: "/manual", label: "설치방법" },
+  { href: "/account/general", label: "Settings" },
 ] as const;
 
 type LandingPageHeaderProps = {
@@ -75,7 +74,7 @@ export function LandingPageHeader({
       mobileNotif={<HeaderProfileLink />}
       mobileProfile={<HeaderDrawerAvatar />}
       mobileLogout={null}
-      mobileFooterLogout={<HeaderLogoutButton />}
+      mobileFooterLogout={isSignedIn ? <HeaderLogoutButton /> : null}
       isAdmin={isAdmin}
       isSignedIn={isSignedIn ?? false}
       version={4}

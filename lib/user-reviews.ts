@@ -15,6 +15,7 @@ export type UserReviewListItem = {
   createdAt: string;
   authorId: string;
   authorIconImage: string | null;
+  authorTier: string | null;
   isAuthor: boolean;
   board: string;
   isPinned: boolean;
@@ -36,24 +37,20 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 2)}***${domain}`;
 }
 
+type ProfileShape = { username?: string | null; email?: string | null; icon_image?: string | null; tier?: string | null };
+
 function getProfile(
   row: {
-    profile?:
-      | { username?: string | null; email?: string | null; icon_image?: string | null }
-      | Array<{ username?: string | null; email?: string | null; icon_image?: string | null }>
-      | null;
+    profile?: ProfileShape | Array<ProfileShape> | null;
   }
-): { username?: string | null; email?: string | null; icon_image?: string | null } | null {
+): ProfileShape | null {
   if (!row.profile) return null;
   if (Array.isArray(row.profile)) return row.profile[0] ?? null;
   return row.profile;
 }
 
 function mapAuthorId(row: {
-  profile?:
-    | { username?: string | null; email?: string | null; icon_image?: string | null }
-    | Array<{ username?: string | null; email?: string | null; icon_image?: string | null }>
-    | null;
+  profile?: ProfileShape | Array<ProfileShape> | null;
 }): string {
   const profile = getProfile(row);
   if (profile?.username) return profile.username;
@@ -76,6 +73,7 @@ function mapRowToListItem(row: any, viewerProfileId?: string | null): UserReview
     createdAt: row.created_at ?? new Date(0).toISOString(),
     authorId: mapAuthorId(row),
     authorIconImage: profile?.icon_image ?? null,
+    authorTier: profile?.tier ?? null,
     isAuthor: !!viewerProfileId && row.profile_id === viewerProfileId,
     board: row.board ?? "review",
     isPinned: !!row.is_pinned,
@@ -107,7 +105,7 @@ export async function getUserReviewList(params: {
   let query = supabase
     .from("user_reviews")
     .select(
-      "id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, board, is_pinned, is_global_pinned, created_at, updated_at, profile:profile_id(username, email, icon_image)",
+      "id, profile_id, title, content, thumbnail_image, thumbnail_first, attached_file, view_count, like_count, is_public, board, is_pinned, is_global_pinned, created_at, updated_at, profile:profile_id(username, email, icon_image, tier)",
       { count: "exact" }
     )
     .or(`board.eq.${board},is_global_pinned.eq.true`);
@@ -176,7 +174,7 @@ export async function getUserReviewById(id: string): Promise<UserReviewDetail | 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("user_reviews")
-    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, thumbnail_first, attached_file, view_count, like_count, is_public, board, is_pinned, is_global_pinned, created_at, updated_at, profile:profile_id(username, email, icon_image)")
+    .select("id, profile_id, title, content, thumbnail_image, thumbnail_small, thumbnail_first, attached_file, view_count, like_count, is_public, board, is_pinned, is_global_pinned, created_at, updated_at, profile:profile_id(username, email, icon_image, tier)")
     .eq("id", id)
     .maybeSingle();
 

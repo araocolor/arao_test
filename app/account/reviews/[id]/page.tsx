@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { TierBadge } from "@/components/tier-badge";
 
 export default function ReviewDetailPage({
   params,
@@ -101,7 +102,7 @@ export default function ReviewDetailPage({
 
       <div className="review-meta">
         <span className="meta-item">카테고리: {review.category}</span>
-        <span className="meta-item">작성자: {review.author_username || review.author_fullname || "익명"}</span>
+        <span className="meta-item">작성자: {review.author_username || review.author_fullname || "익명"}<TierBadge tier={review.author_tier} /></span>
         <span className="meta-item">
           날짜: {new Date(review.created_at).toLocaleDateString("ko-KR")}
         </span>
@@ -159,7 +160,7 @@ export default function ReviewDetailPage({
             {replies.map((reply) => (
               <div key={reply.id} className="reply-item">
                 <div className="reply-header">
-                  <strong>{reply.author_username || "익명"}</strong>
+                  <strong>{reply.author_username || "익명"}<TierBadge tier={reply.author_tier} /></strong>
                   <span className="reply-time">
                     {new Date(reply.created_at).toLocaleDateString("ko-KR")}
                   </span>
