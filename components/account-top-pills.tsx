@@ -7,7 +7,7 @@ const PILL_ITEMS = [
   { href: "/account/general", label: "개인설정" },
   { href: "/account/consulting", label: "상담내역" },
   { href: "/account/orders", label: "주문관리" },
-  { href: "/account/mycolor", label: "컬러레시피" },
+  { href: "/account/mycolor", label: "레시피" },
 ] as const;
 
 function isActivePath(pathname: string, href: string): boolean {
