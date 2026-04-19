@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, ShieldCheck, Camera } from "lucide-react";
+import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, ShieldCheck } from "lucide-react";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 
@@ -117,6 +117,7 @@ export function SiteHeader({
   hideOnScrollMode = "default",
 }: SiteHeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [avatarToastVisible, setAvatarToastVisible] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
   const [panelDragY, setPanelDragY] = useState(0);
   const [hideOnScroll, setHideOnScroll] = useState(false);
@@ -129,6 +130,7 @@ export function SiteHeader({
   const scrollRafRef = useRef<number | null>(null);
   const username = useHeaderSessionStore((state) => state.username);
   const usernameReady = useHeaderSessionStore((state) => state.usernameReady);
+  const avatar = useHeaderSessionStore((state) => state.avatar);
   const email = useHeaderSessionStore((state) => state.email);
   const role = useHeaderSessionStore((state) => state.role);
   const setSessionUsername = useHeaderSessionStore((state) => state.setUsername);
@@ -278,6 +280,24 @@ export function SiteHeader({
     }
     return () => { document.body.style.overflow = ""; };
   }, [drawerOpen]);
+
+  // 아바타 미등록 안내 토스트: 드로어 열림 1초 후 표시, 2초 후 숨김
+  useEffect(() => {
+    if (!drawerOpen || !isSignedIn || avatar) {
+      setAvatarToastVisible(false);
+      return;
+    }
+    const showTimer = setTimeout(() => {
+      setAvatarToastVisible(true);
+      const hideTimer = setTimeout(() => setAvatarToastVisible(false), 5000);
+      (showTimer as unknown as { hideTimer?: ReturnType<typeof setTimeout> }).hideTimer = hideTimer;
+    }, 1000);
+    return () => {
+      clearTimeout(showTimer);
+      const hideTimer = (showTimer as unknown as { hideTimer?: ReturnType<typeof setTimeout> }).hideTimer;
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [drawerOpen, isSignedIn, avatar]);
 
   // 헤더 숨김 로직: 기본(default) / terms 스타일(빠른 상향 스크롤에서만 표시)
   useEffect(() => {
@@ -478,15 +498,15 @@ export function SiteHeader({
           <div className="nav-drawer-profile-panel-handle" onClick={() => setProfilePanelOpen(false)}>
             <span className="nav-drawer-profile-panel-handle-bar" />
           </div>
-          <div className="nav-drawer-profile-panel-email">
+          {role === "admin" && (
+            <div style={{ padding: "5px 24px 0" }}>
+              <span style={{ display: "inline-block", fontSize: 11, fontWeight: 600, color: "#fff", background: "red", borderRadius: 20, padding: "1px 6px", lineHeight: "18px" }}>admin</span>
+            </div>
+          )}
+          <div className="nav-drawer-profile-panel-email" style={role === "admin" ? { paddingTop: 4 } : undefined}>
             {email ?? ""}
-            {role === "admin" && <span style={{ display: "inline-block", marginLeft: 6, fontSize: 11, fontWeight: 600, color: "#fff", background: "red", borderRadius: 20, padding: "1px 6px", lineHeight: "18px" }}>admin</span>}
           </div>
           <nav className="nav-drawer-list">
-            <Link href="/user_review?board=arao" className="nav-drawer-link" onClick={closeDrawer}>
-              <span className="nav-drawer-icon"><Camera width={20} height={20} strokeWidth={1.7} /></span>
-              아라오사진
-            </Link>
             <Link href="/account/orders" className="nav-drawer-link" onClick={closeDrawer}>
               <span className="nav-drawer-icon"><CreditCard width={20} height={20} strokeWidth={1.7} /></span>
               결제내역
@@ -513,6 +533,37 @@ export function SiteHeader({
           </nav>
         </div>
 
+        {isSignedIn && !avatar && (
+          <div
+            style={{
+              padding: "0 20px 8px",
+              display: "flex",
+              justifyContent: "center",
+              transform: avatarToastVisible ? "translateY(0)" : "translateY(20px)",
+              opacity: avatarToastVisible ? 1 : 0,
+              transition: "transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease-out",
+              pointerEvents: avatarToastVisible ? "auto" : "none",
+            }}
+          >
+            <Link
+              href="/account/general"
+              onClick={closeDrawer}
+              style={{
+                display: "inline-block",
+                padding: "8px 14px",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#fff",
+                background: "#111",
+                borderRadius: 999,
+                textDecoration: "none",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              }}
+            >
+              아이콘 사진을 등록하세요
+            </Link>
+          </div>
+        )}
         <div className="nav-drawer-footer-top" style={idErrorMsg ? { color: "#e53935" } : undefined}>{idErrorMsg ? idErrorMsg : idInputFocused ? "4-8자 영어, 숫자 조합" : ""}</div>
 
         {/* 하단 로그인/로그아웃 */}
