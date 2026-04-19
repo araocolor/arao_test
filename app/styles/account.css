@@ -89,6 +89,9 @@
 
 .account-phone-input {
   padding-left: 48px;
+  border-radius: 999px;
+  height: 42px;
+  box-sizing: border-box;
 }
 
 .account-phone-input[readonly] {
@@ -963,6 +966,22 @@
   gap: 12px;
 }
 
+.account-avatar-upload-right-btn {
+  margin-left: auto;
+  align-self: center;
+  border-radius: 999px;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 16px;
+}
+
+.account-phone-pill-btn {
+  border-radius: 999px;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 16px;
+}
+
 .account-avatar-column {
   display: flex;
   flex-direction: column;
@@ -972,8 +991,8 @@
 }
 
 .account-username-avatar {
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   border: 2px solid var(--line);
   object-fit: cover;
@@ -985,8 +1004,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   background: transparent;
   border: 1px solid transparent;
@@ -1038,9 +1057,9 @@
 .account-username-register-fallback {
   position: relative;
   display: inline-flex;
-  width: 50px;
-  height: 50px;
-  flex: 0 0 50px;
+  width: 45px;
+  height: 45px;
+  flex: 0 0 45px;
   aspect-ratio: 1 / 1;
   box-sizing: border-box;
   border: 1px solid rgba(17, 17, 17, 0.24);
@@ -1053,26 +1072,9 @@
 
 .account-username-register-fallback-icon {
   display: block;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-}
-
-.account-avatar-edit-button {
-  font-size: 11px;
-  color: var(--muted);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: underline;
-  opacity: 0.7;
-  transition: opacity 120ms ease;
-  white-space: nowrap;
-}
-
-.account-avatar-edit-button:active {
-  opacity: 1;
 }
 
 .account-avatar-form {
@@ -1171,6 +1173,8 @@
   flex-direction: column;
   gap: 4px;
   flex: 1;
+  min-height: 45px;
+  justify-content: center;
 }
 
 .account-username-row {

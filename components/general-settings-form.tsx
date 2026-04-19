@@ -254,6 +254,11 @@ export function GeneralSettingsForm({
     return digits;
   }
 
+  function maskPhoneForDisplay(value: string) {
+    const formatted = formatPhoneForInput(value);
+    return formatted.replace(/\d{1,4}$/, "****");
+  }
+
   function beginPhoneEditing() {
     if (!phone || isEditingPhone) return;
     setPhoneInput(formatPhoneForInput(phone));
@@ -370,34 +375,13 @@ export function GeneralSettingsForm({
                 <span className="account-username-register-fallback">
                   <UserRound
                     className="account-username-register-fallback-icon"
-                    width={18}
-                    height={18}
+                    width={20}
+                    height={20}
                     strokeWidth={1.8}
                   />
                 </span>
               </span>
             )}
-            <button
-              ref={avatarButtonRef}
-              className="account-avatar-edit-button"
-              type="button"
-              disabled={savingKey === "avatar-delete" || savingKey === "avatar"}
-              onClick={() => {
-                if (iconImage) {
-                  void deleteAvatar();
-                  return;
-                }
-                setIsEditingAvatar((v) => !v);
-                setAvatarMessage(null);
-              }}
-            >
-              {iconImage
-                ? savingKey === "avatar-delete"
-                  ? "삭제 중..."
-                  : "삭제"
-                : "업로드"}
-            </button>
-
             {isEditingAvatar && (
               <div className="account-avatar-popover" ref={avatarPopoverRef}>
                 <form onSubmit={submitAvatar}>
@@ -503,6 +487,24 @@ export function GeneralSettingsForm({
               </div>
             </form>
           )}
+          <button
+            ref={avatarButtonRef}
+            type="button"
+            className="account-general-btn account-avatar-upload-right-btn"
+            disabled={savingKey === "avatar-delete" || savingKey === "avatar"}
+            onClick={() => {
+              if (iconImage) {
+                void deleteAvatar();
+                return;
+              }
+              setIsEditingAvatar((v) => !v);
+              setAvatarMessage(null);
+            }}
+          >
+            {iconImage
+              ? (savingKey === "avatar-delete" ? "초기화 중..." : "사진초기화")
+              : "사진업로드"}
+          </button>
         </div>
         {usernameMessage ? <div className="account-username-message">{usernameMessage}</div> : null}
       </div>
@@ -561,7 +563,7 @@ export function GeneralSettingsForm({
                 />
               </div>
               <button
-                className="account-general-btn"
+                className="account-general-btn account-phone-pill-btn"
                 type="submit"
                 disabled={savingKey === "phone" || !hasPhoneInput}
               >
@@ -577,7 +579,7 @@ export function GeneralSettingsForm({
                 <input
                   className="account-general-input account-phone-input"
                   type="tel"
-                  value={isEditingPhone ? phoneInput : formatPhoneForInput(phone)}
+                  value={isEditingPhone ? phoneInput : maskPhoneForDisplay(phone)}
                   onFocus={beginPhoneEditing}
                   onChange={(event) => {
                     if (!isEditingPhone) return;
@@ -597,19 +599,19 @@ export function GeneralSettingsForm({
               </div>
               {isEditingPhone ? (
                 <button
-                  className="account-general-btn account-general-btn-active"
+                  className="account-general-btn account-general-btn-active account-phone-pill-btn"
                   type="submit"
                   disabled={savingKey === "phone" || !hasPhoneInput}
                 >
-                  {savingKey === "phone" ? "수정 중..." : "수정"}
+                  {savingKey === "phone" ? "번호수정 중..." : "번호수정"}
                 </button>
               ) : (
                 <button
-                  className="account-general-btn"
+                  className="account-general-btn account-phone-pill-btn"
                   type="button"
                   onClick={beginPhoneEditing}
                 >
-                  수정
+                  번호수정
                 </button>
               )}
             </div>

@@ -2,7 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { User } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { clearAllCachesOnLogout } from "@/hooks/use-prefetch-cache";
 
 export function HeaderLogoutButton() {
@@ -12,8 +12,8 @@ export function HeaderLogoutButton() {
   if (!isSignedIn) {
     return (
       <Link className="header-menu-label" href="/sign-in">
-        <span aria-hidden="true">
-          <User width={18} height={18} strokeWidth={1.8} />
+        <span className="header-login-avatar-fallback" aria-hidden="true">
+          <UserRound className="header-login-avatar-fallback-icon" width={20} height={20} strokeWidth={1.8} />
         </span>
         로그인
       </Link>

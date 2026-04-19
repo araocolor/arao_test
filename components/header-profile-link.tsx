@@ -631,7 +631,7 @@ export function HeaderDrawerAvatar() {
       {iconImage ? (
         <img src={iconImage} className="header-profile-avatar" alt="avatar" />
       ) : (
-        <UserRound className="header-profile-icon" width={18} height={18} strokeWidth={1.8} />
+        <UserRound className="header-profile-icon" width={20} height={20} strokeWidth={1.8} />
       )}
     </span>
   );
