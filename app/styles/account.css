@@ -1138,7 +1138,8 @@
 .account-avatar-cancel-button {
   flex: 1;
   padding: 9px 12px;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 700;
   border-radius: 999px;
   border: none;
   cursor: pointer;
@@ -1221,7 +1222,7 @@
 
 .account-avatar-file-button {
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   background: var(--text);
   color: var(--surface);
