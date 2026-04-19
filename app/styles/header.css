@@ -980,9 +980,6 @@
   right: 0;
   padding: 0 24px calc(16px + env(safe-area-inset-bottom));
   background: var(--surface);
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
 }
 
 .nav-drawer-profile-panel-bottom .header-logout-button,
