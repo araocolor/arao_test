@@ -176,14 +176,15 @@ export function HeaderProfileLink() {
     }
   }
 
-  // 아바타만 먼저 조회 (빠른 업데이트)
+  // 아바타/아이디 먼저 조회 (빠른 업데이트)
   async function fetchAvatar() {
     try {
       const response = await fetch("/api/account/avatar");
       if (response.ok) {
-        const data = (await response.json()) as { iconImage?: string | null };
+        const data = (await response.json()) as { iconImage?: string | null; username?: string | null };
         const img = data.iconImage ?? null;
         setHeaderAvatar(img);
+        setHeaderUsername(data.username ?? null);
       }
     } catch (error) {
       console.error("Failed to fetch avatar:", error);

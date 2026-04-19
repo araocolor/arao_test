@@ -128,6 +128,7 @@ export function SiteHeader({
   const lastScrollTsRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
   const username = useHeaderSessionStore((state) => state.username);
+  const usernameReady = useHeaderSessionStore((state) => state.usernameReady);
   const email = useHeaderSessionStore((state) => state.email);
   const role = useHeaderSessionStore((state) => state.role);
   const setSessionUsername = useHeaderSessionStore((state) => state.setUsername);
@@ -517,7 +518,7 @@ export function SiteHeader({
         {/* 하단 로그인/로그아웃 */}
         <div className="nav-drawer-footer" onClick={!isSignedIn ? () => { window.location.href = "/sign-in"; } : undefined} style={!isSignedIn ? { cursor: "pointer" } : undefined}>
           <div className="nav-drawer-footer-row">
-            {isSignedIn && (
+            {isSignedIn && usernameReady && (
               hasUsername ? (
                 <button
                   type="button"

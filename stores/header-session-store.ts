@@ -7,12 +7,14 @@ type HeaderSessionStore = {
   badgeCount: number;
   avatar: string | null;
   username: string | null;
+  usernameReady: boolean;
   email: string | null;
   role: string | null;
   hydrateForUser: (userId: string | null | undefined) => void;
   setBadgeCount: (count: number) => void;
   setAvatar: (avatar: string | null) => void;
   setUsername: (username: string | null) => void;
+  setUsernameReady: (ready: boolean) => void;
   setEmail: (email: string | null) => void;
   setRole: (role: string | null) => void;
   clearActiveUserCache: () => void;
@@ -73,19 +75,20 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
   badgeCount: 0,
   avatar: null,
   username: null,
+  usernameReady: false,
   email: null,
   role: null,
 
   hydrateForUser: (userId) => {
     const normalized = normalizeUserId(userId);
     if (!normalized) {
-      set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, email: null, role: null });
+      set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, usernameReady: false, email: null, role: null });
       return;
     }
     const badgeCount = readBadgeFromStorage(normalized);
     const avatar = readAvatarFromStorage(normalized);
     const username = readUsernameFromStorage(normalized);
-    set({ activeUserId: normalized, badgeCount, avatar, username });
+    set({ activeUserId: normalized, badgeCount, avatar, username, usernameReady: username !== null });
   },
 
   setBadgeCount: (count) => {
@@ -112,12 +115,16 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
   setUsername: (username) => {
     const activeUserId = get().activeUserId;
     const normalizedUsername = username && username.trim().length > 0 ? username : null;
-    set({ username: normalizedUsername });
+    set({ username: normalizedUsername, usernameReady: true });
     if (!activeUserId || typeof window === "undefined") return;
     try {
       if (normalizedUsername) localStorage.setItem(getUsernameKey(activeUserId), normalizedUsername);
       else localStorage.removeItem(getUsernameKey(activeUserId));
     } catch {}
+  },
+
+  setUsernameReady: (ready) => {
+    set({ usernameReady: ready });
   },
 
   setEmail: (email) => {
@@ -137,6 +144,6 @@ export const useHeaderSessionStore = create<HeaderSessionStore>((set, get) => ({
         localStorage.removeItem(getUsernameKey(activeUserId));
       } catch {}
     }
-    set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, email: null, role: null });
+    set({ activeUserId: null, badgeCount: 0, avatar: null, username: null, usernameReady: false, email: null, role: null });
   },
 }));
