@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, ShieldCheck, Flower2 } from "lucide-react";
+import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, ShieldCheck, BadgeCheck } from "lucide-react";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 
@@ -506,12 +506,6 @@ export function SiteHeader({
           )}
           <div className="nav-drawer-profile-panel-email" style={role === "admin" ? { paddingTop: 4 } : undefined}>
             {email ?? ""}
-            {tier === "pro" && (
-              <Flower2 width={14} height={14} strokeWidth={2} color="#D4A574" style={{ marginLeft: 6, verticalAlign: "middle" }} />
-            )}
-            {tier === "premium" && (
-              <Flower2 width={14} height={14} strokeWidth={2} color="#E91E63" style={{ marginLeft: 6, verticalAlign: "middle" }} />
-            )}
           </div>
           <nav className="nav-drawer-list">
             <Link href="/account/orders" className="nav-drawer-link" onClick={closeDrawer}>
@@ -592,10 +586,10 @@ export function SiteHeader({
                     <span className="nav-drawer-avatar-label">
                       {usernameLabel}
                       {tier === "pro" && (
-                        <Flower2 width={12} height={12} strokeWidth={2} color="#D4A574" style={{ marginLeft: 4, verticalAlign: "middle" }} />
+                        <BadgeCheck width={14} height={14} strokeWidth={2} color="#fff" fill="#1D9BF0" style={{ marginLeft: 4, verticalAlign: "middle" }} />
                       )}
                       {tier === "premium" && (
-                        <Flower2 width={12} height={12} strokeWidth={2} color="#E91E63" style={{ marginLeft: 4, verticalAlign: "middle" }} />
+                        <BadgeCheck width={14} height={14} strokeWidth={2} color="#fff" fill="#D4AF37" style={{ marginLeft: 4, verticalAlign: "middle" }} />
                       )}
                     </span>
                   </span>
