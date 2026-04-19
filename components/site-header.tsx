@@ -557,13 +557,13 @@ export function SiteHeader({
                 fontSize: 14,
                 fontWeight: 700,
                 color: "#fff",
-                background: "#111",
+                background: "rgba(17, 17, 17, 0.8)",
                 borderRadius: 999,
                 textDecoration: "none",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
               }}
             >
-              아이콘 사진을 등록하세요
+              프로필 사진 등록
             </Link>
           </div>
         )}
