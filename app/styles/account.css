@@ -1013,6 +1013,8 @@
   background: transparent;
   border: 1px solid transparent;
   flex-shrink: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
 .account-avatar-default {

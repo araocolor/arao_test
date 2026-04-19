@@ -371,7 +371,15 @@ export function GeneralSettingsForm({
             {iconImage ? (
               <img src={iconImage} alt={username || "avatar"} className="account-username-avatar" />
             ) : (
-              <span className="account-username-avatar-placeholder" aria-hidden="true">
+              <button
+                type="button"
+                className="account-username-avatar-placeholder"
+                onClick={() => {
+                  setIsEditingAvatar((v) => !v);
+                  setAvatarMessage(null);
+                }}
+                aria-label="프로필 사진 등록"
+              >
                 <span className="account-username-register-fallback">
                   <UserRound
                     className="account-username-register-fallback-icon"
@@ -380,7 +388,7 @@ export function GeneralSettingsForm({
                     strokeWidth={1.8}
                   />
                 </span>
-              </span>
+              </button>
             )}
             {isEditingAvatar && (
               <div className="account-avatar-popover" ref={avatarPopoverRef}>
