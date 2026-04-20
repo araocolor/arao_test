@@ -11,7 +11,6 @@
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
     }
-    :root { --test-header-height: 48px; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -19,44 +18,9 @@
       line-height: 1.5;
       color: #111111;
       background: #ffffff;
-      padding: calc(var(--test-header-height) + 24px) 16px 40px;
+      padding: 24px 16px 40px;
       max-width: 800px;
       margin: 0 auto;
-    }
-
-    .test-header {
-      position: fixed;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(800px, 100%);
-      height: var(--test-header-height);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 12px;
-      border-bottom: 1px solid #e0e0e0;
-      background: rgba(128, 128, 128, 0.5);
-      color: #111111;
-      z-index: 999;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-      opacity: 1;
-    }
-
-    .test-header.is-hidden {
-      transform: translate(-50%, -100%);
-      opacity: 0;
-    }
-
-    .test-header__title {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .test-header__hint {
-      font-size: 11px;
-      color: #666;
-      white-space: nowrap;
     }
 
     h1 {
@@ -122,24 +86,13 @@
     }
 
     @media (max-width: 600px) {
-      body { padding: calc(var(--test-header-height) + 16px) 12px 32px; }
+      body { padding: 16px 12px 32px; }
       table { display: block; overflow-x: auto; }
-      .test-header {
-        padding: 0 10px;
-      }
-      .test-header__hint {
-        font-size: 10px;
-      }
     }
   </style>
 
 </head>
 <body>
-  <header class="test-header" data-test-header>
-    <span class="test-header__title">임시 헤더 테스트</span>
-    <span class="test-header__hint">아래로: 숨김 / 위로 빠르게: 표시</span>
-  </header>
-
   <h1>서비스 이용약관</h1>
 
   <p>본 약관은 아라오(ARAO)(이하 "회사")가 운영하는 웹사이트에서 제공하는 온라인 디지털 콘텐츠 및 관련 서비스의 이용과 관련하여 회사와 회원의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
@@ -436,52 +389,6 @@
   <div class="meta">
     공고일자: 2026년 4월 13일&nbsp;&nbsp;|&nbsp;&nbsp;시행일자: 2026년 4월 13일
   </div>
-
-  <script>
-    (function () {
-      const header = document.querySelector("[data-test-header]");
-      if (!header) return;
-
-      const SHOW_TOP_Y = 12;
-      const HIDE_DOWN_DELTA = 4;
-      const FAST_UPWARD_SPEED = 3.5; // px/ms
-
-      let lastY = window.scrollY;
-      let lastTs = performance.now();
-      let ticking = false;
-
-      function updateHeader() {
-        const currentY = window.scrollY;
-        const nowTs = performance.now();
-        const deltaY = currentY - lastY;
-        const elapsedMs = Math.max(1, nowTs - lastTs);
-        const upwardSpeed = deltaY < 0 ? Math.abs(deltaY) / elapsedMs : 0;
-
-        if (currentY <= SHOW_TOP_Y) {
-          header.classList.remove("is-hidden");
-        } else if (deltaY > HIDE_DOWN_DELTA) {
-          header.classList.add("is-hidden");
-        } else if (deltaY < 0 && upwardSpeed >= FAST_UPWARD_SPEED) {
-          header.classList.remove("is-hidden");
-        }
-
-        lastY = currentY;
-        lastTs = nowTs;
-        ticking = false;
-      }
-
-      window.addEventListener(
-        "scroll",
-        function () {
-          if (!ticking) {
-            window.requestAnimationFrame(updateHeader);
-            ticking = true;
-          }
-        },
-        { passive: true }
-      );
-    })();
-  </script>
 
 </body>
 </html>

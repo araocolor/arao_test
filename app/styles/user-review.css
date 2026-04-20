@@ -215,7 +215,7 @@
 
 .user-review-item-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text);
   line-height: 1.35;
@@ -228,7 +228,7 @@
 }
 
 .user-review-item.read .user-review-item-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
 }
 

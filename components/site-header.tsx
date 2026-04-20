@@ -33,6 +33,8 @@ type SiteHeaderProps = {
 const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 const PROFILE_PANEL_AUTO_OPEN_ONCE_KEY = "profile-panel-auto-open-once-v1";
+const SETTINGS_PATH = "/account/general";
+const SIGN_IN_WITH_SETTINGS_REDIRECT = "/sign-in?redirect_url=%2Faccount%2Fgeneral";
 
 function canPrefetchReviewList(): boolean {
   if (typeof navigator === "undefined") return true;
@@ -92,6 +94,13 @@ function createTempIdFromEmail(email: string | null): string {
   return `${prefix}${tail.join("")}`;
 }
 
+function resolveMenuHref(href: string, isSignedIn?: boolean): string {
+  if (href === SETTINGS_PATH && !isSignedIn) {
+    return SIGN_IN_WITH_SETTINGS_REDIRECT;
+  }
+  return href;
+}
+
 // 메뉴 항목별 아이콘
 const MENU_ICONS: Record<string, ReactNode> = {
   "/about": <Sparkles width={20} height={20} strokeWidth={1.7} />,
@@ -124,6 +133,8 @@ export function SiteHeader({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [avatarToastVisible, setAvatarToastVisible] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
+  const [autoOpenedProfilePanelActive, setAutoOpenedProfilePanelActive] = useState(false);
+  const [profilePanelHeight, setProfilePanelHeight] = useState(0);
   const [panelDragY, setPanelDragY] = useState(0);
   const [hideOnScroll, setHideOnScroll] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -249,6 +260,7 @@ export function SiteHeader({
   function handlePanelTouchEnd() {
     isDragging.current = false;
     if (panelDragY > 80) {
+      setAutoOpenedProfilePanelActive(false);
       setProfilePanelOpen(false);
     }
     setPanelDragY(0);
@@ -274,11 +286,36 @@ export function SiteHeader({
         try {
           sessionStorage.setItem(PROFILE_PANEL_AUTO_OPEN_ONCE_KEY, "1");
         } catch {}
+        setAutoOpenedProfilePanelActive(true);
         setProfilePanelOpen(true);
       }, 500);
       return () => clearTimeout(timer);
     }
   }, [drawerOpen, isSignedIn, hasUsername]);
+
+  useEffect(() => {
+    if (!profilePanelOpen) {
+      setProfilePanelHeight(0);
+      return;
+    }
+    const panelEl = panelRef.current;
+    if (!panelEl) return;
+
+    const updatePanelHeight = () => {
+      setProfilePanelHeight(panelEl.offsetHeight);
+    };
+
+    updatePanelHeight();
+
+    const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updatePanelHeight) : null;
+    resizeObserver?.observe(panelEl);
+    window.addEventListener("resize", updatePanelHeight);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updatePanelHeight);
+    };
+  }, [profilePanelOpen]);
 
   // 드로어 열릴 때 body 스크롤 잠금 + 커뮤니티 prefetch
   useEffect(() => {
@@ -412,7 +449,11 @@ export function SiteHeader({
     };
   }, [drawerOpen, fullWidth, hideOnScrollMode, profilePanelOpen]);
 
-  const closeDrawer = () => { setDrawerOpen(false); setProfilePanelOpen(false); };
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setAutoOpenedProfilePanelActive(false);
+    setProfilePanelOpen(false);
+  };
   const handleLogout = () => {
     closeDrawer();
     clearAllCachesOnLogout();
@@ -424,6 +465,7 @@ export function SiteHeader({
   };
   const handleAvatarClick = () => {
     if (isSignedIn) {
+      setAutoOpenedProfilePanelActive(false);
       setProfilePanelOpen((v) => !v);
     } else {
       window.location.href = "/sign-in";
@@ -431,6 +473,46 @@ export function SiteHeader({
   };
   const shouldHideHeader = fullWidth && hideOnScroll;
   const hideClassName = hideOnScrollMode === "terms" ? "header-scroll-hidden-terms" : "header-scroll-hidden";
+  const shouldShowAvatarRegisterCta = !!isSignedIn && !avatar;
+  const shouldPlaceAvatarCtaAbovePanel =
+    shouldShowAvatarRegisterCta &&
+    autoOpenedProfilePanelActive &&
+    profilePanelOpen &&
+    profilePanelHeight > 0;
+  const avatarRegisterCta = (
+    <div
+      style={{
+        padding: "0 20px 8px",
+        display: "flex",
+        justifyContent: "center",
+        transform: avatarToastVisible ? "translateY(0)" : "translateY(20px)",
+        opacity: avatarToastVisible ? 1 : 0,
+        transition: "transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease-out",
+        pointerEvents: avatarToastVisible ? "auto" : "none",
+      }}
+    >
+      <Link
+        href="/account/general"
+        onClick={closeDrawer}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: 40,
+          padding: "0 18px",
+          fontSize: 14,
+          fontWeight: 700,
+          color: "#fff",
+          background: "rgba(17, 17, 17, 0.8)",
+          borderRadius: 999,
+          textDecoration: "none",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}
+      >
+        프로필 사진 등록
+      </Link>
+    </div>
+  );
 
   return (
     <>
@@ -455,7 +537,7 @@ export function SiteHeader({
           <div className="header-actions">
             <nav className="nav">
               {links.map((link) => (
-                <Link key={link.href} href={link.href}>
+                <Link key={link.href} href={resolveMenuHref(link.href, isSignedIn)}>
                   {link.label}
                 </Link>
               ))}
@@ -529,15 +611,17 @@ export function SiteHeader({
         <nav className="nav-drawer-list">
           {links.map((link) => {
             const isAccountSettings = link.href === "/account/general" && isSignedIn && hasUsername;
+            const resolvedHref = resolveMenuHref(link.href, isSignedIn);
             return (
               <div key={link.href}>
                 {link.divider && <hr className="nav-drawer-divider" />}
                 <Link
-                  href={link.href}
+                  href={resolvedHref}
                   className="nav-drawer-link"
                   onClick={(e) => {
                     if (isAccountSettings) {
                       e.preventDefault();
+                      setAutoOpenedProfilePanelActive(false);
                       setProfilePanelOpen((v) => !v);
                     } else {
                       closeDrawer();
@@ -558,6 +642,20 @@ export function SiteHeader({
           })}
         </nav>
 
+        {shouldPlaceAvatarCtaAbovePanel && (
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: `${profilePanelHeight + 81}px`,
+              zIndex: 11,
+            }}
+          >
+            {avatarRegisterCta}
+          </div>
+        )}
+
         {/* 사용자 서브패널 */}
         <div
           ref={panelRef}
@@ -570,7 +668,13 @@ export function SiteHeader({
             transition: isDragging.current ? "none" : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
           }}
         >
-          <div className="nav-drawer-profile-panel-handle" onClick={() => setProfilePanelOpen(false)}>
+          <div
+            className="nav-drawer-profile-panel-handle"
+            onClick={() => {
+              setAutoOpenedProfilePanelActive(false);
+              setProfilePanelOpen(false);
+            }}
+          >
             <span className="nav-drawer-profile-panel-handle-bar" />
           </div>
           <nav className="nav-drawer-list">
@@ -608,40 +712,7 @@ export function SiteHeader({
           </nav>
         </div>
 
-        {isSignedIn && !avatar && (
-          <div
-            style={{
-              padding: "0 20px 8px",
-              display: "flex",
-              justifyContent: "center",
-              transform: avatarToastVisible ? "translateY(0)" : "translateY(20px)",
-              opacity: avatarToastVisible ? 1 : 0,
-              transition: "transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease-out",
-              pointerEvents: avatarToastVisible ? "auto" : "none",
-            }}
-          >
-            <Link
-              href="/account/general"
-              onClick={closeDrawer}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: 40,
-                padding: "0 18px",
-                fontSize: 14,
-                fontWeight: 700,
-                color: "#fff",
-                background: "rgba(17, 17, 17, 0.8)",
-                borderRadius: 999,
-                textDecoration: "none",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-              }}
-            >
-              프로필 사진 등록
-            </Link>
-          </div>
-        )}
+        {shouldShowAvatarRegisterCta && !shouldPlaceAvatarCtaAbovePanel && avatarRegisterCta}
         <div className="nav-drawer-footer-top" style={idErrorMsg ? { color: "#e53935" } : undefined}>{idErrorMsg ? idErrorMsg : idInputFocused ? "4-8자 영어, 숫자 조합" : ""}</div>
 
         {/* 하단 로그인/로그아웃 */}
