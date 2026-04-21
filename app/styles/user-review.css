@@ -843,8 +843,39 @@
   padding-left: 50px;
 }
 
+.user-content-bottom-me-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 44px;
+  min-height: 44px;
+  padding-left: 50px;
+}
+
+.user-content-bottom-me-avatar-img,
+.user-content-bottom-me-avatar-fallback {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-content-bottom-me-avatar-img {
+  object-fit: cover;
+}
+
+.user-content-bottom-me-avatar-fallback {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(17, 17, 17, 0.08);
+}
+
 .user-content-bottom-emoji-btn {
   padding-right: 50px;
+  display: none;
 }
 
 .user-content-bottom-comment-btn {
@@ -1860,7 +1891,7 @@
   bottom: calc(60px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   width: min(100%, var(--tablet-width, 820px));
-  min-height: 40dvh;
+  min-height: 60dvh;
   max-height: calc(100dvh - (60px + env(safe-area-inset-bottom)) - 8px);
   display: flex;
   flex-direction: column;
@@ -1918,15 +1949,34 @@
   background: transparent;
   color: var(--muted);
   font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
   line-height: 1;
   font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
   padding: 2px 0;
+  display: block;
+  margin-left: auto;
+}
+
+.user-content-compose-sheet-close-icon {
+  display: block;
+}
+
+.user-content-compose-sheet-close-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 32px;
 }
 
 .user-content-compose-sheet-bottom {
   margin-top: auto;
-  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  padding: 12px 2px calc(12px + env(safe-area-inset-bottom)) 14px;
 }
 
 .user-content-compose-context {
@@ -2072,18 +2122,22 @@
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  width: calc(100% - 52px);
+  flex: 1;
+  width: auto;
   position: relative;
   z-index: 1;
   min-height: 50px;
   border: 1px solid rgba(17, 17, 17, 0.16);
-  border-radius: 14px;
+  border-radius: 24px;
   background: var(--surface, #fff);
-  padding: 0 6px 0 24px;
+  padding: 0 4px 0 18px;
 }
 
 .user-content-compose-input-wrap {
   position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .user-content-compose-emoji-sheet {
@@ -2100,6 +2154,7 @@
   opacity: 0;
   pointer-events: none;
   transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
+  display: none;
 }
 
 .user-content-compose-emoji-sheet.is-open {
@@ -2175,7 +2230,7 @@
   min-height: 28px;
   max-height: calc(1.35em * 3 + 22px);
   padding: 11px 0;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 500;
   line-height: 1.35;
   color: var(--text);
@@ -2218,12 +2273,9 @@
 }
 
 .user-content-compose-floating-submit {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
+  position: static;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 999px;
   background: #FEE500;
@@ -2237,20 +2289,43 @@
   padding: 0;
   box-shadow: none;
   cursor: pointer;
-  z-index: 2;
-}
-
-.user-content-compose-floating-submit.active {
-  transform: translateY(-50%);
-}
-
-.user-content-compose-floating-submit:disabled {
-  cursor: default;
-  opacity: 0.45;
+  flex-shrink: 0;
+  margin-bottom: 6px;
 }
 
 .user-content-compose-floating-submit-icon {
   display: block;
+}
+
+.user-content-compose-member-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.user-content-compose-member-avatar-img,
+.user-content-compose-member-avatar-fallback {
+  width: 37px;
+  height: 37px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-content-compose-member-avatar-img {
+  object-fit: cover;
+}
+
+.user-content-compose-member-avatar-fallback {
+  color: var(--muted);
+  background: rgba(17, 17, 17, 0.06);
 }
 
 .gallery-sheet-comments .user-content-comment-section {

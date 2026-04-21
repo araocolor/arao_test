@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { UserContentHeader } from "@/components/user-content-header";
 import { UserContentInteractions, UserContentLikeSection } from "@/components/user-content-interactions";
 import { UserProfileModal, type UserProfileModalTarget } from "@/components/user-profile-modal";
+import { useHeaderSessionStore } from "@/stores/header-session-store";
 
 function ContentImage({
   src,
@@ -473,6 +474,8 @@ export function UserContentPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isSignedIn, user } = useUser();
+  const headerAvatar = useHeaderSessionStore((state) => state.avatar);
+  const hydrateHeaderSession = useHeaderSessionStore((state) => state.hydrateForUser);
   const [item, setItem] = useState<ReviewItem | null>(null);
   const [viewerRole, setViewerRole] = useState<string | null>(null);
   const [profileModalTarget, setProfileModalTarget] = useState<UserProfileModalTarget | null>(null);
@@ -502,6 +505,17 @@ export function UserContentPage({
     user?.primaryEmailAddress?.emailAddress ??
     user?.emailAddresses?.[0]?.emailAddress ??
     null;
+  const footerAvatarSrc = isSignedIn ? (headerAvatar ?? user?.imageUrl ?? null) : null;
+
+  useEffect(() => {
+    if (isSignedIn && user?.id) {
+      hydrateHeaderSession(user.id);
+      return;
+    }
+    if (isSignedIn === false) {
+      hydrateHeaderSession(null);
+    }
+  }, [isSignedIn, user?.id, hydrateHeaderSession]);
 
   function resizeCommentSheetTextarea(textarea?: HTMLTextAreaElement | null) {
     const target = textarea ?? commentSheetTextareaRef.current;
@@ -890,7 +904,12 @@ export function UserContentPage({
 
   return (
     <main className="landing-page user-content-page user-content-page-shell">
-      <UserContentHeader reviewId={id} isAuthor={item?.isAuthor ?? false} board={item?.board} onBack={closeWithSlide} />
+      <UserContentHeader
+        reviewId={id}
+        isAuthor={item?.isAuthor ?? false}
+        board={item?.board}
+        onBack={closeWithSlide}
+      />
       <div className="landing-shell">
         {notFound ? (
           <section className="section stack">
@@ -1025,11 +1044,6 @@ export function UserContentPage({
             />
             <div className="user-content-bottom-footer">
               <div className="user-content-bottom-footer-inner">
-              <button type="button" className="user-content-bottom-back-btn" onClick={closeWithSlide} aria-label="목록으로">
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
               <UserContentLikeSection
                 reviewId={id}
                 footer
@@ -1073,9 +1087,34 @@ export function UserContentPage({
                             : `${item.authorId}님의 본문에 댓글 남기기`}
                       </p>
                     </div>
-                    <button type="button" className="user-content-compose-sheet-close" onClick={closeCommentSheet}>
-                      {editTarget ? "취소" : "닫기"}
-                    </button>
+                    <div className="user-content-compose-sheet-close-wrap">
+                      <button
+                        type="button"
+                        className="user-content-compose-sheet-close"
+                        onClick={closeCommentSheet}
+                        aria-label={editTarget ? "취소" : "닫기"}
+                      >
+                        {editTarget ? (
+                          "취소"
+                        ) : (
+                          <svg
+                            className="user-content-compose-sheet-close-icon"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="user-content-compose-context">
@@ -1177,32 +1216,43 @@ export function UserContentPage({
                             resizeCommentSheetTextarea(e.target);
                           }}
                         />
-                      </form>
-                      <button
-                        type="button"
-                        className={`user-content-compose-floating-submit${commentSheetInput.trim() ? " active" : ""}`}
-                        aria-label={editTarget ? "수정 완료" : "댓글 전송"}
-                        onClick={() => {
-                          void handleCommentSheetSubmit();
-                        }}
-                        disabled={!commentSheetInput.trim() || commentSheetSubmitting}
-                      >
-                        <svg
-                          className="user-content-compose-floating-submit-icon"
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
+                        <button
+                          type="button"
+                          className="user-content-compose-floating-submit"
+                          aria-label={editTarget ? "수정 완료" : "댓글 전송"}
+                          onClick={() => {
+                            void handleCommentSheetSubmit();
+                          }}
                         >
-                          <path d="M12 20h9" />
-                          <path d="m16.5 3.5 4 4L7 21H3v-4z" />
-                        </svg>
-                      </button>
+                          <svg
+                            className="user-content-compose-floating-submit-icon"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M12 20h9" />
+                            <path d="m16.5 3.5 4 4L7 21H3v-4z" />
+                          </svg>
+                        </button>
+                      </form>
+                      <div className="user-content-compose-member-avatar" aria-label="로그인 회원 아바타">
+                        {footerAvatarSrc ? (
+                          <img src={footerAvatarSrc} alt="" className="user-content-compose-member-avatar-img" />
+                        ) : (
+                          <span className="user-content-compose-member-avatar-fallback" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="8" r="4" />
+                              <path d="M4 20c0-4.2 3.6-7 8-7s8 2.8 8 7" />
+                            </svg>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
