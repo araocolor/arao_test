@@ -853,6 +853,7 @@
 
 .admin-consulting-list {
   padding-bottom: 70px;
+  overflow-x: hidden;
 }
 
 .admin-consulting-empty {
@@ -870,15 +871,14 @@
 }
 
 .admin-consulting-item {
-  --admin-item-pad-x: 16px;
-  position: relative;
   display: flex;
   width: 100%;
   box-sizing: border-box;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px var(--admin-item-pad-x);
+  gap: 3px;
+  padding: 3px 16px;
   border: none;
+  border-bottom: 1px solid var(--line);
   background: var(--surface);
   cursor: pointer;
   transition: background 0.2s;
@@ -889,18 +889,8 @@
   appearance: none;
 }
 
-.admin-consulting-item::after {
-  content: "";
-  position: absolute;
-  left: calc(-1 * var(--admin-item-pad-x));
-  right: calc(-1 * var(--admin-item-pad-x));
-  bottom: 0;
-  height: 1px;
-  background: var(--line);
-}
-
-.admin-consulting-item:last-child::after {
-  display: none;
+.admin-consulting-item:last-child {
+  border-bottom: none;
 }
 
 .admin-consulting-item:hover {
@@ -948,32 +938,53 @@
 .admin-consulting-item-writer-id {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text);
+  color: rgba(0, 0, 0, 0.5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.admin-consulting-item-writer-sep {
+  color: var(--muted);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.admin-consulting-item-writer-created {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .admin-consulting-item-bottom {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   padding: 5px;
 }
 
 .admin-consulting-item-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--text);
+  color: rgba(0, 0, 0, 0.8);
+  margin-left: 18px;
+  flex: 1;
+  min-width: 0;
 }
 
 .admin-consulting-item-meta {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
   gap: 6px;
   font-size: 12px;
   color: var(--muted);
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .admin-consulting-item-meta-updated {
@@ -1688,12 +1699,11 @@
   }
 
   .admin-consulting-item {
-    --admin-item-pad-x: 14px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
-    padding: 12px var(--admin-item-pad-x);
+    gap: 3px;
+    padding: 3px 14px;
   }
 
   .admin-consulting-detail-row1 {

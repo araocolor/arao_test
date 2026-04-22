@@ -332,6 +332,12 @@ export function AdminConsultingManager({
       minute: "2-digit",
     });
 
+  const truncateTitle = (value: string, maxLength: number = 18) => {
+    const chars = Array.from(value ?? "");
+    if (chars.length <= maxLength) return value;
+    return `${chars.slice(0, maxLength).join("")}...`;
+  };
+
   const sortedInquiries = useMemo(() => {
     const sorted = [...inquiries].sort((a, b) => {
       const aTime = new Date(
@@ -508,6 +514,10 @@ export function AdminConsultingManager({
                           <span className="admin-consulting-item-writer-icon">👤</span>
                         )}
                         <span className="admin-consulting-item-writer-id">{writerId}</span>
+                        <span className="admin-consulting-item-writer-sep">|</span>
+                        <span className="admin-consulting-item-writer-created">
+                          {formatDate(inquiry.created_at)}
+                        </span>
                       </span>
                       {inquiry.has_unread_reply && (
                         <span className="admin-consulting-badge">읽지않음</span>
@@ -522,20 +532,16 @@ export function AdminConsultingManager({
                     </div>
 
                     <div className="admin-consulting-item-bottom">
-                      <span className="admin-consulting-item-title">{inquiry.title}</span>
-                      <span className="admin-consulting-item-meta">
-                        {hasUpdatedAt && (
-                          <>
-                            <span className="admin-consulting-item-meta-updated">
-                              {formatDate(inquiry.updated_at)}
-                            </span>
-                            <span className="admin-consulting-item-meta-sep">|</span>
-                          </>
-                        )}
-                        <span className="admin-consulting-item-meta-created">
-                          {formatDate(inquiry.created_at)}
-                        </span>
+                      <span className="admin-consulting-item-title">
+                        {truncateTitle(inquiry.title, 20)}
                       </span>
+                      {hasUpdatedAt && (
+                        <span className="admin-consulting-item-meta">
+                          <span className="admin-consulting-item-meta-updated">
+                            {formatDate(inquiry.updated_at)}
+                          </span>
+                        </span>
+                      )}
                     </div>
                   </button>
                 );
