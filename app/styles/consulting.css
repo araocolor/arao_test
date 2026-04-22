@@ -799,11 +799,12 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  margin-bottom: 0;
+  height: 70px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 16px;
+  padding: 0 16px 0 16px;
   background: #ffffff;
   border-top: 1px solid var(--line);
   z-index: 50;
@@ -851,7 +852,7 @@
 }
 
 .admin-consulting-list {
-  padding-bottom: 60px;
+  padding-bottom: 70px;
 }
 
 .admin-consulting-empty {
@@ -869,22 +870,37 @@
 }
 
 .admin-consulting-item {
+  --admin-item-pad-x: 16px;
+  position: relative;
   display: flex;
+  width: 100%;
+  box-sizing: border-box;
   flex-direction: column;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 14px var(--admin-item-pad-x);
   border: none;
-  border-bottom: 1px solid var(--line);
   background: var(--surface);
   cursor: pointer;
   transition: background 0.2s;
   text-align: left;
   align-items: stretch;
   font-size: 13px;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.admin-consulting-item:last-child {
-  border-bottom: none;
+.admin-consulting-item::after {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--admin-item-pad-x));
+  right: calc(-1 * var(--admin-item-pad-x));
+  bottom: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+.admin-consulting-item:last-child::after {
+  display: none;
 }
 
 .admin-consulting-item:hover {
@@ -989,11 +1005,14 @@
 }
 
 .admin-consulting-status {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 4px 10px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
+  text-align: center;
 }
 
 .admin-consulting-status-pending {
@@ -1048,6 +1067,12 @@
   min-height: 0;
 }
 
+.admin-consulting-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .admin-consulting-detail-row1 {
   display: flex;
   align-items: center;
@@ -1073,7 +1098,15 @@
 }
 
 .admin-consulting-detail-avatar-icon {
-  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  font-size: 19px;
   flex-shrink: 0;
 }
 
@@ -1099,10 +1132,10 @@
 
 .admin-consulting-detail-row2 {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 5px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 0 5px 5px calc(5px + 32px + 8px);
 }
 
 .admin-consulting-detail-title {
@@ -1193,17 +1226,23 @@
 
 .admin-consulting-status-buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, auto);
+  justify-content: center;
   gap: 8px;
 }
 
 .admin-consulting-status-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface);
   font-size: 12px;
   font-weight: 600;
+  text-align: center;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1239,6 +1278,7 @@
   flex-direction: column;
   height: min(66vh, 680px);
   min-height: 420px;
+  margin: 0 8px 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #f8fafc;
@@ -1277,11 +1317,40 @@
   margin-left: auto;
 }
 
+.admin-consulting-chat-row-pending {
+  max-width: none;
+  width: auto;
+}
+
 .admin-consulting-chat-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
   line-height: 1.2;
+}
+
+.admin-consulting-chat-user-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.admin-consulting-chat-user-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-consulting-chat-user-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .admin-consulting-chat-bubble {
@@ -1307,9 +1376,20 @@
   color: #ffffff;
 }
 
+.admin-consulting-chat-bubble-pending {
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
+  box-sizing: border-box;
+}
+
 .admin-consulting-chat-bubble-empty {
   min-height: 72px;
   opacity: 0.35;
+}
+
+.admin-consulting-chat-empty-space {
+  min-height: 76px;
 }
 
 .admin-consulting-chat-bubble p {
@@ -1325,6 +1405,11 @@
   justify-content: flex-end;
   margin-bottom: 8px;
   font-size: 12px;
+}
+
+.admin-consulting-inquiry-meta {
+  justify-content: flex-start;
+  margin-bottom: 6px;
 }
 
 .reply-date {
@@ -1494,7 +1579,8 @@
   }
 
   .admin-consulting-status-buttons {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, auto);
+    justify-content: center;
   }
 
   .admin-consulting-item-bottom {
@@ -1513,6 +1599,14 @@
 }
 
 @media (max-width: 768px) {
+  .admin-consulting-search-footer {
+    height: 70px;
+  }
+
+  .admin-consulting-list {
+    padding-bottom: 70px;
+  }
+
   .admin-consulting-filters {
     display: flex;
     flex-direction: column;
@@ -1594,11 +1688,12 @@
   }
 
   .admin-consulting-item {
+    --admin-item-pad-x: 14px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
-    padding: 12px 14px;
+    padding: 12px var(--admin-item-pad-x);
   }
 
   .admin-consulting-detail-row1 {
@@ -1608,6 +1703,7 @@
   .admin-consulting-detail-row2 {
     flex-direction: column;
     align-items: flex-start;
+    gap: 2px;
   }
 
   .admin-consulting-chat-layout {
@@ -1617,6 +1713,17 @@
 
   .admin-consulting-chat-row {
     max-width: 92%;
+  }
+
+  .admin-consulting-chat-row-pending {
+    max-width: none;
+    width: auto;
+  }
+
+  .admin-consulting-chat-bubble-pending {
+    width: 360px;
+    min-width: 360px;
+    max-width: 360px;
   }
 
   .admin-consulting-reply-form {
@@ -1633,6 +1740,10 @@
   .admin-consulting-btn-reply {
     width: 100%;
     height: 38px;
+  }
+
+  .admin-consulting-detail-row1 > .admin-consulting-status {
+    margin-right: 8px;
   }
 }
 
