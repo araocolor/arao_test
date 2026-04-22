@@ -170,10 +170,6 @@
   overflow: hidden;
 }
 
-.consulting-item.consulting-item-waiting {
-  background: #FCD34D;
-}
-
 .consulting-item.expanded {
   border-color: var(--text);
 }
