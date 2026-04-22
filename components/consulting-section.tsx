@@ -26,6 +26,9 @@ export function ConsultingSection({
 
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [followupOpenId, setFollowupOpenId] = useState<string | null>(null);
+  const [followupContent, setFollowupContent] = useState("");
+  const [followupSubmittingId, setFollowupSubmittingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadInquiries();
@@ -52,10 +55,16 @@ export function ConsultingSection({
   async function toggleExpand(inquiry: Inquiry) {
     if (expandedId === inquiry.id) {
       setExpandedId(null);
+      if (followupOpenId === inquiry.id) {
+        setFollowupOpenId(null);
+        setFollowupContent("");
+      }
       return;
     }
 
     setExpandedId(inquiry.id);
+    setFollowupOpenId(null);
+    setFollowupContent("");
 
     if (!repliesMap[inquiry.id]) {
       try {
@@ -178,12 +187,83 @@ export function ConsultingSection({
     }
   }
 
+  function toggleFollowupInput(inquiryId: string) {
+    if (followupOpenId === inquiryId) {
+      setFollowupOpenId(null);
+      setFollowupContent("");
+      return;
+    }
+
+    setFollowupOpenId(inquiryId);
+    setFollowupContent("");
+    setMessage(null);
+  }
+
+  async function handleCreateFollowup(
+    e: React.FormEvent,
+    inquiry: Inquiry
+  ) {
+    e.preventDefault();
+    if (!followupContent.trim()) return;
+
+    try {
+      setFollowupSubmittingId(inquiry.id);
+      setMessage(null);
+
+      const response = await fetch(`/api/account/consulting/${inquiry.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "followup",
+          content: followupContent.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as { message?: string };
+        setMessage(data.message ?? "추가문의 등록 중 오류가 발생했습니다.");
+        return;
+      }
+
+      const data = (await response.json()) as {
+        reply: InquiryReply;
+        inquiry: Inquiry;
+      };
+
+      setRepliesMap((prev) => ({
+        ...prev,
+        [inquiry.id]: [...(prev[inquiry.id] ?? []), data.reply],
+      }));
+      setInquiries((prev) =>
+        prev.map((it) =>
+          it.id === inquiry.id
+            ? {
+                ...it,
+                status: data.inquiry.status,
+                updated_at: data.inquiry.updated_at,
+                has_unread_reply: data.inquiry.has_unread_reply,
+              }
+            : it
+        )
+      );
+
+      setFollowupOpenId(null);
+      setFollowupContent("");
+      setMessage("추가문의가 등록되었습니다.");
+    } catch (error) {
+      console.error("Failed to create followup inquiry:", error);
+      setMessage("추가문의 등록 중 오류가 발생했습니다.");
+    } finally {
+      setFollowupSubmittingId(null);
+    }
+  }
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "pending":
         return "접수완료";
       case "in_progress":
-        return "답변중";
+        return "답변대기";
       case "resolved":
         return "답변완료";
       case "closed":
@@ -233,9 +313,13 @@ export function ConsultingSection({
             <div className="consulting-items">
               {inquiries.map((inquiry) => {
                 const isOpen = expandedId === inquiry.id;
-                const isResolved = inquiry.status === "resolved";
+                const inquiryStatus = inquiry.status as string;
+                const isResolved = inquiryStatus === "resolved" || inquiryStatus === "closed";
                 const replies = repliesMap[inquiry.id] ?? [];
+                const useChatThread = isResolved || replies.length > 0;
                 const canModify = inquiry.status === "pending" || inquiry.status === "in_progress";
+                const isFollowupOpen = isOpen && followupOpenId === inquiry.id;
+                const isFollowupSubmitting = followupSubmittingId === inquiry.id;
 
                 return (
                   <div
@@ -255,11 +339,40 @@ export function ConsultingSection({
                             {new Date(inquiry.created_at).toLocaleDateString("ko-KR")}
                           </span>
                         </div>
-                        <span
-                          className={`consulting-status ${getStatusClass(inquiry.status)}`}
-                        >
-                          {getStatusLabel(inquiry.status)}
-                        </span>
+                        <div className="consulting-item-header-actions">
+                          <span
+                            className={`consulting-status ${getStatusClass(inquiry.status)}`}
+                          >
+                            {getStatusLabel(inquiry.status)}
+                          </span>
+                          {isResolved && (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              className="consulting-btn-followup-inline"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                if (!isOpen) {
+                                  void toggleExpand(inquiry);
+                                }
+                                toggleFollowupInput(inquiry.id);
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  if (!isOpen) {
+                                    void toggleExpand(inquiry);
+                                  }
+                                  toggleFollowupInput(inquiry.id);
+                                }
+                              }}
+                            >
+                              {isFollowupOpen ? "문의취소" : "추가문의"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {inquiry.has_unread_reply && (
                         <span className="consulting-item-badge">답변 있음</span>
@@ -268,7 +381,7 @@ export function ConsultingSection({
 
                     {isOpen && (
                       <div className="consulting-item-body">
-                        {isResolved ? (
+                        {useChatThread ? (
                           <div className="consulting-chat-thread">
                             <div className="consulting-chat-row consulting-chat-row-question">
                               <span className="consulting-chat-label">문의내용</span>
@@ -278,9 +391,26 @@ export function ConsultingSection({
                             </div>
 
                             {replies.map((reply) => (
-                              <div key={reply.id} className="consulting-chat-row consulting-chat-row-answer">
-                                <span className="consulting-chat-label">관리자(답변)</span>
-                                <div className="consulting-chat-bubble consulting-chat-bubble-answer">
+                              <div
+                                key={reply.id}
+                                className={`consulting-chat-row ${
+                                  reply.author_role === "admin"
+                                    ? "consulting-chat-row-answer"
+                                    : "consulting-chat-row-question"
+                                }`}
+                              >
+                                <span className="consulting-chat-label">
+                                  {reply.author_role === "admin"
+                                    ? "관리자(답변)"
+                                    : "문의자 추가질문"}
+                                </span>
+                                <div
+                                  className={`consulting-chat-bubble ${
+                                    reply.author_role === "admin"
+                                      ? "consulting-chat-bubble-answer"
+                                      : "consulting-chat-bubble-question"
+                                  }`}
+                                >
                                   <p>{reply.content}</p>
                                 </div>
                               </div>
@@ -356,6 +486,33 @@ export function ConsultingSection({
                             </button>
                           </div>
                         )}
+
+                        <form
+                          className={`consulting-followup-slide${isFollowupOpen ? " open" : ""}`}
+                          onSubmit={(e) => handleCreateFollowup(e, inquiry)}
+                        >
+                          <div className="consulting-followup-inner">
+                            <textarea
+                              className="consulting-followup-input"
+                              value={followupContent}
+                              onChange={(e) => setFollowupContent(e.target.value)}
+                              placeholder="추가문의를 입력해주세요"
+                              rows={2}
+                              disabled={!isFollowupOpen || isFollowupSubmitting}
+                            />
+                            <button
+                              type="submit"
+                              className="consulting-followup-submit"
+                              disabled={
+                                !isFollowupOpen ||
+                                isFollowupSubmitting ||
+                                !followupContent.trim()
+                              }
+                            >
+                              {isFollowupSubmitting ? "등록 중..." : "등록"}
+                            </button>
+                          </div>
+                        </form>
                       </div>
                     )}
                   </div>

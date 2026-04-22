@@ -370,10 +370,46 @@ export async function updateInquiry(
   content: string
 ) {
   const supabase = createSupabaseAdminClient();
+  const nowIso = new Date().toISOString();
+
+  const [{ data: inquiryMeta, error: inquiryMetaError }, { count: adminReplyCount, error: replyCountError }] =
+    await Promise.all([
+      supabase
+        .from("inquiries")
+        .select("status")
+        .eq("id", id)
+        .single<{ status: Inquiry["status"] }>(),
+      supabase
+        .from("inquiry_replies")
+        .select("id", { count: "exact", head: true })
+        .eq("inquiry_id", id)
+        .eq("author_role", "admin"),
+    ]);
+
+  if (inquiryMetaError) {
+    console.error("updateInquiry inquiryMeta error:", inquiryMetaError);
+    return null;
+  }
+
+  if (replyCountError) {
+    console.error("updateInquiry replyCount error:", replyCountError);
+    return null;
+  }
+
+  const hasAdminReply = (adminReplyCount ?? 0) > 0;
+  const nextStatus: Inquiry["status"] = hasAdminReply
+    ? "in_progress"
+    : (inquiryMeta?.status ?? "pending");
 
   const { data, error } = await supabase
     .from("inquiries")
-    .update({ title, content, updated_at: new Date().toISOString() })
+    .update({
+      title,
+      content,
+      status: nextStatus,
+      has_unread_reply: false,
+      updated_at: nowIso,
+    })
     .eq("id", id)
     .select()
     .single();
@@ -384,6 +420,52 @@ export async function updateInquiry(
   }
 
   return data as Inquiry;
+}
+
+// 사용자: 답변완료 문의에 추가문의 등록
+export async function createFollowupInquiryByCustomer(
+  id: string,
+  content: string
+) {
+  const supabase = createSupabaseAdminClient();
+  const nowIso = new Date().toISOString();
+
+  const [replyRes, inquiryRes] = await Promise.all([
+    supabase
+      .from("inquiry_replies")
+      .insert({
+        inquiry_id: id,
+        author_role: "customer",
+        content,
+      })
+      .select()
+      .single(),
+    supabase
+      .from("inquiries")
+      .update({
+        status: "in_progress",
+        has_unread_reply: false,
+        updated_at: nowIso,
+      })
+      .eq("id", id)
+      .select()
+      .single(),
+  ]);
+
+  if (replyRes.error) {
+    console.error("createFollowupInquiryByCustomer reply error:", replyRes.error);
+    return null;
+  }
+
+  if (inquiryRes.error) {
+    console.error("createFollowupInquiryByCustomer inquiry error:", inquiryRes.error);
+    return null;
+  }
+
+  return {
+    reply: replyRes.data as InquiryReply,
+    inquiry: inquiryRes.data as Inquiry,
+  };
 }
 
 // 사용자: 본인 문의 삭제

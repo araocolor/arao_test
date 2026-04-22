@@ -3,6 +3,7 @@ import {
   getInquiryById,
   updateInquiry,
   deleteInquiry,
+  createFollowupInquiryByCustomer,
 } from "@/lib/consulting";
 import { syncProfile } from "@/lib/profiles";
 import { NextResponse } from "next/server";
@@ -149,6 +150,34 @@ export async function PATCH(
         );
       }
       return NextResponse.json({ inquiry: updated });
+    }
+
+    // followup 액션: 답변완료 글에 추가문의 등록
+    if (body.action === "followup") {
+      if (!body.content?.trim()) {
+        return NextResponse.json(
+          { message: "Content is required" },
+          { status: 400 }
+        );
+      }
+
+      const currentStatus = result.inquiry.status as string;
+      if (currentStatus !== "resolved" && currentStatus !== "closed") {
+        return NextResponse.json(
+          { message: "추가문의는 답변완료 상태에서만 가능합니다." },
+          { status: 400 }
+        );
+      }
+
+      const created = await createFollowupInquiryByCustomer(id, body.content.trim());
+      if (!created) {
+        return NextResponse.json(
+          { message: "Failed to create followup inquiry" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(created);
     }
 
     return NextResponse.json(

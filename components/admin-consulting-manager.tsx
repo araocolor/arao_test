@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type InquiryWithProfile, type InquiryReply } from "@/lib/consulting";
 
 type View = "list" | "detail";
@@ -35,6 +35,7 @@ export function AdminConsultingManager({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchField, setSearchField] = useState<"id" | "email" | "title" | "content">("title");
   const [period, setPeriod] = useState<"today" | "week" | "month" | "year">("year");
+  const detailThreadRef = useRef<HTMLDivElement | null>(null);
 
   // 목록 조회 - 초기 로드 및 타입/상태 변경 시
   useEffect(() => {
@@ -56,6 +57,13 @@ export function AdminConsultingManager({
     setEditReplyContent("");
     setReplyActionLoadingId(null);
   }, [forceListToken]);
+
+  useEffect(() => {
+    if (view !== "detail") return;
+    const container = detailThreadRef.current;
+    if (!container) return;
+    container.scrollTop = container.scrollHeight;
+  }, [view, selectedInquiry?.id, replies.length]);
 
   async function loadInquiries() {
     try {
@@ -298,6 +306,15 @@ export function AdminConsultingManager({
 
   const formatDate = (value: string) =>
     new Date(value).toLocaleDateString("ko-KR");
+
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   const sortedInquiries = useMemo(() => {
     const sorted = [...inquiries].sort((a, b) => {
@@ -589,10 +606,6 @@ export function AdminConsultingManager({
 
             {/* 본문 */}
             <div className="admin-consulting-detail-content">
-              <div className="admin-consulting-section">
-                <p>{selectedInquiry.content}</p>
-              </div>
-
               {/* 상태 버튼 */}
               <div className="admin-consulting-status-buttons">
                 {["pending", "in_progress", "resolved"].map((s) => (
@@ -608,124 +621,138 @@ export function AdminConsultingManager({
                 ))}
               </div>
 
-              {/* 답변 이력 */}
-              {replies.length > 0 && (
-                <div className="admin-consulting-replies">
-                  <h4>답변 ({replies.length})</h4>
-                  {replies.map((reply) => (
-                    <div
-                      key={reply.id}
-                      className={`admin-consulting-reply ${
-                        reply.author_role === "admin"
-                          ? "admin-consulting-reply-admin"
-                          : "admin-consulting-reply-customer"
-                      }`}
-                    >
-                      <div className="admin-consulting-reply-meta">
-                        <span className="reply-author">
-                          {reply.author_role === "admin"
-                            ? "📞 관리자 답변"
-                            : "👤 고객"}
-                        </span>
-                        <span className="reply-date">
-                          {new Date(reply.created_at).toLocaleDateString(
-                            "ko-KR",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
-                        </span>
-                      </div>
-                      {editingReplyId === reply.id ? (
-                        <div className="admin-consulting-reply-edit">
-                          <textarea
-                            value={editReplyContent}
-                            onChange={(e) => setEditReplyContent(e.target.value)}
-                            rows={4}
-                            disabled={replyActionLoadingId === reply.id}
-                          />
-                          <div className="admin-consulting-reply-actions">
-                            <button
-                              type="button"
-                              className="admin-consulting-reply-action-btn"
-                              onClick={cancelEditReply}
-                              disabled={replyActionLoadingId === reply.id}
-                            >
-                              취소
-                            </button>
-                            <button
-                              type="button"
-                              className="admin-consulting-reply-action-btn primary"
-                              onClick={() => handleUpdateReply(reply.id)}
-                              disabled={
-                                replyActionLoadingId === reply.id ||
-                                !editReplyContent.trim()
-                              }
-                            >
-                              {replyActionLoadingId === reply.id ? "저장 중..." : "저장"}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <p>{reply.content}</p>
-                          {reply.author_role === "admin" && (
-                            <div className="admin-consulting-reply-actions">
-                              <button
-                                type="button"
-                                className="admin-consulting-reply-action-btn"
-                                onClick={() => startEditReply(reply)}
-                                disabled={replyActionLoadingId === reply.id}
-                              >
-                                수정
-                              </button>
-                              <button
-                                type="button"
-                                className="admin-consulting-reply-action-btn danger"
-                                onClick={() => handleDeleteReply(reply.id)}
-                                disabled={replyActionLoadingId === reply.id}
-                              >
-                                {replyActionLoadingId === reply.id ? "삭제 중..." : "삭제"}
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              {message && (
+                <div className="admin-consulting-message">{message}</div>
               )}
 
-              {/* 답변 입력 */}
-              <form
-                onSubmit={handleReply}
-                className="admin-consulting-reply-form"
-              >
-                <h4>답변 작성</h4>
-                <textarea
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="답변을 작성해주세요"
-                  rows={5}
-                  disabled={isSubmitting}
-                />
+              <div className="admin-consulting-chat-layout">
+                <div className="admin-consulting-chat-scroll" ref={detailThreadRef}>
+                  <div className="admin-consulting-chat-row admin-consulting-chat-row-question">
+                    <span className="admin-consulting-chat-label">문의내용</span>
+                    <div className="admin-consulting-chat-bubble admin-consulting-chat-bubble-question">
+                      <p>{selectedInquiry.content}</p>
+                    </div>
+                  </div>
 
-                {message && (
-                  <div className="admin-consulting-message">{message}</div>
-                )}
+                  {replies.length === 0 ? (
+                    <div className="admin-consulting-chat-row admin-consulting-chat-row-answer">
+                      <span className="admin-consulting-chat-label">관리자(답변)</span>
+                      <div
+                        className="admin-consulting-chat-bubble admin-consulting-chat-bubble-answer admin-consulting-chat-bubble-empty"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  ) : (
+                    replies.map((reply) => {
+                      const isAdminReply = reply.author_role === "admin";
+                      const isEditing = editingReplyId === reply.id;
+                      return (
+                        <div
+                          key={reply.id}
+                          className={`admin-consulting-chat-row ${
+                            isAdminReply
+                              ? "admin-consulting-chat-row-answer"
+                              : "admin-consulting-chat-row-question"
+                          }${isEditing ? " admin-consulting-chat-row-editing" : ""}`}
+                        >
+                          <span className="admin-consulting-chat-label">
+                            {isAdminReply ? "관리자(답변)" : "문의자 추가글"}
+                          </span>
+                          <div
+                            className={`admin-consulting-chat-bubble ${
+                              isAdminReply
+                                ? "admin-consulting-chat-bubble-answer"
+                                : "admin-consulting-chat-bubble-question"
+                            }${isEditing ? " admin-consulting-chat-bubble-editing" : ""}`}
+                          >
+                            <div className="admin-consulting-reply-meta">
+                              <span className="reply-date">{formatDateTime(reply.created_at)}</span>
+                            </div>
 
-                <button
-                  type="submit"
-                  className="admin-consulting-btn-reply"
-                  disabled={isSubmitting || !replyContent.trim()}
+                            {isEditing ? (
+                              <div className="admin-consulting-reply-edit">
+                                <textarea
+                                  value={editReplyContent}
+                                  onChange={(e) => setEditReplyContent(e.target.value)}
+                                  rows={3}
+                                  disabled={replyActionLoadingId === reply.id}
+                                />
+                                <div className="admin-consulting-reply-actions">
+                                  <button
+                                    type="button"
+                                    className="admin-consulting-reply-action-btn"
+                                    onClick={cancelEditReply}
+                                    disabled={replyActionLoadingId === reply.id}
+                                  >
+                                    취소
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="admin-consulting-reply-action-btn primary"
+                                    onClick={() => handleUpdateReply(reply.id)}
+                                    disabled={
+                                      replyActionLoadingId === reply.id ||
+                                      !editReplyContent.trim()
+                                    }
+                                  >
+                                    {replyActionLoadingId === reply.id ? "저장 중..." : "저장"}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <p>{reply.content}</p>
+                                {isAdminReply && (
+                                  <div className="admin-consulting-reply-actions">
+                                    <button
+                                      type="button"
+                                      className="admin-consulting-reply-action-btn"
+                                      onClick={() => startEditReply(reply)}
+                                      disabled={replyActionLoadingId === reply.id}
+                                    >
+                                      수정
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin-consulting-reply-action-btn danger"
+                                      onClick={() => handleDeleteReply(reply.id)}
+                                      disabled={replyActionLoadingId === reply.id}
+                                    >
+                                      {replyActionLoadingId === reply.id ? "삭제 중..." : "삭제"}
+                                    </button>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* 답변 입력 */}
+                <form
+                  onSubmit={handleReply}
+                  className="admin-consulting-reply-form"
                 >
-                  {isSubmitting ? "등록 중..." : "답변 등록"}
-                </button>
-              </form>
+                  <textarea
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    placeholder="답변을 작성해주세요"
+                    rows={3}
+                    disabled={isSubmitting}
+                  />
+
+                  <button
+                    type="submit"
+                    className="admin-consulting-btn-reply"
+                    disabled={isSubmitting || !replyContent.trim()}
+                  >
+                    {isSubmitting ? "등록 중..." : "답변 등록"}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         )

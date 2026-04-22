@@ -122,7 +122,7 @@
 }
 
 .admin-page {
-  padding: 24px 16px 64px;
+  padding: 0;
   min-height: 100vh;
 }
 
@@ -317,7 +317,7 @@
 
 @media (max-width: 500px) {
   .admin-page {
-    padding-top: 8px;
+    padding: 0;
   }
 
   .grid {
@@ -365,7 +365,7 @@
 
 @media (min-width: 501px) {
   .admin-page {
-    padding: 24px 24px 64px;
+    padding: 0;
   }
 
   .account-page {
@@ -381,6 +381,11 @@
   .admin-layout {
     grid-template-columns: 150px minmax(0, 1fr);
     gap: 0;
+  }
+
+  .admin-panel {
+    padding: 0 10px;
+    box-sizing: border-box;
   }
 
   .admin-sidebar-root {
