@@ -17,7 +17,7 @@ export function AdminConsultingManager({
   forceListToken = 0,
 }: AdminConsultingManagerProps) {
   const [view, setView] = useState<View>("list");
-  const [status, setStatus] = useState<string>("pending");
+  const [status, setStatus] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("updated");
   const [sortOrder, setSortOrder] = useState<SortOrder>("normal");
   const [inquiries, setInquiries] = useState<InquiryWithProfile[]>([]);
@@ -32,6 +32,9 @@ export function AdminConsultingManager({
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editReplyContent, setEditReplyContent] = useState("");
   const [replyActionLoadingId, setReplyActionLoadingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchField, setSearchField] = useState<"id" | "email" | "title" | "content">("title");
+  const [period, setPeriod] = useState<"today" | "week" | "month" | "year">("year");
 
   // 목록 조회 - 초기 로드 및 타입/상태 변경 시
   useEffect(() => {
@@ -52,7 +55,7 @@ export function AdminConsultingManager({
     setEditingReplyId(null);
     setEditReplyContent("");
     setReplyActionLoadingId(null);
-  }, [forceListToken, view]);
+  }, [forceListToken]);
 
   async function loadInquiries() {
     try {
@@ -268,7 +271,7 @@ export function AdminConsultingManager({
       case "pending":
         return "접수완료";
       case "in_progress":
-        return "답변중";
+        return "답변대기";
       case "resolved":
         return "답변완료";
       case "closed":
@@ -312,8 +315,32 @@ export function AdminConsultingManager({
       sorted.reverse();
     }
 
-    return sorted;
-  }, [inquiries, sortField, sortOrder]);
+    const now = new Date();
+    const periodFiltered = sorted.filter((i) => {
+      const created = new Date(i.created_at);
+      if (period === "today") {
+        return created.toDateString() === now.toDateString();
+      }
+      if (period === "week") {
+        return now.getTime() - created.getTime() <= 7 * 24 * 60 * 60 * 1000;
+      }
+      if (period === "month") {
+        return now.getTime() - created.getTime() <= 30 * 24 * 60 * 60 * 1000;
+      }
+      return true;
+    });
+
+    if (!searchQuery.trim()) return periodFiltered;
+
+    const q = searchQuery.trim().toLowerCase();
+    return periodFiltered.filter((i) => {
+      if (searchField === "id") return i.profile.email.split("@")[0].toLowerCase().includes(q);
+      if (searchField === "email") return i.profile.email.toLowerCase().includes(q);
+      if (searchField === "title") return i.title.toLowerCase().includes(q);
+      if (searchField === "content") return i.content.toLowerCase().includes(q);
+      return true;
+    });
+  }, [inquiries, sortField, sortOrder, searchQuery, searchField, period]);
 
   const handleSortClick = (nextField: SortField) => {
     if (sortField === nextField) {
@@ -337,14 +364,22 @@ export function AdminConsultingManager({
       {view === "list" ? (
         <div className="admin-consulting-list">
           {/* 필터 */}
-          <div className="admin-consulting-filters">
-            <div className="admin-consulting-filter-line">
+          <div className="admin-consulting-filter-line">
+              <div className="admin-consulting-filter-group admin-consulting-filter-period">
+                <select value={period} onChange={(e) => setPeriod(e.target.value as typeof period)}>
+                  <option value="today">today</option>
+                  <option value="week">week</option>
+                  <option value="month">month</option>
+                  <option value="year">year</option>
+                </select>
+              </div>
+
               <div className="admin-consulting-filter-group admin-consulting-filter-status">
                 <select value={status} onChange={(e) => setStatus(e.target.value)}>
                   <option value="all">전체</option>
                   <option value="pending">접수완료</option>
-                  <option value="unread">읽지않음</option>
                   <option value="resolved">답변완료</option>
+                  <option value="unread">읽지않음</option>
                 </select>
               </div>
 
@@ -359,7 +394,7 @@ export function AdminConsultingManager({
                   }
                   aria-pressed={status === "in_progress"}
                 >
-                  답변중
+                  답변대기
                 </button>
               </div>
 
@@ -387,9 +422,9 @@ export function AdminConsultingManager({
                   </button>
                 </div>
               </div>
-            </div>
+          </div>
 
-            <div className="admin-consulting-stats">
+          <div className="admin-consulting-stats">
               <span className="admin-consulting-stat">
                 총 <strong>{inquiries.length}</strong>건
               </span>
@@ -403,7 +438,6 @@ export function AdminConsultingManager({
                   답변 <strong>{answeredCount}</strong>건
                 </span>
               )}
-            </div>
           </div>
 
           {/* 목록 */}
@@ -445,6 +479,13 @@ export function AdminConsultingManager({
                       {inquiry.has_unread_reply && (
                         <span className="admin-consulting-badge">읽지않음</span>
                       )}
+                      <span
+                        className={`admin-consulting-status ${getStatusClass(
+                          inquiry.status
+                        )}`}
+                      >
+                        {getStatusLabel(inquiry.status)}
+                      </span>
                     </div>
 
                     <div className="admin-consulting-item-bottom">
@@ -462,98 +503,109 @@ export function AdminConsultingManager({
                           {formatDate(inquiry.created_at)}
                         </span>
                       </span>
-                      <span
-                        className={`admin-consulting-status ${getStatusClass(
-                          inquiry.status
-                        )}`}
-                      >
-                        {getStatusLabel(inquiry.status)}
-                      </span>
                     </div>
                   </button>
                 );
               })}
             </div>
           )}
+
+          {/* 하단 고정 검색 푸터 */}
+          <div className="admin-consulting-search-footer">
+            <select
+              className="admin-consulting-search-field"
+              value={searchField}
+              onChange={(e) => setSearchField(e.target.value as typeof searchField)}
+            >
+              <option value="id">아이디</option>
+              <option value="email">이메일</option>
+              <option value="title">제목</option>
+              <option value="content">본문</option>
+            </select>
+            <input
+              className="admin-consulting-search-input"
+              type="text"
+              placeholder="검색어 입력"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                className="admin-consulting-search-clear"
+                onClick={() => setSearchQuery("")}
+                type="button"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         // 상세 뷰
         selectedInquiry && (
           <div className="admin-consulting-detail">
-            {/* 문의 정보 */}
-            <div className="admin-consulting-detail-header">
-              <div className="admin-consulting-detail-header-left">
-                <button
-                  className="admin-consulting-btn-back admin-consulting-btn-back-desktop"
-                  onClick={() => setView("list")}
-                  aria-label="목록으로 돌아가기"
-                >
-                  {"<"}
-                </button>
-
-                <div className="admin-consulting-detail-info">
-                  <h3>{selectedInquiry.title}</h3>
-                  <div className="admin-consulting-detail-meta">
-                    <span className="meta-email">
-                      📧 {selectedInquiry.profile.email}
-                    </span>
-                    <span className="meta-name">
-                      👤 {selectedInquiry.profile.full_name ?? "이름 없음"}
-                    </span>
-                    <span className="meta-type">
-                      {selectedInquiry.type === "consulting" ? "1:1 상담" : "일반 문의"}
-                    </span>
-                    <span
-                      className={`meta-status admin-consulting-status ${getStatusClass(
-                        selectedInquiry.status
-                      )}`}
-                    >
-                      {getStatusLabel(selectedInquiry.status)}
-                    </span>
-                    <span className="meta-date">
-                      {new Date(selectedInquiry.created_at).toLocaleDateString(
-                        "ko-KR",
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      )}
-                    </span>
-                  </div>
-                </div>
+            {/* 1줄: 아바타 + 아이디 | 이메일 + 상태 */}
+            <div className="admin-consulting-detail-row1">
+              <div className="admin-consulting-detail-user">
+                {selectedInquiry.profile.icon_image ? (
+                  <img
+                    src={selectedInquiry.profile.icon_image}
+                    alt=""
+                    className="admin-consulting-detail-avatar"
+                  />
+                ) : (
+                  <span className="admin-consulting-detail-avatar-icon">👤</span>
+                )}
+                <span className="admin-consulting-detail-userid">
+                  {selectedInquiry.profile.email.split("@")[0] || selectedInquiry.profile.full_name || selectedInquiry.profile.email}
+                </span>
+                <span className="admin-consulting-detail-sep">|</span>
+                <span className="admin-consulting-detail-email">{selectedInquiry.profile.email}</span>
               </div>
-
-              {/* 상태 변경 */}
-              <div className="admin-consulting-status-controls">
-                <label>상태 변경</label>
-                <div className="admin-consulting-status-buttons">
-                  {["pending", "in_progress", "resolved"].map(
-                    (s) => (
-                      <button
-                        key={s}
-                        className={`admin-consulting-status-btn ${
-                          selectedInquiry.status === s ? "active" : ""
-                        }`}
-                        onClick={() => handleStatusChange(s as any)}
-                        disabled={s === "resolved"}
-                        title={s === "resolved" ? "답변 작성 시 자동 완료됩니다." : undefined}
-                      >
-                        {getStatusLabel(s)}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
+              <span className={`admin-consulting-status ${getStatusClass(selectedInquiry.status)}`}>
+                {getStatusLabel(selectedInquiry.status)}
+              </span>
             </div>
+
+            {/* 2줄: 제목 + 날짜 */}
+            {(() => {
+              const hasUpdated = new Date(selectedInquiry.updated_at).getTime() - new Date(selectedInquiry.created_at).getTime() > 1000;
+              return (
+                <div className="admin-consulting-detail-row2">
+                  <span className="admin-consulting-detail-title">{selectedInquiry.title}</span>
+                  <span className="admin-consulting-detail-dates">
+                    <span className="admin-consulting-detail-date-created">
+                      {formatDate(selectedInquiry.created_at)}
+                    </span>
+                    {hasUpdated && (
+                      <span className="admin-consulting-detail-date-updated">
+                        수정 {formatDate(selectedInquiry.updated_at)}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* 본문 */}
             <div className="admin-consulting-detail-content">
               <div className="admin-consulting-section">
-                <h4>상담 내용</h4>
                 <p>{selectedInquiry.content}</p>
+              </div>
+
+              {/* 상태 버튼 */}
+              <div className="admin-consulting-status-buttons">
+                {["pending", "in_progress", "resolved"].map((s) => (
+                  <button
+                    key={s}
+                    className={`admin-consulting-status-btn ${selectedInquiry.status === s ? "active" : ""}`}
+                    onClick={() => handleStatusChange(s as any)}
+                    disabled={s === "resolved" || (replies.length > 0 && s !== "resolved")}
+                    title={s === "resolved" ? "답변 작성 시 자동 완료됩니다." : replies.length > 0 ? "답변 등록 후 변경할 수 없습니다." : undefined}
+                  >
+                    {getStatusLabel(s)}
+                  </button>
+                ))}
               </div>
 
               {/* 답변 이력 */}

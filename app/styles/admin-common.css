@@ -290,11 +290,16 @@
   background: #ffffff;
   border: none;
   border-radius: 0;
-  padding: 24px 16px;
+  padding: 24px 2px;
 }
 
 .admin-panel-card-font-reduced {
   font-size: 15px;
+}
+
+.admin-panel-card-no-padding {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .admin-checklist {
@@ -369,7 +374,8 @@
 
   .admin-layout-root {
     width: 100%;
-    margin: 0;
+    max-width: 820px;
+    margin: 0 auto;
   }
 
   .admin-layout {

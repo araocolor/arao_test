@@ -92,9 +92,10 @@ export function AdminDashboard({ email, role, landingContent }: AdminDashboardPr
   const activeSection =
     adminSections.find((section) => section.id === activeSectionId) ?? adminSections[0];
   const isCommitSection = activeSection.id === "commit-list";
+  const isConsultingSection = activeSection.id === "consulting";
   const panelCardClassName = !hydrated || isCommitSection
     ? "admin-panel-card stack"
-    : "admin-panel-card stack admin-panel-card-font-reduced";
+    : `admin-panel-card stack admin-panel-card-font-reduced${isConsultingSection ? " admin-panel-card-no-padding" : ""}`;
 
   useEffect(() => {
     setHydrated(true);
