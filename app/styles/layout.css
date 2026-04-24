@@ -28,13 +28,6 @@
   width: 100%;
   height: 100%;
   background: #facc15;
-  transform-origin: left center;
-  animation: landing-entry-loader-progress 1000ms linear forwards;
-}
-
-@keyframes landing-entry-loader-progress {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
 }
 
 #intro,
