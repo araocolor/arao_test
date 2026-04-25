@@ -37,17 +37,18 @@ export function GeneralSettingsForm({
   usernameChangeCount: initialUsernameChangeCount = 0,
   usernameRegisteredAt: initialUsernameRegisteredAt = null,
 }: GeneralSettingsFormProps) {
+  const [username, setUsername] = useState(initialUsername ?? "");
   const [usernameChangeCount, setUsernameChangeCount] = useState(initialUsernameChangeCount);
   const [usernameRegisteredAt, setUsernameRegisteredAt] = useState<string | null>(initialUsernameRegisteredAt);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const setSessionUsername = useHeaderSessionStore((state) => state.setUsername);
 
   const isWithinEditWindow = (() => {
-    if (!usernameRegisteredAt) return false;
+    if (!username) return false;
+    if (!usernameRegisteredAt) return true;
     return Date.now() - new Date(usernameRegisteredAt).getTime() < 24 * 60 * 60 * 1000;
   })();
   const canEditUsername = isWithinEditWindow && usernameChangeCount < 5;
-  const [username, setUsername] = useState(initialUsername ?? "");
   const [hasPassword, setHasPassword] = useState(initialHasPassword);
   const [phone, setPhone] = useState(initialPhone ?? "");
   const [notificationEnabled, setNotificationEnabled] = useState(initialNotificationEnabled);
@@ -73,6 +74,8 @@ export function GeneralSettingsForm({
   const avatarPopoverRef = useRef<HTMLDivElement>(null);
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
   const phoneEditFormRef = useRef<HTMLFormElement>(null);
+  const usernameInputRef = useRef<HTMLInputElement>(null);
+  const [isUsernameFocused, setIsUsernameFocused] = useState(false);
 
   async function submitUsername(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -104,7 +107,7 @@ export function GeneralSettingsForm({
       setUsernameRegisteredAt((data as { usernameRegisteredAt?: string | null }).usernameRegisteredAt ?? null);
     }
     setIsEditingUsername(false);
-    setUsernameMessage(wasFirstRegistration ? "비밀번호를 설정하세요" : "아이디가 변경되었습니다.");
+    setUsernameMessage(wasFirstRegistration ? "아이디가 등록되었습니다." : "아이디가 변경되었습니다.");
     setSavingKey(null);
   }
 
@@ -503,8 +506,9 @@ export function GeneralSettingsForm({
                 {canEditUsername && (
                   <button
                     type="button"
-                    className="account-general-btn"
-                    onClick={() => { setIsEditingUsername(true); setUsernameMessage(null); setUsernameInput(""); }}
+                    className="account-general-btn account-username-edit-btn"
+                    style={{ borderRadius: "999px", padding: "6px 16px", fontSize: "13px" }}
+                    onClick={() => { setIsEditingUsername(true); setUsernameMessage(null); setUsernameInput(username ?? ""); setTimeout(() => usernameInputRef.current?.focus(), 0); }}
                   >
                     수정
                   </button>
@@ -519,16 +523,21 @@ export function GeneralSettingsForm({
             <form className="account-inline-form" onSubmit={submitUsername}>
               <div className="account-inline-row">
                 <input
+                  ref={usernameInputRef}
                   className="account-general-input"
+                  style={{ width: "180px", flex: "none" }}
                   type="text"
                   value={usernameInput}
                   onChange={(event) => setUsernameInput(event.target.value)}
+                  onFocus={() => setIsUsernameFocused(true)}
+                  onBlur={() => setIsUsernameFocused(false)}
                   placeholder={username ? "새 아이디 (4~8자)" : "아이디등록 (4~8자 이내)"}
                   maxLength={8}
                 />
                 <button
-                  className="account-general-btn"
+                  className={`account-general-btn${isUsernameFocused ? " account-general-btn-active" : ""}`}
                   type="submit"
+                  style={{ borderRadius: "999px", padding: "6px 16px", fontSize: "13px" }}
                   disabled={savingKey === "username" || !hasUsernameInput}
                 >
                   {savingKey === "username" ? (username ? "변경 중..." : "등록 중...") : username ? "변경" : "등록"}
@@ -536,7 +545,8 @@ export function GeneralSettingsForm({
                 {username && (
                   <button
                     type="button"
-                    className="account-general-btn"
+                    className="account-general-btn account-username-cancel-btn"
+                    style={{ borderRadius: "999px", padding: "6px 16px", fontSize: "13px" }}
                     onClick={() => { setIsEditingUsername(false); setUsernameInput(""); setUsernameMessage(null); }}
                   >
                     취소
@@ -549,6 +559,7 @@ export function GeneralSettingsForm({
             ref={avatarButtonRef}
             type="button"
             className="account-general-btn account-avatar-upload-right-btn"
+            style={isEditingUsername ? { display: "none" } : {}}
             disabled={savingKey === "avatar-delete" || savingKey === "avatar"}
             onClick={() => {
               if (iconImage) {
