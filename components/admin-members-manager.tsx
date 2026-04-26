@@ -168,7 +168,7 @@ export function AdminMembersManager() {
             <div className="admin-members-detail-row">
               <span className="admin-members-label">Role</span>
               <span className="admin-members-value admin-members-role">
-                {selectedMember.role === "admin" ? "관리자" : "member"}
+                {selectedMember.role === "admin" ? "admin" : "mem"}
               </span>
             </div>
           </div>
@@ -261,7 +261,7 @@ export function AdminMembersManager() {
                   <td className="admin-members-date">{formatDate(member.created_at)}</td>
                   <td className="admin-members-tier">{member.tier || "-"}</td>
                   <td className="admin-members-role">
-                    {member.role === "admin" ? "관리자" : "member"}
+                    {member.role === "admin" ? "admin" : "mem"}
                   </td>
                   <td className="admin-members-action">
                     <button
