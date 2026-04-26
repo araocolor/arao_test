@@ -504,7 +504,7 @@ export function GeneralSettingsForm({
                       disabled={savingKey === "avatar" || !cropSource}
                     >
                       {savingKey === "avatar"
-                        ? (cropSource ? "확인 중..." : "업로드 중...")
+                        ? (cropSource ? "넣는중..." : "업로드 중...")
                         : (cropSource ? "확인" : "업로드")}
                     </button>
                     <button
@@ -542,7 +542,7 @@ export function GeneralSettingsForm({
                 )}
               </div>
               <div className="account-created-date">
-                등록일 {formatDate(createdAt)}
+                가입일 {formatDate(createdAt)}
                 {canEditUsername ? ` · ${usernameChangeCount >= 4 ? "아이디 변경이 이번이 마지막입니다." : `24시간 유효 (${usernameChangeCount}/5)`}` : ""}
               </div>
             </div>
@@ -604,8 +604,8 @@ export function GeneralSettingsForm({
             }}
           >
             {iconImage
-              ? (savingKey === "avatar-delete" ? "초기화 중..." : "사진초기화")
-              : "프로필사진"}
+              ? (savingKey === "avatar-delete" ? "기본이미지로..." : "기본이미지")
+              : "프로필등록"}
           </button>
         </div>
         <div className={`account-username-message${usernameMsgAnim === "exit" ? " msg-exit" : usernameMsgAnim === "enter" ? " msg-enter" : ""}`} style={{ fontSize: "16px", fontWeight: "bold", color: "#4d4d4d" }}>{usernameMessage ?? ""}</div>
