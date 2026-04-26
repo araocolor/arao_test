@@ -55,15 +55,18 @@
 
 .admin-members-sortable {
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   user-select: none;
   transition: color 0.15s ease;
 }
 
 .admin-members-sortable:hover {
   color: #1976d2;
+}
+
+.admin-members-sortable > svg {
+  display: inline;
+  margin-left: 6px;
+  vertical-align: middle;
 }
 
 .admin-members-table-body tr {
