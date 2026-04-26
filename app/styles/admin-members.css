@@ -53,6 +53,19 @@
   color: #333;
 }
 
+.admin-members-sortable {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.admin-members-sortable:hover {
+  color: #1976d2;
+}
+
 .admin-members-table-body tr {
   border-bottom: 1px solid var(--line);
 }

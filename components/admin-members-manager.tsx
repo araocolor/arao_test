@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye } from "lucide-react";
+import { Eye, ArrowUp, ArrowDown } from "lucide-react";
 
 interface Member {
   id: string;
@@ -14,6 +14,10 @@ interface Member {
 }
 
 type View = "list" | "detail";
+type SortField = "username" | "email" | "created_at" | "tier";
+type SortOrder = "asc" | "desc";
+
+const TIER_ORDER = { premium: 0, pro: 1, general: 2 };
 
 export function AdminMembersManager() {
   const [view, setView] = useState<View>("list");
@@ -25,10 +29,58 @@ export function AdminMembersManager() {
   const [offset, setOffset] = useState(0);
   const limit = 50;
   const [total, setTotal] = useState(0);
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   useEffect(() => {
     loadMembers();
-  }, [searchQuery, searchField, offset]);
+  }, [searchQuery, searchField, offset, sortField, sortOrder]);
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder(field === "created_at" ? "desc" : "asc");
+    }
+    setOffset(0);
+  }
+
+  function compareStrings(a: string, b: string, reverse: boolean): number {
+    const cmp = a.localeCompare(b, "ko-KR", { numeric: true });
+    return reverse ? -cmp : cmp;
+  }
+
+  function sortMembers(membersToSort: Member[]): Member[] {
+    const sorted = [...membersToSort];
+    const isReverse = sortOrder === "desc";
+
+    if (sortField === "username") {
+      sorted.sort((a, b) => {
+        const aVal = a.username || "";
+        const bVal = b.username || "";
+        return compareStrings(aVal, bVal, isReverse);
+      });
+    } else if (sortField === "email") {
+      sorted.sort((a, b) => compareStrings(a.email, b.email, isReverse));
+    } else if (sortField === "created_at") {
+      sorted.sort((a, b) => {
+        const cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        return isReverse ? -cmp : cmp;
+      });
+    } else if (sortField === "tier") {
+      sorted.sort((a, b) => {
+        const aVal = a.tier?.toLowerCase() || "general";
+        const bVal = b.tier?.toLowerCase() || "general";
+        const aOrder = TIER_ORDER[aVal as keyof typeof TIER_ORDER] ?? 999;
+        const bOrder = TIER_ORDER[bVal as keyof typeof TIER_ORDER] ?? 999;
+        const cmp = aOrder - bOrder;
+        return isReverse ? -cmp : cmp;
+      });
+    }
+
+    return sorted;
+  }
 
   async function loadMembers() {
     try {
@@ -45,7 +97,8 @@ export function AdminMembersManager() {
           members: Member[];
           total: number;
         };
-        setMembers(data.members);
+        const sortedMembers = sortMembers(data.members);
+        setMembers(sortedMembers);
         setTotal(data.total);
       } else {
         setMembers([]);
@@ -156,10 +209,30 @@ export function AdminMembersManager() {
           <thead className="admin-members-table-head">
             <tr>
               <th>아바타</th>
-              <th>아이디</th>
-              <th>이메일</th>
-              <th>가입일</th>
-              <th>티어</th>
+              <th className="admin-members-sortable" onClick={() => handleSort("username")}>
+                아이디
+                {sortField === "username" && (
+                  sortOrder === "asc" ? <ArrowUp width={14} height={14} /> : <ArrowDown width={14} height={14} />
+                )}
+              </th>
+              <th className="admin-members-sortable" onClick={() => handleSort("email")}>
+                이메일
+                {sortField === "email" && (
+                  sortOrder === "asc" ? <ArrowUp width={14} height={14} /> : <ArrowDown width={14} height={14} />
+                )}
+              </th>
+              <th className="admin-members-sortable" onClick={() => handleSort("created_at")}>
+                가입일
+                {sortField === "created_at" && (
+                  sortOrder === "asc" ? <ArrowUp width={14} height={14} /> : <ArrowDown width={14} height={14} />
+                )}
+              </th>
+              <th className="admin-members-sortable" onClick={() => handleSort("tier")}>
+                티어
+                {sortField === "tier" && (
+                  sortOrder === "asc" ? <ArrowUp width={14} height={14} /> : <ArrowDown width={14} height={14} />
+                )}
+              </th>
               <th>Role</th>
               <th>상세보기</th>
             </tr>
