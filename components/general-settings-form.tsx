@@ -434,7 +434,7 @@ export function GeneralSettingsForm({
                 type="button"
                 className="account-username-avatar-placeholder"
                 onClick={openAvatarPopover}
-                aria-label="프로필 사진 등록"
+                aria-label="아바타 사진 등록"
               >
                 <span className="account-username-register-fallback">
                   <UserRound
@@ -492,7 +492,7 @@ export function GeneralSettingsForm({
                         className="account-avatar-file-button"
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        프로필사진
+                        사진찾기
                       </button>
                       <div className="account-avatar-help">jpg, png, gif 파일을 업로드 하세요</div>
                     </>

@@ -3,12 +3,32 @@
 ## 스킬 규칙 (최우선)
 - `using-superpowers` 스킬 사용 금지
 
+## 코드 검색 규칙 (최우선, 거짓말 방지)
+
+검색 시 첫 번째 결과를 정답으로 단정하지 말 것.
+
+1. 동일한 텍스트/기능을 가진 요소가 몇 개인지 **전체 검색 먼저 수행**
+2. 모든 후보를 나열한 후 정확한 요소를 특정
+3. CSS 클래스명 확인 시 해당 클래스가 실제로 적용된 요소까지 추적
+
+**Why:** 동일 텍스트("프로필사진")가 여러 버튼에 존재할 수 있어, 첫 번째 검색 결과만 보고 단정하면 거짓말이 됨.
+
 ## 메모리 규칙 (최우선)
 
 모든 답변 전에 `/Users/chalres/.claude/projects/-Users-chalres-Projects-test-codex/memory/MEMORY.md`의 메모리 규칙을 먼저 읽고 적용할 것. 사용자가 별도로 언급하지 않아도 항상 적용.
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. See **frontend.md**, **backend.md**, and **share.md** for detailed specifications.
 Also follow **AGENTS.md** for shared agent workflow and verification rules.
+
+## Quick Start
+
+```bash
+npm install                    # Install dependencies
+cp .env.example .env.local     # Copy environment template
+npm run dev                    # Start dev server (localhost:3000)
+npm run build                  # Build for production
+npm run start                  # Start production server
+```
 
 ## 토큰 사용량 규칙 (최우선)
 
@@ -22,16 +42,6 @@ Also follow **AGENTS.md** for shared agent workflow and verification rules.
 > 2. **부모 요소부터 자식 요소까지 전체 구조를 파악**하고 이미 적용된 스타일 확인
 > 3. 확인한 내용을 사용자에게 먼저 보고한 후 수정 진행
 
-
-## Quick Start
-
-```bash
-npm install                    # Install dependencies
-cp .env.example .env.local     # Copy environment template
-npm run dev                    # Start dev server (localhost:3000)
-npm run build                  # Build for production
-npm run start                  # Start production server
-```
 
 ## Project Overview
 
@@ -56,29 +66,6 @@ export async function GET(
 }
 ```
 
-
-### 캐시 로딩
-
-```typescript
-// O — useEffect에서 로드
-const [item, setItem] = useState(null);
-useEffect(() => {
-  const cached = getCache(id);
-  if (cached) setItem(cached);
-}, [id]);
-
-// X — useState 초기값에서 로드 (Hydration 에러)
-const [item, setItem] = useState(() => getCache(id));
-```
-
-### 뒤에서 처리: after()
-
-```typescript
-import { after } from "next/server";
-after(() => { void incrementUserReviewViewCount(id); });
-```
-
-상세 내용은 **frontend.md**, **backend.md** 참조.
 
 ## Styling & Layout
 
@@ -117,19 +104,10 @@ after(() => { void incrementUserReviewViewCount(id); });
 
 ## Language Rules (Core)
 
-### 1. 종결 어미 규약
-
-- **~함 / ~임**: 작업 완료 보고 및 팩트 전달 (요약)
-
-
-### 2. 소통 원칙
+### 소통 원칙
 - **톤앤매너**: 감정 배제, 짧고 간결한 전문가 어조, 이모지/은유 금지.
 - **포맷**: 분석/정리는 무조건 **표(Table)** 사용.
-- **단위**: 거리 `cm`, 가격 `원` 환산 필수.
 
-- 토큰 사용량이 90% 이상이면 작업을 중단한다. 
-- 또한 작업 시작 전 토큰 여유가 부족해 중간에 끊길 것 같으면 아예 시작하지 말 것.
-- 사용자가 작업해, 라고 구체적으로 지시했을때만,  작업을 진행. 
 
 ## Common Gotchas
 

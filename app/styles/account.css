@@ -1005,13 +1005,13 @@
 .account-avatar-upload-right-btn.btn-breathe {
   animation: btn-breathe 2s ease-in-out infinite;
   color: #ffffff;
-  background: #FFB92D;
-  border-color: #FFB92D;
+  background: #6B7280;
+  border-color: #6B7280;
 }
 
 .account-avatar-upload-right-btn:hover {
-  border-color: #111111;
-  background: #111111;
+  border-color: #3E4449;
+  background: #3E4449;
 }
 
 .account-phone-pill-btn {
@@ -1141,9 +1141,10 @@
 }
 
 .account-avatar-popover {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 200;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1280,14 +1281,16 @@
   padding: 10px 12px;
   font-size: 14px;
   font-weight: 700;
-  background: var(--text);
+  background: #3E4449;
   color: var(--surface);
-  border: 1px solid var(--text);
+  border: 1px solid #3E4449;
   border-radius: 999px;
   cursor: pointer;
   transition: background 120ms ease;
-  width: 100%;
+  width: 70%;
   text-align: center;
+  display: block;
+  margin: 0 auto;
 }
 
 .account-avatar-file-button:active {
