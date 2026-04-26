@@ -505,7 +505,7 @@ export function GeneralSettingsForm({
               <div className="account-random-avatar-row">
                 {!randomPreviewUrl ? (
                   <button type="button" className="account-random-avatar-btn" onClick={pickNextRandom}>
-                    랜덤아바타
+                    캐릭터선택
                   </button>
                 ) : (
                   <>
