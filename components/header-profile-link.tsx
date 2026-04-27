@@ -4,7 +4,6 @@ import { useRef, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { Heart, UserRound } from "lucide-react";
-import { useNotificationCount } from "@/hooks/use-notification-count";
 import { useAdminPendingCount } from "@/hooks/use-admin-pending-count";
 import { NotificationDrawer } from "@/components/notification-drawer";
 import type { NotificationItem } from "@/lib/notifications";
@@ -53,9 +52,7 @@ function readNotificationCache(cacheKey: string): NotificationPayload | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as NotificationCacheSnapshot;
     if (!parsed?.data || !Number.isFinite(parsed.ts)) return null;
-    if (Date.now() - parsed.ts > NOTIFICATION_CACHE_TTL) {
-      return parsed.data; // 만료돼도 즉시 표시, 백그라운드 fetch가 갱신
-    }
+    // 캐시 만료되었더라도 즉시 표시, 백그라운드 fetch가 갱신
     return parsed.data;
   } catch {
     return null;
@@ -116,7 +113,6 @@ export function HeaderProfileLink() {
   const { isSignedIn, user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const { unreadCount: realtimeUnreadCount, ready: notificationCountReady } = useNotificationCount(user?.id);
   useAdminPendingCount(isSignedIn ?? false);
   const notificationCacheKey = getNotificationCacheKey(user?.id);
   const badgeCount = useHeaderSessionStore((state) => state.badgeCount);
@@ -140,8 +136,7 @@ export function HeaderProfileLink() {
   const [email, setEmail] = useState<string | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const drawerCacheBatch1Ref = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const drawerCacheBatch2Ref = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drawerOpenedRef = useRef(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -209,7 +204,27 @@ export function HeaderProfileLink() {
     }
   }
 
-  // 알림 목록 조회 (백그라운드)
+  // 알림 목록 조회 — 안 읽은 중요알림 최대 3개 (컨설팅 → 댓글 → 대댓글 순)
+  const TYPE_PRIORITY: Record<string, number> = {
+    consulting: 0,
+    review_comment: 1,
+    gallery_reply: 1,
+    review_reply: 2,
+    gallery_comment_deleted: 2,
+  };
+
+  function getTop3UnreadItems(allItems: NotificationItem[]): NotificationItem[] {
+    return allItems
+      .filter((item) => !item.is_read && item.type !== "settings")
+      .sort((a, b) => {
+        const pa = TYPE_PRIORITY[a.type] ?? 99;
+        const pb = TYPE_PRIORITY[b.type] ?? 99;
+        if (pa !== pb) return pa - pb;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      })
+      .slice(0, 3);
+  }
+
   async function fetchNotificationItems(options?: { showLoading?: boolean }) {
     const showLoading = options?.showLoading ?? items.length === 0;
     if (showLoading) setIsLoadingNotifications(true);
@@ -217,54 +232,8 @@ export function HeaderProfileLink() {
       const response = await fetch("/api/account/notifications");
       if (response.ok) {
         const data = (await response.json()) as NotificationPayload;
-        applyNotificationPayload(data);
-
-        // 안 읽은 갤러리 알림의 댓글 미리 캐시
-        const unreadGallery = (data.items ?? []).filter(
-          (item) =>
-            !item.is_read &&
-            (item.type === "gallery_like" ||
-              item.type === "gallery_reply" ||
-              item.type === "gallery_comment_deleted")
-        );
-        for (const item of unreadGallery) {
-          try {
-            const url = new URL(item.link, window.location.origin);
-            const category = url.searchParams.get("category");
-            const index = url.searchParams.get("index");
-            if (!category || !index) continue;
-            const commentKey = `gallery_comments_${category}_${index}`;
-            if (!getCached(commentKey)) {
-              fetch(`/api/gallery/${category}/${index}/comments`)
-                .then((r) => r.json())
-                .then((d) => setCached(commentKey, slimGalleryCommentsForCache(d)))
-                .catch(() => {});
-            }
-          } catch {}
-        }
-
-        // 안 읽은 커뮤니티 알림의 댓글 미리 캐시
-        const unreadReview = (data.items ?? []).filter(
-          (item) =>
-            !item.is_read &&
-            (item.type === "review_comment" ||
-              item.type === "review_comment_like" ||
-              item.type === "review_reply")
-        );
-        for (const item of unreadReview) {
-          try {
-            const url = new URL(item.link, window.location.origin);
-            const reviewId = url.searchParams.get("id") ?? url.pathname.split("/").pop();
-            if (!reviewId) continue;
-            const commentKey = `user-review-comments-${reviewId}`;
-            if (!sessionStorage.getItem(commentKey)) {
-              fetch(`/api/main/user-review/${reviewId}/comments`)
-                .then((r) => r.json())
-                .then((d) => sessionStorage.setItem(commentKey, JSON.stringify({ data: d, ts: Date.now() })))
-                .catch(() => {});
-            }
-          } catch {}
-        }
+        const hasUnread = getTop3UnreadItems(data.items ?? []).length > 0;
+        applyNotificationPayload({ ...data, unreadCount: drawerOpenedRef.current ? 0 : (hasUnread ? 1 : 0) });
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
@@ -455,22 +424,13 @@ export function HeaderProfileLink() {
   }, [isSignedIn, pathname, notificationCacheKey]);
 
 
-  // 실시간 unread 카운트를 헤더 뱃지에 동기화
-  useEffect(() => {
-    if (!isSignedIn) return;
-    if (drawerOpen) return;
-    if (!notificationCountReady) return;
-    if (badgeCount !== realtimeUnreadCount) {
-      setHeaderBadgeCount(realtimeUnreadCount);
-    }
-  }, [isSignedIn, realtimeUnreadCount, notificationCountReady, drawerOpen, badgeCount, setHeaderBadgeCount]);
-
   // 초기 로드: 아바타 먼저 → 알림 / 로그아웃 시 캐시 제거
   useEffect(() => {
     if (isSignedIn) {
       void fetchAvatar();
       void fetchNotificationItems({ showLoading: false });
     } else if (isSignedIn === false) {
+      drawerOpenedRef.current = false;
       clearActiveHeaderSession();
       setItems([]);
       setUsername(null);
@@ -502,62 +462,28 @@ export function HeaderProfileLink() {
     return () => window.removeEventListener("notification-setting-updated", handleNotificationSettingUpdated);
   }, [notificationCacheKey]);
 
-  // 알림 항목의 커뮤니티 댓글 캐시 (startIdx ~ endIdx)
-  function prefetchCommentRange(notifItems: NotificationItem[], startIdx: number, endIdx: number) {
-    const slice = notifItems.slice(startIdx, endIdx);
-    for (const item of slice) {
-      try {
-        const url = new URL(item.link, window.location.origin);
-        if (!url.pathname.startsWith("/user_content/")) continue;
-        const reviewId = url.pathname.split("/").pop();
-        if (!reviewId) continue;
-        const commentKey = `user-review-comments-${reviewId}`;
-        if (sessionStorage.getItem(commentKey)) continue;
-        fetch(`/api/main/user-review/${reviewId}/comments`)
-          .then((r) => r.json())
-          .then((d) => sessionStorage.setItem(commentKey, JSON.stringify({ data: d, ts: Date.now() })))
-          .catch(() => {});
-      } catch {}
-    }
-  }
-
   // 드로어 오픈
   function openDrawer() {
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
-    if (drawerCacheBatch1Ref.current) clearTimeout(drawerCacheBatch1Ref.current);
-    if (drawerCacheBatch2Ref.current) clearTimeout(drawerCacheBatch2Ref.current);
 
     const cached = readNotificationCache(notificationCacheKey);
     if (cached) {
-      applyNotificationPayload(cached, { persist: false });
+      applyNotificationPayload({ ...cached, unreadCount: 0 }, { persist: false });
     }
     setDrawerMounted(true);
     setDrawerOpen(true);
-    void fetchNotificationItems({ showLoading: !cached });
 
-    // 드로어 열리는 순간 즉시 첫 5개 댓글 캐시
-    const currentItems = itemsRef.current;
-    prefetchCommentRange(currentItems, 0, 5);
-
-    // 2초 후 6~10개 캐시
-    drawerCacheBatch1Ref.current = setTimeout(() => {
-      prefetchCommentRange(itemsRef.current, 5, 10);
-    }, 2000);
-
-    // 4초 후 11~15개 캐시
-    drawerCacheBatch2Ref.current = setTimeout(() => {
-      prefetchCommentRange(itemsRef.current, 10, 15);
-    }, 4000);
+    // 드로어 열리는 순간 빨간점 OFF (로그아웃 전까지 유지)
+    drawerOpenedRef.current = true;
+    setHeaderBadgeCount(0);
   }
 
   // 드로어 닫기
   function closeDrawer() {
     setDrawerOpen(false);
-    if (drawerCacheBatch1Ref.current) { clearTimeout(drawerCacheBatch1Ref.current); drawerCacheBatch1Ref.current = null; }
-    if (drawerCacheBatch2Ref.current) { clearTimeout(drawerCacheBatch2Ref.current); drawerCacheBatch2Ref.current = null; }
     closeTimerRef.current = setTimeout(() => {
       setDrawerMounted(false);
     }, 260);
@@ -567,8 +493,6 @@ export function HeaderProfileLink() {
   useEffect(() => {
     return () => {
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-      if (drawerCacheBatch1Ref.current) clearTimeout(drawerCacheBatch1Ref.current);
-      if (drawerCacheBatch2Ref.current) clearTimeout(drawerCacheBatch2Ref.current);
     };
   }, []);
 
@@ -590,10 +514,8 @@ export function HeaderProfileLink() {
     const nextItems = itemsRef.current.map((item) => (item.id === id ? { ...item, is_read: isRead } : item));
     itemsRef.current = nextItems;
     setItems(nextItems);
-    const unread = nextItems.filter((item) => !item.is_read).length;
-    setHeaderBadgeCount(unread);
     writeNotificationCache(notificationCacheKey, {
-      unreadCount: unread,
+      unreadCount: 0,
       items: nextItems,
       iconImage,
       username,
@@ -628,7 +550,7 @@ export function HeaderProfileLink() {
         >
           <Heart width={22} height={22} strokeWidth={1.7} aria-hidden="true" />
           {isSignedIn && notificationEnabled && badgeCount > 0 && (
-            <span className="header-profile-badge">{badgeCount}</span>
+            <span className="header-profile-badge header-profile-badge-dot" aria-hidden="true" />
           )}
         </button>
       </div>
