@@ -113,7 +113,8 @@ export async function getUserReviewList(params: {
     .or(`board.eq.${board},is_global_pinned.eq.true`);
 
   if (q) {
-    const pattern = `%${q}%`;
+    const escapedQ = q.replace(/[%_\\]/g, "\\$&");
+    const pattern = `%${escapedQ}%`;
     const { data: matchedProfiles } = await supabase
       .from("profiles")
       .select("id")

@@ -13,6 +13,11 @@ export async function GET(request: Request) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
+    const { data: profile } = await supabase.from("profiles").select("role").eq("clerk_id", userId).single();
+    if (profile?.role !== "admin") {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+    }
+
     const url = new URL(request.url);
     const limit = parseInt(url.searchParams.get("limit") || "50");
     const offset = parseInt(url.searchParams.get("offset") || "0");

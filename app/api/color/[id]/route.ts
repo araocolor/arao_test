@@ -55,6 +55,16 @@ export async function PUT(
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ message: "로그인이 필요합니다." }, { status: 401 });
 
+  const supabaseAuth = createSupabaseAdminClient();
+  const { data: requestProfile } = await supabaseAuth
+    .from("profiles")
+    .select("role")
+    .eq("clerk_id", userId)
+    .maybeSingle();
+  if (requestProfile?.role !== "admin") {
+    return NextResponse.json({ message: "권한이 없습니다." }, { status: 403 });
+  }
+
   const { id } = await params;
 
   try {

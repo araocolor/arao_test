@@ -123,11 +123,10 @@ export async function getNotificationsForProfile(
     const senderIconMap: Record<string, string | null> = {};
     if (senderNames.size > 0) {
       const names = Array.from(senderNames);
-      const orFilter = names.map((n) => `username.eq.${n},email.eq.${n}`).join(",");
       const { data: senderProfiles } = await supabase
         .from("profiles")
         .select("username, email, icon_image")
-        .or(orFilter);
+        .in("username", names);
       for (const p of senderProfiles ?? []) {
         if (p.username) senderIconMap[p.username] = p.icon_image ?? null;
         if (p.email) senderIconMap[p.email] = p.icon_image ?? null;

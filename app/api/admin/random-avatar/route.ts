@@ -31,6 +31,14 @@ export async function GET() {
   if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
   const supabase = createSupabaseAdminClient();
+
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
+  if (!email) return NextResponse.json({ message: "이메일 정보가 없습니다." }, { status: 401 });
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("email", email.toLowerCase()).maybeSingle();
+  if (profile?.role !== "admin") return NextResponse.json({ message: "권한이 없습니다." }, { status: 403 });
+
   const { data, error } = await supabase
     .from("random_avatars")
     .select("url")
