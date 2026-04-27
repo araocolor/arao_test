@@ -62,8 +62,7 @@ export async function POST(request: Request) {
   const parsed = parseDataUrl(body.dataUrl);
   if (!parsed) return NextResponse.json({ message: "이미지 형식이 올바르지 않습니다." }, { status: 400 });
 
-  const ts = Date.now();
-  const name = `random_${ts}.${getExt(parsed.mimeType)}`;
+  const name = `random_${crypto.randomUUID()}.${getExt(parsed.mimeType)}`;
   const path = `${RANDOM_AVATAR_FOLDER}/${name}`;
 
   const { error: uploadError } = await supabase.storage
@@ -71,7 +70,7 @@ export async function POST(request: Request) {
     .upload(path, parsed.buffer, {
       contentType: parsed.mimeType,
       cacheControl: "60",
-      upsert: false,
+      upsert: true,
     });
 
   if (uploadError) return NextResponse.json({ message: "업로드 실패: " + uploadError.message }, { status: 500 });
@@ -83,9 +82,12 @@ export async function POST(request: Request) {
     .from("random_avatars")
     .insert({ url });
 
-  if (dbError) return NextResponse.json({ message: "DB 저장 실패: " + dbError.message }, { status: 500 });
+  if (dbError) {
+    await supabase.storage.from(AVATAR_BUCKET).remove([path]);
+    return NextResponse.json({ message: "DB 저장 실패: " + dbError.message }, { status: 500 });
+  }
 
-  return NextResponse.json({ message: "업로드 완료", name, url });
+  return NextResponse.json({ message: "업로드 완료", url });
 }
 
 export async function DELETE(request: Request) {
