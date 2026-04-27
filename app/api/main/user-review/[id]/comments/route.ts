@@ -141,7 +141,8 @@ export async function POST(
       `${commenterName}님이 댓글을 남겼습니다`,
       `/user_content/${id}?commentId=${data.id}`,
       `review-comment:${data.id}:owner`,
-      profile.icon_image ?? null
+      profile.icon_image ?? null,
+      profile.id
     );
   }
 
@@ -156,7 +157,8 @@ export async function POST(
       `${commenterName}님이 답글을 남겼습니다`,
       `/user_content/${id}?commentId=${data.id}`,
       `review-comment:${data.id}:parent`,
-      profile.icon_image ?? null
+      profile.icon_image ?? null,
+      profile.id
     );
   }
 

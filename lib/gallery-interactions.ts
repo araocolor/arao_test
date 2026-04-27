@@ -281,7 +281,8 @@ export async function createGalleryComment(
         `${commenterName}님이 댓글을 남겼습니다`,
         `/gallery?category=${parentComment.item_category}&index=${parentComment.item_index}&commentId=${data.id}`,
         data.id,
-        normalizeIconImage(profile?.icon_image)
+        normalizeIconImage(profile?.icon_image),
+        profileId
       );
     }
   }
@@ -395,7 +396,8 @@ export async function deleteGalleryComment(
               `${deleterName}님이 댓글을 삭제하였습니다`,
               `/gallery?category=${target.item_category}&index=${target.item_index}&commentId=${commentId}`,
               `${commentId}:deleted`,
-              normalizeIconImage(deleter?.icon_image)
+              normalizeIconImage(deleter?.icon_image),
+              profileId
             )
           )
         );
@@ -515,7 +517,8 @@ export async function toggleGalleryCommentLike(
           `${likerName}님이 좋아요를 남겼습니다`,
           `/gallery?category=${commentData.item_category}&index=${commentData.item_index}&commentId=${commentId}`,
           commentId,
-          normalizeIconImage(liker?.icon_image)
+          normalizeIconImage(liker?.icon_image),
+          profileId
         );
       }
     }

@@ -325,7 +325,8 @@ export async function createReviewReply(
       `${liker?.username ?? "누군가"}님이 작성한 댓글에 새로운 답글이 있습니다`,
       `/account/reviews/${reviewId}`,
       data.id,
-      liker?.icon_image ?? null
+      liker?.icon_image ?? null,
+      profileId
     );
   }
 

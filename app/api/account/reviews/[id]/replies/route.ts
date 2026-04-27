@@ -60,7 +60,8 @@ export async function POST(
         `${profile.username || "사용자"}님이 작성한 댓글에 새로운 글 확인`,
         `/account/reviews/${id}`,
         id,
-        profile.icon_image ?? null
+        profile.icon_image ?? null,
+        profile.id
       );
     }
 

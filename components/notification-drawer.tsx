@@ -206,14 +206,36 @@ export function NotificationDrawer({
     return 0;
   };
 
-  // 중요알림 섹션 구성: 1주일 이내 + 안읽은 글 최신순 3개
+  // 중요알림 섹션 구성: sessionStorage에 저장된 sticky IDs가 있으면 그걸 우선
+  // 없으면 1주일 이내 + 안읽은 글 최신순 3개를 캡처해서 저장
+  const STICKY_KEY = "header-notification-sticky-ids-v1";
   const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const importantItems = sortedItems
-    .filter(
-      (i) => !i.is_read && new Date(i.created_at).getTime() >= oneWeekAgo
-    )
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 3);
+
+  let stickyIds: string[] = [];
+  try {
+    const raw = sessionStorage.getItem(STICKY_KEY);
+    if (raw) stickyIds = JSON.parse(raw) as string[];
+  } catch {}
+
+  let importantItems: NotificationItem[];
+  if (stickyIds.length > 0) {
+    const itemMap = new Map(sortedItems.map((i) => [i.id, i]));
+    importantItems = stickyIds
+      .map((id) => itemMap.get(id))
+      .filter((i): i is NotificationItem => Boolean(i));
+  } else {
+    importantItems = sortedItems
+      .filter(
+        (i) => !i.is_read && new Date(i.created_at).getTime() >= oneWeekAgo
+      )
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 3);
+    if (importantItems.length > 0) {
+      try {
+        sessionStorage.setItem(STICKY_KEY, JSON.stringify(importantItems.map((i) => i.id)));
+      } catch {}
+    }
+  }
 
   // 중요알림 이후 항목 (최근7일)
   const importantIds = new Set(importantItems.map((i) => i.id));
@@ -341,6 +363,7 @@ export function NotificationDrawer({
                         <p className="notif-item-time">
                           {formatRelativeTime(item.created_at)}
                           {item.is_read && <span className="notif-read-check">✓</span>}
+                          {!item.is_read && <span className="notif-unread-dot" />}
                         </p>
                       )}
                     </div>
@@ -378,7 +401,7 @@ export function NotificationDrawer({
                   {recentItems.length > 0 && (
                     <div className="notif-section">
                       <span className="notif-section-title">최근 7일</span>
-                      {recentItems.map(renderItem)}
+                      {recentItems.map((item) => renderItem(item))}
                     </div>
                   )}
 
@@ -386,7 +409,7 @@ export function NotificationDrawer({
                   {older.length > 0 && (
                     <div className="notif-section">
                       <span className="notif-section-title">최근 30일</span>
-                      {moreItems.map(renderItem)}
+                      {moreItems.map((item) => renderItem(item))}
                       {older.length > moreItems.length && (
                         <button
                           className="notif-more-btn"

@@ -95,9 +95,26 @@ export async function getNotificationsForProfile(
   if (error) {
     console.error("getNotificationsForProfile db notifications error:", error);
   } else if (dbNotifications) {
-    // 알림 제목에서 발신자 이름(username/email) 추출 후 프로필 아이콘 조회
+    // 1차: sender_profile_id로 현재 아바타 조회 (이름 변경에도 안전)
+    const senderProfileIds = new Set<string>();
+    for (const n of dbNotifications) {
+      if (n.sender_profile_id) senderProfileIds.add(n.sender_profile_id);
+    }
+    const iconByProfileId: Record<string, string | null> = {};
+    if (senderProfileIds.size > 0) {
+      const { data: senderProfiles } = await supabase
+        .from("profiles")
+        .select("id, icon_image")
+        .in("id", Array.from(senderProfileIds));
+      for (const p of senderProfiles ?? []) {
+        iconByProfileId[p.id] = p.icon_image ?? null;
+      }
+    }
+
+    // 2차: sender_profile_id 없는 기존 알림은 제목 파싱으로 fallback
     const senderNames = new Set<string>();
     for (const n of dbNotifications) {
+      if (n.sender_profile_id) continue;
       const idx = n.title.indexOf("님이");
       if (idx > 0) {
         const name = n.title.slice(0, idx);
@@ -113,18 +130,38 @@ export async function getNotificationsForProfile(
       const { data: senderProfiles } = await supabase
         .from("profiles")
         .select("username, email, icon_image")
-        .in("username", names);
+        .or(`username.in.(${names.map((n) => `"${n}"`).join(",")}),email.in.(${names.map((n) => `"${n}"`).join(",")})`);
       for (const p of senderProfiles ?? []) {
         if (p.username) senderIconMap[p.username] = p.icon_image ?? null;
         if (p.email) senderIconMap[p.email] = p.icon_image ?? null;
+      }
+      const maskedNames = names.filter((n) => /^.+\*\*\*@.+$/.test(n));
+      for (const masked of maskedNames) {
+        if (senderIconMap[masked] !== undefined) continue;
+        const atIndex = masked.indexOf("@");
+        const prefix = masked.slice(0, masked.indexOf("***"));
+        const domain = masked.slice(atIndex);
+        const { data: matches } = await supabase
+          .from("profiles")
+          .select("email, icon_image")
+          .like("email", `${prefix}%${domain}`)
+          .limit(2);
+        if (matches && matches.length === 1) {
+          senderIconMap[masked] = matches[0].icon_image ?? null;
+        }
       }
     }
 
     items.push(
       ...dbNotifications.map((n) => {
-        const idx = n.title.indexOf("님이");
-        const senderName = idx > 0 ? n.title.slice(0, idx) : null;
-        const senderIcon = senderName ? (senderIconMap[senderName] ?? null) : null;
+        let senderIcon: string | null = null;
+        if (n.sender_profile_id && iconByProfileId[n.sender_profile_id] !== undefined) {
+          senderIcon = iconByProfileId[n.sender_profile_id];
+        } else {
+          const idx = n.title.indexOf("님이");
+          const senderName = idx > 0 ? n.title.slice(0, idx) : null;
+          senderIcon = senderName ? (senderIconMap[senderName] ?? null) : null;
+        }
         return {
           id: n.id,
           type: n.type,
@@ -278,7 +315,8 @@ export async function createNotification(
   title: string,
   link: string,
   sourceId?: string,
-  senderIcon?: string | null
+  senderIcon?: string | null,
+  senderProfileId?: string | null
 ): Promise<void> {
   const supabase = createSupabaseAdminClient();
 
@@ -304,6 +342,7 @@ export async function createNotification(
     source_id: sourceId,
     is_read: false,
     sender_icon: senderIcon ?? null,
+    sender_profile_id: senderProfileId ?? null,
   });
 
   if (error) {

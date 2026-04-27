@@ -96,7 +96,8 @@ export async function POST(
         `${likerName}님이 좋아요를 남겼습니다`,
         `/user_content/${id}`,
         `review-like:${id}:${profile.id}`,
-        liker?.icon_image ?? null
+        liker?.icon_image ?? null,
+        profile.id
       );
     }
 

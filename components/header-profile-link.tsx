@@ -136,7 +136,9 @@ export function HeaderProfileLink() {
   const [email, setEmail] = useState<string | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const drawerOpenedRef = useRef(false);
+  const drawerOpenedRef = useRef(
+    typeof window !== "undefined" && sessionStorage.getItem("header-notification-drawer-opened") === "1"
+  );
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -436,6 +438,10 @@ export function HeaderProfileLink() {
       setUsername(null);
       setEmail(null);
       clearNotificationCacheAll();
+      try {
+        sessionStorage.removeItem("header-notification-sticky-ids-v1");
+        sessionStorage.removeItem("header-notification-drawer-opened");
+      } catch {}
     }
   }, [isSignedIn, clearActiveHeaderSession]);
 
@@ -471,13 +477,16 @@ export function HeaderProfileLink() {
 
     const cached = readNotificationCache(notificationCacheKey);
     if (cached) {
-      applyNotificationPayload({ ...cached, unreadCount: 0 }, { persist: false });
+      applyNotificationPayload({ ...cached, unreadCount: 0 });
     }
     setDrawerMounted(true);
     setDrawerOpen(true);
 
     // 드로어 열리는 순간 빨간점 OFF (로그아웃 전까지 유지)
     drawerOpenedRef.current = true;
+    try {
+      sessionStorage.setItem("header-notification-drawer-opened", "1");
+    } catch {}
     setHeaderBadgeCount(0);
   }
 
@@ -487,6 +496,48 @@ export function HeaderProfileLink() {
     closeTimerRef.current = setTimeout(() => {
       setDrawerMounted(false);
     }, 260);
+
+    // 안읽은 알림 일괄 읽음 처리
+    const unreadItems = itemsRef.current.filter((item) => !item.is_read);
+    if (unreadItems.length === 0) return;
+
+    const notificationIds = unreadItems
+      .filter((item) => item.type !== "consulting" && item.type !== "settings")
+      .map((item) => item.id);
+    const consultingIds = unreadItems
+      .filter((item) => item.type === "consulting")
+      .map((item) => item.id);
+
+    const nextItems = itemsRef.current.map((item) =>
+      item.is_read ? item : { ...item, is_read: true }
+    );
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+    writeNotificationCache(notificationCacheKey, {
+      unreadCount: 0,
+      items: nextItems,
+      iconImage,
+      username,
+      email,
+      notificationEnabled,
+    });
+
+    if (notificationIds.length > 0) {
+      void fetch("/api/account/notifications/batch-mark-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: notificationIds }),
+        keepalive: true,
+      }).catch((error) => console.error("batch-mark-read failed:", error));
+    }
+    if (consultingIds.length > 0) {
+      void fetch("/api/account/consulting/batch-mark-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: consultingIds }),
+        keepalive: true,
+      }).catch((error) => console.error("consulting batch-mark-read failed:", error));
+    }
   }
 
   // 정리

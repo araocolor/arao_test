@@ -76,7 +76,8 @@ export async function POST(
       `${likerName}님이 댓글 좋아요를 남겼습니다`,
       `/user_content/${targetComment.review_id}?commentId=${commentId}`,
       `review-comment-like:${commentId}:${profile.id}`,
-      liker?.icon_image ?? null
+      liker?.icon_image ?? null,
+      profile.id
     );
   }
 

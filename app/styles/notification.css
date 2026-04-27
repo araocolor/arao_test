@@ -280,6 +280,14 @@
   line-height: 1;
 }
 
+.notif-unread-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
 /* 하단 불편신고 링크 */
 .notif-footer {
   flex-shrink: 0;
