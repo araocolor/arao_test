@@ -1014,6 +1014,16 @@
   background: #3E4449;
 }
 
+.account-avatar-upload-right-btn.btn-confirm-active,
+.account-avatar-upload-right-btn.btn-confirm-active:hover {
+  background: #FACC15;
+  border: 2px solid #ffffff;
+  color: #111111;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px #FACC15;
+  animation: btn-breathe 2s ease-in-out infinite;
+}
+
 .account-phone-pill-btn {
   border-radius: 999px;
   height: 38px;
@@ -1037,7 +1047,7 @@
 
 .account-random-avatar-buttons-overlay {
   position: absolute;
-  bottom: -30px;
+  bottom: -35px;
   left: 120%;
   transform: translateX(-50%);
   display: flex;
@@ -1063,6 +1073,76 @@
   animation: avatar-breathe 1.4s ease-in-out infinite;
   border: 2px solid white;
 }
+
+.account-avatar-slot-frame {
+  position: relative;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid white;
+  flex-shrink: 0;
+  background: #f3f4f6;
+}
+
+.avatar-slot-base {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-slot-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.avatar-slot-cell {
+  width: 100%;
+  height: 55px;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+
+.avatar-with-hearts {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar-heart-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+@keyframes heart-float {
+  0%   { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+  15%  { transform: translate(-50%, -10px) scale(1); opacity: 1; }
+  80%  { transform: translate(-50%, -70px) scale(1.05); opacity: 1; }
+  100% { transform: translate(-50%, -90px) scale(0.7); opacity: 0; }
+}
+
+.avatar-heart {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: 18px;
+  line-height: 1;
+  animation: heart-float 1.5s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.avatar-heart-1 { font-size: 18px; animation-delay: 0s; }
+.avatar-heart-2 { font-size: 20px; animation-delay: 0.3s; }
 
 .account-username-avatar-placeholder {
   position: relative;

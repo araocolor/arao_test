@@ -6,6 +6,7 @@ import Cropper, { Area } from "react-easy-crop";
 import { clearCached } from "@/hooks/use-prefetch-cache";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { UserProfileModal, type UserProfileModalTarget } from "@/components/user-profile-modal";
+import { TierBadge } from "@/components/tier-badge";
 
 type GeneralSettingsFormProps = {
   email: string;
@@ -43,6 +44,7 @@ export function GeneralSettingsForm({
   const [usernameRegisteredAt, setUsernameRegisteredAt] = useState<string | null>(initialUsernameRegisteredAt);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const setSessionUsername = useHeaderSessionStore((state) => state.setUsername);
+  const sessionTier = useHeaderSessionStore((state) => state.tier);
 
   const isWithinEditWindow = (() => {
     if (!username) return false;
@@ -73,6 +75,13 @@ export function GeneralSettingsForm({
   const [profileModalTarget, setProfileModalTarget] = useState<UserProfileModalTarget | null>(null);
   const [randomPreviewUrl, setRandomPreviewUrl] = useState<string | null>(null);
   const [savingRandomAvatar, setSavingRandomAvatar] = useState(false);
+  const [isSlotSpinning, setIsSlotSpinning] = useState(false);
+  const [heartBurstKey, setHeartBurstKey] = useState<number>(0);
+  const [slotStripUrls, setSlotStripUrls] = useState<string[]>([]);
+  const [slotOffset, setSlotOffset] = useState<number>(0);
+  const [slotTransitionMs, setSlotTransitionMs] = useState<number>(0);
+  const slotRafRef = useRef<number | null>(null);
+  const slotStartRef = useRef<number>(0);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [cropSource, setCropSource] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -352,16 +361,85 @@ export function GeneralSettingsForm({
   }
 
   function pickNextRandom() {
+    if (randomAvatarShuffled.length === 0) return;
     const nextIndex = randomAvatarIndex + 1 >= randomAvatarShuffled.length ? 0 : randomAvatarIndex + 1;
-    setRandomAvatarIndex(nextIndex);
-    setRandomPreviewUrl(randomAvatarShuffled[nextIndex] ?? null);
+    const finalUrl = randomAvatarShuffled[nextIndex] ?? null;
+    if (!finalUrl) return;
+
+    if (slotRafRef.current !== null) {
+      cancelAnimationFrame(slotRafRef.current);
+      slotRafRef.current = null;
+    }
+
+    const pool = randomAvatarShuffled;
+    const cellPx = 55;
+    const totalCells = 18;
+    const strip: string[] = [];
+    for (let k = 0; k < totalCells - 1; k++) {
+      strip.push(pool[(nextIndex + 1 + k) % pool.length]);
+    }
+    strip.push(finalUrl);
+
+    setRandomPreviewUrl(null);
+    setSlotStripUrls(strip);
+    setSlotTransitionMs(0);
+    setSlotOffset(0);
+    setIsSlotSpinning(true);
+
+    const totalDistance = (totalCells - 1) * cellPx;
+    const duration = 2000;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setSlotTransitionMs(duration);
+        setSlotOffset(-totalDistance);
+      });
+    });
+
+    const finishId = window.setTimeout(() => {
+      setIsSlotSpinning(false);
+      setSlotStripUrls([]);
+      setSlotOffset(0);
+      setSlotTransitionMs(0);
+      setRandomAvatarIndex(nextIndex);
+      setRandomPreviewUrl(finalUrl);
+    }, duration + 30);
+
+    slotRafRef.current = finishId as unknown as number;
   }
+
+  useEffect(() => {
+    return () => {
+      if (slotRafRef.current !== null) {
+        window.clearTimeout(slotRafRef.current);
+        slotRafRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!randomPreviewUrl || isSlotSpinning) {
+      setHeartBurstKey(0);
+      return;
+    }
+    const startId = window.setTimeout(() => {
+      setHeartBurstKey((k) => k + 1);
+    }, 1000);
+    return () => window.clearTimeout(startId);
+  }, [randomPreviewUrl, isSlotSpinning]);
 
   function pickPrevRandom() {
     if (randomAvatarIndex <= 0) return;
     const prevIndex = randomAvatarIndex - 1;
     setRandomAvatarIndex(prevIndex);
     setRandomPreviewUrl(randomAvatarShuffled[prevIndex] ?? null);
+  }
+
+  function stepNextRandom() {
+    if (randomAvatarShuffled.length === 0) return;
+    const nextIndex = randomAvatarIndex + 1 >= randomAvatarShuffled.length ? 0 : randomAvatarIndex + 1;
+    setRandomAvatarIndex(nextIndex);
+    setRandomPreviewUrl(randomAvatarShuffled[nextIndex] ?? null);
   }
 
   async function confirmRandomAvatar() {
@@ -485,14 +563,47 @@ export function GeneralSettingsForm({
 
       <div className="account-settings-row">
         <div className="account-settings-copy">
-          <h3>아이디</h3>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <h3>아이디</h3>
+            {canEditUsername && (
+              <span className="account-created-date" style={{ fontStyle: "normal" }}>
+                {usernameChangeCount >= 4 ? "📍 아이디 변경이 이번이 마지막입니다." : `📍 아이디 수정은 24시간 유효 (${usernameChangeCount}/5)`}
+              </span>
+            )}
+          </div>
           <div className="muted">아이디 등록후 커뮤니티와 댓글 사용가능</div>
         </div>
         <div className="account-username-section">
           <div className="account-avatar-column">
             <div className="account-avatar-wrapper">
-              {randomPreviewUrl ? (
-                <img src={randomPreviewUrl} alt="랜덤 아바타 미리보기" className="account-username-avatar avatar-breathe" />
+              {isSlotSpinning ? (
+                <div className="account-avatar-slot-frame">
+                  {iconImage && (
+                    <img src={iconImage} alt="" className="avatar-slot-base" />
+                  )}
+                  <div
+                    className="avatar-slot-strip"
+                    style={{
+                      transform: `translateY(${slotOffset}px)`,
+                      transition: slotTransitionMs > 0 ? `transform ${slotTransitionMs}ms cubic-bezier(0.15, 0.7, 0.25, 1)` : "none",
+                    }}
+                  >
+                    {slotStripUrls.map((url, idx) => (
+                      <img key={`${idx}-${url}`} src={url} alt="" className="avatar-slot-cell" />
+                    ))}
+                  </div>
+                </div>
+              ) : randomPreviewUrl ? (
+                <div className="avatar-with-hearts">
+                  <img src={randomPreviewUrl} alt="랜덤 아바타 미리보기" className="account-username-avatar avatar-breathe" />
+                  {heartBurstKey > 0 && (
+                    <div key={heartBurstKey} className="avatar-heart-burst" aria-hidden="true">
+                      {["💕", "❤️"].map((emoji, i) => (
+                        <span key={i} className={`avatar-heart avatar-heart-${i + 1}`}>{emoji}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : iconImage ? (
                 <img
                   src={iconImage}
@@ -523,7 +634,7 @@ export function GeneralSettingsForm({
                   </span>
                 </button>
               )}
-              {randomAvatarPool.length > 0 && randomPreviewUrl && (
+              {randomAvatarPool.length > 0 && randomPreviewUrl && !isSlotSpinning && (
                 <div className="account-random-avatar-buttons-overlay">
                   <button
                     type="button"
@@ -536,7 +647,7 @@ export function GeneralSettingsForm({
                   <button
                     type="button"
                     className="account-random-avatar-confirm-btn"
-                    onClick={pickNextRandom}
+                    onClick={stepNextRandom}
                   >
                     ▶
                   </button>
@@ -544,14 +655,18 @@ export function GeneralSettingsForm({
                   <button
                     type="button"
                     className="account-random-avatar-cancel-btn"
-                    onClick={() => { setRandomPreviewUrl(null); setRandomAvatarIndex(-1); }}
+                    onClick={() => {
+                      setRandomPreviewUrl(null);
+                      setRandomAvatarIndex(-1);
+                      setRandomAvatarShuffled(shuffle(randomAvatarPool));
+                    }}
                   >
                     취소
                   </button>
                 </div>
               )}
             </div>
-            {randomAvatarPool.length > 0 && !randomPreviewUrl && (
+            {randomAvatarPool.length > 0 && !randomPreviewUrl && !isSlotSpinning && (
               <button type="button" className="account-random-avatar-btn" onClick={pickNextRandom}>
                 캐릭터변경
               </button>
@@ -639,7 +754,9 @@ export function GeneralSettingsForm({
             <div className="account-username-info">
               <div className="account-username-row">
                 <div className="account-setting-static account-username-static">{username}</div>
-                <div className="account-user-role" style={{ fontSize: "15px", backgroundColor: "#e8e8e8", padding: "4px 12px", borderRadius: "12px", display: "inline-block" }}>{role === "admin" ? "관리자" : "member"}</div>
+                <div className="account-user-role" style={{ display: "inline-flex", alignItems: "center" }}>
+                  <TierBadge tier={sessionTier} size={18} marginLeft={0} />
+                </div>
                 {canEditUsername && (
                   <button
                     type="button"
@@ -652,8 +769,7 @@ export function GeneralSettingsForm({
                 )}
               </div>
               <div className="account-created-date">
-                가입일 {formatDate(createdAt)}
-                {canEditUsername ? ` · ${usernameChangeCount >= 4 ? "아이디 변경이 이번이 마지막입니다." : `24시간 유효 (${usernameChangeCount}/5)`}` : ""}
+                {formatDate(createdAt)} · {role === "admin" ? "admin" : sessionTier === "premium" ? "premium" : sessionTier === "pro" ? "pro" : "member"}
               </div>
             </div>
           ) : (
@@ -695,7 +811,7 @@ export function GeneralSettingsForm({
           <button
             ref={avatarButtonRef}
             type="button"
-            className={`account-general-btn account-avatar-upload-right-btn${!iconImage ? " btn-breathe" : ""}`}
+            className={`account-general-btn account-avatar-upload-right-btn${!iconImage ? " btn-breathe" : ""}${randomPreviewUrl ? " btn-confirm-active" : ""}`}
             style={isEditingUsername ? { display: "none" } : {}}
             disabled={savingKey === "avatar-delete" || savingKey === "avatar" || (!!randomPreviewUrl && savingRandomAvatar)}
             onClick={() => {
