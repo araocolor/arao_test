@@ -17,6 +17,7 @@ interface GeneralData {
   createdAt: string;
   usernameChangeCount?: number;
   usernameRegisteredAt?: string | null;
+  previousUsername?: string | null;
 }
 
 function getGeneralCacheKey(email?: string | null) {
@@ -116,6 +117,7 @@ export default function AccountGeneralPage() {
         createdAt={data.createdAt}
         usernameChangeCount={data.usernameChangeCount ?? 0}
         usernameRegisteredAt={data.usernameRegisteredAt ?? null}
+        previousUsername={data.previousUsername ?? null}
       />
     </div>
   );

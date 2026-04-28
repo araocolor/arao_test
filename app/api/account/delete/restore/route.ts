@@ -35,7 +35,6 @@ export async function POST() {
     .update({
       deleted_at: null,
       delete_scheduled_at: null,
-      previous_username: null,
     })
     .eq("id", profile.id);
 

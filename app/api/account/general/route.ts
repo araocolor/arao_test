@@ -38,6 +38,7 @@ export async function GET() {
     createdAt: profile.created_at,
     usernameChangeCount: profile.username_change_count,
     usernameRegisteredAt: profile.username_registered_at,
+    previousUsername: profile.previous_username ?? null,
   });
 }
 

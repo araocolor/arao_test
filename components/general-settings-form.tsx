@@ -21,6 +21,7 @@ type GeneralSettingsFormProps = {
   createdAt: string;
   usernameChangeCount?: number;
   usernameRegisteredAt?: string | null;
+  previousUsername?: string | null;
 };
 
 function getGeneralCacheKey(email?: string | null) {
@@ -39,6 +40,7 @@ export function GeneralSettingsForm({
   createdAt,
   usernameChangeCount: initialUsernameChangeCount = 0,
   usernameRegisteredAt: initialUsernameRegisteredAt = null,
+  previousUsername = null,
 }: GeneralSettingsFormProps) {
   const [username, setUsername] = useState(initialUsername ?? "");
   const [usernameChangeCount, setUsernameChangeCount] = useState(initialUsernameChangeCount);
@@ -784,14 +786,14 @@ export function GeneralSettingsForm({
               <div className="account-inline-row">
                 <input
                   ref={usernameInputRef}
-                  className="account-general-input"
+                  className={`account-general-input${!username && previousUsername ? " account-general-input-prev" : ""}`}
                   style={{ width: "180px", flex: "none" }}
                   type="text"
                   value={usernameInput}
                   onChange={(event) => setUsernameInput(event.target.value)}
                   onFocus={() => setIsUsernameFocused(true)}
                   onBlur={() => setIsUsernameFocused(false)}
-                  placeholder={username ? "새 아이디 (4~8자)" : "아이디등록 (4~8자 이내)"}
+                  placeholder={username ? "새 아이디 (4~8자)" : previousUsername ? previousUsername : "아이디등록 (4~8자 이내)"}
                   maxLength={8}
                 />
                 <button

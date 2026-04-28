@@ -88,6 +88,10 @@
   background: #fff;
 }
 
+.account-general-input-prev::placeholder {
+  color: #c0c0c0;
+}
+
 .account-phone-input-wrap {
   position: relative;
   width: 100%;
