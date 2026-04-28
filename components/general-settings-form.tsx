@@ -7,6 +7,7 @@ import { clearCached } from "@/hooks/use-prefetch-cache";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { UserProfileModal, type UserProfileModalTarget } from "@/components/user-profile-modal";
 import { TierBadge } from "@/components/tier-badge";
+import { AccountDeleteModal } from "@/components/account-delete-modal";
 
 type GeneralSettingsFormProps = {
   email: string;
@@ -45,6 +46,7 @@ export function GeneralSettingsForm({
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const setSessionUsername = useHeaderSessionStore((state) => state.setUsername);
   const sessionTier = useHeaderSessionStore((state) => state.tier);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const isWithinEditWindow = (() => {
     if (!username) return false;
@@ -953,6 +955,29 @@ export function GeneralSettingsForm({
         )}
         {phoneMessage ? <div className="muted">{phoneMessage}</div> : null}
       </div>
+
+      <div className="account-settings-row">
+        <div className="account-settings-copy">
+          <h3>회원탈퇴</h3>
+          <div className="muted">
+            회원탈퇴시 모든 작성글과 데이터가 삭제되어 복구할 수 없으며,<br />
+            7일간 임시저장 후 영구삭제 됩니다.
+          </div>
+          <button
+            type="button"
+            className="account-delete-link"
+            onClick={() => setIsDeleteModalOpen(true)}
+          >
+            회원탈퇴
+          </button>
+        </div>
+      </div>
+
+      <AccountDeleteModal
+        open={isDeleteModalOpen}
+        email={email}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
 
       <div className="account-settings-row" hidden aria-hidden="true" style={{ display: "none" }}>
         <div className="account-settings-copy">

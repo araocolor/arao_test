@@ -1535,3 +1535,240 @@
     width: min(calc(100% - 48px), var(--tablet-width));
   }
 }
+
+.account-delete-link {
+  margin-top: 12px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: #c0392b;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.account-delete-link:hover {
+  color: #922b21;
+}
+
+.account-delete-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: account-delete-fade 200ms ease-out;
+}
+
+@keyframes account-delete-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes account-delete-slide {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.account-delete-modal-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 24px 20px 32px;
+  animation: account-delete-slide 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+@media (min-width: 820px) {
+  .account-delete-modal-backdrop {
+    align-items: center;
+  }
+  .account-delete-modal-sheet {
+    border-radius: 16px;
+  }
+}
+
+.account-delete-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.account-delete-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.account-delete-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #888;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.account-delete-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-delete-modal-desc {
+  margin: 0;
+  font-size: 15px;
+  color: #333;
+  line-height: 1.6;
+}
+
+.account-delete-modal-warn {
+  margin: 0;
+  padding: 12px 14px;
+  background: #fff3f0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #8a3a2a;
+  line-height: 1.6;
+}
+
+.account-delete-modal-msg {
+  font-size: 13px;
+  color: #555;
+}
+
+.account-delete-modal-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 18px;
+  letter-spacing: 6px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.account-delete-modal-input:focus {
+  outline: none;
+  border-color: #111;
+}
+
+.account-delete-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.account-delete-modal-cancel,
+.account-delete-modal-primary {
+  flex: 1;
+  height: 46px;
+  border-radius: 999px;
+  font-size: 15px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.account-delete-modal-cancel {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #333;
+}
+
+.account-delete-modal-primary {
+  background: #111;
+  color: #fff;
+}
+
+.account-delete-modal-primary.danger {
+  background: #c0392b;
+}
+
+.account-delete-modal-primary:disabled,
+.account-delete-modal-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account-delete-modal-resend {
+  margin-top: 4px;
+  background: transparent;
+  border: none;
+  color: #555;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  align-self: flex-end;
+  padding: 4px 0;
+}
+
+.account-deleted-view {
+  padding: 32px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.account-deleted-view h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #c0392b;
+}
+.account-deleted-email {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  font-weight: 600;
+}
+.account-deleted-desc {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #222;
+}
+.account-deleted-info {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #666;
+}
+.account-deleted-msg {
+  font-size: 13px;
+  color: #c0392b;
+}
+.account-deleted-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+.account-deleted-leave,
+.account-deleted-restore {
+  flex: 1;
+  height: 46px;
+  border-radius: 999px;
+  font-size: 15px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.account-deleted-leave {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #333;
+}
+.account-deleted-restore {
+  background: #111;
+  color: #fff;
+}
+.account-deleted-restore:disabled,
+.account-deleted-leave:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

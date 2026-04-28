@@ -15,6 +15,9 @@ export type Profile = {
   created_at: string;
   username_registered_at: string | null;
   username_change_count: number;
+  deleted_at: string | null;
+  delete_scheduled_at: string | null;
+  previous_username: string | null;
 };
 
 type SyncProfileInput = {
@@ -23,7 +26,7 @@ type SyncProfileInput = {
 };
 
 const PROFILE_SELECT_COLUMNS =
-  "id, email, role, tier, notification_enabled, full_name, phone, username, icon_image, created_at, username_registered_at, username_change_count, last_visited_at, visit_count";
+  "id, email, role, tier, notification_enabled, full_name, phone, username, icon_image, created_at, username_registered_at, username_change_count, last_visited_at, visit_count, deleted_at, delete_scheduled_at, previous_username";
 const PROFILE_SELECT_COLUMNS_LEGACY =
   "id, email, role, full_name, phone, username, icon_image, created_at, username_registered_at, username_change_count";
 
@@ -42,6 +45,9 @@ function normalizeProfile(row: any): Profile {
     created_at: row.created_at,
     username_registered_at: row.username_registered_at ?? null,
     username_change_count: row.username_change_count ?? 0,
+    deleted_at: row.deleted_at ?? null,
+    delete_scheduled_at: row.delete_scheduled_at ?? null,
+    previous_username: row.previous_username ?? null,
   };
 }
 

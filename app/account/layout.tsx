@@ -5,6 +5,7 @@ import { AccountNavLinks } from "@/components/account-nav-links";
 import { syncProfile } from "@/lib/profiles";
 import { AccountPrefetchWrapper } from "@/components/account-prefetch-wrapper";
 import { AccountTopPills } from "@/components/account-top-pills";
+import { AccountDeletedView } from "@/components/account-deleted-view";
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
@@ -46,6 +47,12 @@ export default async function AccountLayout({ children }: { children: React.Reac
                 <p className="muted">hint: {profileError.hint ?? "없음"}</p>
                 <p className="muted">로그인 이메일: {email ?? "없음"}</p>
               </section>
+            ) : profile?.deleted_at ? (
+              <AccountDeletedView
+                deletedAt={profile.deleted_at}
+                deleteScheduledAt={profile.delete_scheduled_at}
+                email={profile.email}
+              />
             ) : profile ? (
               children
             ) : (
