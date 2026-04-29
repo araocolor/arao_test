@@ -10,6 +10,7 @@ type HomeEntryLoaderProps = {
 const ENTRY_LOADER_MS = 2000;
 const MEMBER_READY_LOADER_MS = 3000;
 const NOTIFICATION_CACHE_PREFIX = "header-notifications-cache-v1";
+const LOGIN_LOADER_DONE_PREFIX = "arao-login-loader-done";
 
 type NotificationCachePayload = {
   unreadCount: number;
@@ -71,6 +72,10 @@ function getNotificationCacheKey(userId: string): string {
   return `${NOTIFICATION_CACHE_PREFIX}:${userId}`;
 }
 
+function getLoginLoaderDoneKey(userId: string): string {
+  return `${LOGIN_LOADER_DONE_PREFIX}:${userId}`;
+}
+
 function hasNotificationEnabledCache(userId: string): boolean {
   try {
     const raw = sessionStorage.getItem(getNotificationCacheKey(userId));
@@ -109,14 +114,27 @@ export function HomeEntryLoader({ children }: HomeEntryLoaderProps) {
   const setHeaderBadgeCount = useHeaderSessionStore((state) => state.setBadgeCount);
 
   useEffect(() => {
+    if (typeof isSignedIn !== "boolean") return;
+    if (isSignedIn && !user?.id) return;
+
     const memberReadyCached = sessionStorage.getItem("arao-member-ready") === "1";
     const landingCached = hasLandingCache();
+    const loginLoaderDoneCached = isSignedIn && user?.id
+      ? sessionStorage.getItem(getLoginLoaderDoneKey(user.id)) === "1"
+      : false;
     const delay = isSignedIn
-      ? (memberReadyCached ? MEMBER_READY_LOADER_MS : ENTRY_LOADER_MS)
+      ? (loginLoaderDoneCached ? 0 : (memberReadyCached ? MEMBER_READY_LOADER_MS : ENTRY_LOADER_MS))
       : (landingCached ? 0 : ENTRY_LOADER_MS);
-    const timer = window.setTimeout(() => setReady(true), delay);
+    const timer = window.setTimeout(() => {
+      setReady(true);
+      if (isSignedIn && user?.id) {
+        try {
+          sessionStorage.setItem(getLoginLoaderDoneKey(user.id), "1");
+        } catch {}
+      }
+    }, delay);
     return () => window.clearTimeout(timer);
-  }, [isSignedIn]);
+  }, [isSignedIn, user?.id]);
 
   useEffect(() => {
     if (!isSignedIn || !user?.id) return;
