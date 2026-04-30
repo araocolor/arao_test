@@ -8,6 +8,7 @@ import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { UserProfileModal, type UserProfileModalTarget } from "@/components/user-profile-modal";
 import { TierBadge } from "@/components/tier-badge";
 import { AccountDeleteModal } from "@/components/account-delete-modal";
+import { getWithdrawRestrictionDaysLeft } from "@/lib/account-delete-policy";
 
 type GeneralSettingsFormProps = {
   email: string;
@@ -22,6 +23,8 @@ type GeneralSettingsFormProps = {
   usernameChangeCount?: number;
   usernameRegisteredAt?: string | null;
   previousUsername?: string | null;
+  withdrawRestrictedUntil?: string | null;
+  withdrawRestrictionDaysLeft?: number;
 };
 
 const RANDOM_AVATAR_PREFETCH_KEY = "random-avatar-prefetched-v1";
@@ -43,6 +46,8 @@ export function GeneralSettingsForm({
   usernameChangeCount: initialUsernameChangeCount = 0,
   usernameRegisteredAt: initialUsernameRegisteredAt = null,
   previousUsername = null,
+  withdrawRestrictedUntil = null,
+  withdrawRestrictionDaysLeft: initialWithdrawRestrictionDaysLeft = 0,
 }: GeneralSettingsFormProps) {
   const [username, setUsername] = useState(initialUsername ?? "");
   const [usernameChangeCount, setUsernameChangeCount] = useState(initialUsernameChangeCount);
@@ -57,6 +62,11 @@ export function GeneralSettingsForm({
     if (!usernameRegisteredAt) return true;
     return Date.now() - new Date(usernameRegisteredAt).getTime() < 24 * 60 * 60 * 1000;
   })();
+  const withdrawRestrictionDaysLeft = Math.max(
+    initialWithdrawRestrictionDaysLeft,
+    getWithdrawRestrictionDaysLeft(withdrawRestrictedUntil),
+  );
+  const isWithdrawRestricted = withdrawRestrictionDaysLeft > 0;
   const canEditUsername = isWithinEditWindow && usernameChangeCount < 5;
   const [hasPassword, setHasPassword] = useState(initialHasPassword);
   const [phone, setPhone] = useState(initialPhone ?? "");
@@ -1004,17 +1014,27 @@ export function GeneralSettingsForm({
         {phoneMessage ? <div className="muted">{phoneMessage}</div> : null}
       </div>
 
-      <div className="account-settings-row">
+      <div className="account-settings-row account-settings-row-plain">
         <div className="account-settings-copy">
-          <h3>회원탈퇴</h3>
-          <div className="muted">
-            회원탈퇴시 모든 작성글과 데이터가 삭제되어 복구할 수 없으며,<br />
-            7일간 임시저장 후 영구삭제 됩니다.
+          <div className="muted account-withdraw-desc">
+            {isWithdrawRestricted ? (
+              <>
+                복구한 계정은 이메일과 아이디를 새로 등록할 수 있습니다.<br />
+                복구계정은 14일 이후에 정상적인 탈퇴 신청이 가능합니다.
+              </>
+            ) : (
+              <>
+                회원탈퇴시 모든 작성글과 데이터가 삭제되어 복구할 수 없으며, 7일간 임시저장 후 영구삭제 됩니다.
+              </>
+            )}
           </div>
           <button
             type="button"
             className="account-delete-link"
             onClick={() => setIsDeleteModalOpen(true)}
+            disabled={isWithdrawRestricted}
+            aria-disabled={isWithdrawRestricted}
+            title={isWithdrawRestricted ? `복구 후 ${withdrawRestrictionDaysLeft}일 남아 탈퇴 신청이 제한됩니다.` : undefined}
           >
             회원탈퇴
           </button>

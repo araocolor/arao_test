@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { hashPassword, validateEnglishNumberPassword } from "@/lib/password";
 import { syncProfile } from "@/lib/profiles";
+import { getWithdrawRestrictionDaysLeft } from "@/lib/account-delete-policy";
 import { isDesignMode, mockGeneralProfile } from "@/lib/design-mock";
 
 async function getUnreadCount(profileId: string): Promise<number> {
@@ -58,6 +59,19 @@ export async function GET() {
   if (!profile) {
     return NextResponse.json({ message: "회원 정보를 찾을 수 없습니다." }, { status: 404 });
   }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: restrictionRow, error: restrictionError } = await supabase
+    .from("profiles")
+    .select("withdraw_restricted_until")
+    .eq("id", profile.id)
+    .maybeSingle<{ withdraw_restricted_until: string | null }>();
+
+  const withdrawRestrictedUntil = restrictionError?.code === "42703"
+    ? null
+    : (restrictionRow?.withdraw_restricted_until ?? null);
+  const withdrawRestrictionDaysLeft = getWithdrawRestrictionDaysLeft(withdrawRestrictedUntil);
+
   const unreadCount = await getUnreadCount(profile.id);
 
   return NextResponse.json({
@@ -75,6 +89,8 @@ export async function GET() {
     usernameChangeCount: profile.username_change_count,
     usernameRegisteredAt: profile.username_registered_at,
     previousUsername: profile.previous_username ?? null,
+    withdrawRestrictedUntil,
+    withdrawRestrictionDaysLeft,
   });
 }
 

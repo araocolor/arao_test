@@ -81,14 +81,12 @@ export function AccountDeleteModal({ open, email, onClose }: AccountDeleteModalP
 
         {step === "intro" && (
           <div className="account-delete-modal-body">
-            <p className="account-delete-modal-desc">
-              본인 확인을 위해 가입 이메일로 인증번호를 보내드립니다.
-              <br />
-              <strong>{email}</strong>
+            <p className="account-delete-modal-desc" style={{ textAlign: "center" }}>
+              <span style={{ display: "block" }}>계정 이메일로 인증번호를 발송합니다.</span>
+              <span style={{ display: "block" }}><strong>{email}</strong></span>
             </p>
             <p className="account-delete-modal-warn">
               회원탈퇴 시 작성한 게시글은 삭제되며, 7일간 임시 보관 후 영구 삭제됩니다.
-              <br />
               7일 이내에 같은 이메일로 로그인하시면 복구할 수 있습니다.
             </p>
             {message && <div className="account-delete-modal-msg">{message}</div>}
@@ -135,8 +133,7 @@ export function AccountDeleteModal({ open, email, onClose }: AccountDeleteModalP
         {step === "done" && (
           <div className="account-delete-modal-body">
             <p className="account-delete-modal-desc">
-              회원탈퇴가 신청되었습니다.<br />
-              7일 후 영구 삭제됩니다.<br />
+              회원탈퇴가 신청되었습니다. 7일 후 영구 삭제됩니다.
               복구를 원하시면 7일 이내에 동일 이메일로 다시 로그인해 주세요.
             </p>
             <div className="account-delete-modal-actions">

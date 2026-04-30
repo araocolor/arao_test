@@ -18,6 +18,14 @@
   padding-top: 14px;
 }
 
+.account-settings-row-plain {
+  padding: 0 13px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .account-settings-copy {
   display: flex;
   flex-direction: column;
@@ -1545,14 +1553,24 @@
   padding: 0;
   background: transparent;
   border: none;
-  color: #c0392b;
+  color: #00000066;
   font-size: 14px;
   text-decoration: underline;
   cursor: pointer;
   align-self: flex-start;
 }
 .account-delete-link:hover {
-  color: #922b21;
+  color: #00000066;
+}
+.account-delete-link:disabled,
+.account-delete-link[aria-disabled="true"] {
+  color: #9ca3af;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.account-withdraw-desc {
+  color: #00000066;
 }
 
 .account-delete-modal-backdrop {

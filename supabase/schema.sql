@@ -210,6 +210,7 @@ create table if not exists gallery_comment_likes (
 
 alter table profiles add column if not exists icon_image text;
 alter table profiles alter column icon_image type text using icon_image::text;
+alter table profiles add column if not exists withdraw_restricted_until timestamptz;
 
 -- 작업 로그/보고서 (관리자 전용 운영 기록)
 create table if not exists work_logs (

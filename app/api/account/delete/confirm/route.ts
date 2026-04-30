@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfile } from "@/lib/profiles";
+import { getWithdrawRestrictionDaysLeft, isWithdrawRestricted } from "@/lib/account-delete-policy";
 
 export async function POST(request: Request) {
   const { userId } = await auth();
@@ -33,6 +34,28 @@ export async function POST(request: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const { data: restrictionRow, error: restrictionError } = await supabase
+    .from("profiles")
+    .select("withdraw_restricted_until")
+    .eq("id", profile.id)
+    .maybeSingle<{ withdraw_restricted_until: string | null }>();
+
+  if (restrictionError && restrictionError.code !== "42703") {
+    return NextResponse.json({ message: "회원 상태 확인 중 오류가 발생했습니다." }, { status: 500 });
+  }
+
+  const withdrawRestrictedUntil = restrictionError?.code === "42703"
+    ? null
+    : (restrictionRow?.withdraw_restricted_until ?? null);
+
+  if (isWithdrawRestricted(withdrawRestrictedUntil)) {
+    const daysLeft = getWithdrawRestrictionDaysLeft(withdrawRestrictedUntil);
+    return NextResponse.json(
+      { message: `복구한 계정은 14일 이후에 탈퇴 신청이 가능합니다. (${daysLeft}일 남음)` },
+      { status: 400 },
+    );
+  }
+
   const codeHash = createHash("sha256").update(code).digest("hex");
 
   const { data: codeRow, error: codeError } = await supabase

@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfile } from "@/lib/profiles";
+import { getRestoreWithdrawRestrictedUntil } from "@/lib/account-delete-policy";
 
 export async function POST() {
   const { userId } = await auth();
@@ -30,13 +31,27 @@ export async function POST() {
   }
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
+  const withdrawRestrictedUntil = getRestoreWithdrawRestrictedUntil();
+  let { error } = await supabase
     .from("profiles")
     .update({
       deleted_at: null,
       delete_scheduled_at: null,
+      withdraw_restricted_until: withdrawRestrictedUntil,
     })
     .eq("id", profile.id);
+
+  // 구버전 DB(컬럼 미적용)와의 호환을 위한 폴백
+  if (error?.code === "42703") {
+    const fallback = await supabase
+      .from("profiles")
+      .update({
+        deleted_at: null,
+        delete_scheduled_at: null,
+      })
+      .eq("id", profile.id);
+    error = fallback.error;
+  }
 
   if (error) {
     return NextResponse.json({ message: "복구 처리 중 오류가 발생했습니다." }, { status: 500 });

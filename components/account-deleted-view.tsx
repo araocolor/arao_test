@@ -71,7 +71,7 @@ export function AccountDeletedView({ deleteScheduledAt, email, onRestored }: Acc
       {message && <div className="account-deleted-msg">{message}</div>}
       <div className="account-deleted-actions">
         <button type="button" className="account-deleted-leave" onClick={leave}>
-          그대로 두기
+          삭제 진행
         </button>
         <button type="button" className="account-deleted-restore" onClick={restore} disabled={restoring}>
           {restoring ? "복구 중..." : "계정 복구하기"}

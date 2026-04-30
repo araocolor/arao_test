@@ -18,6 +18,8 @@ interface GeneralData {
   usernameChangeCount?: number;
   usernameRegisteredAt?: string | null;
   previousUsername?: string | null;
+  withdrawRestrictedUntil?: string | null;
+  withdrawRestrictionDaysLeft?: number;
 }
 
 function getGeneralCacheKey(email?: string | null) {
@@ -118,6 +120,8 @@ export default function AccountGeneralPage() {
         usernameChangeCount={data.usernameChangeCount ?? 0}
         usernameRegisteredAt={data.usernameRegisteredAt ?? null}
         previousUsername={data.previousUsername ?? null}
+        withdrawRestrictedUntil={data.withdrawRestrictedUntil ?? null}
+        withdrawRestrictionDaysLeft={data.withdrawRestrictionDaysLeft ?? 0}
       />
     </div>
   );
