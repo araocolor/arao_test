@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState, useRef, useEffect, useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
 import { UserRound } from "lucide-react";
 import Cropper, { Area } from "react-easy-crop";
 import { clearCached, getCached, setCached } from "@/hooks/use-prefetch-cache";
@@ -51,11 +52,13 @@ export function GeneralSettingsForm({
   withdrawRestrictedUntil = null,
   withdrawRestrictionDaysLeft: initialWithdrawRestrictionDaysLeft = 0,
 }: GeneralSettingsFormProps) {
+  const { user } = useUser();
   const [username, setUsername] = useState(initialUsername ?? "");
   const [usernameChangeCount, setUsernameChangeCount] = useState(initialUsernameChangeCount);
   const [usernameRegisteredAt, setUsernameRegisteredAt] = useState<string | null>(initialUsernameRegisteredAt);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const setSessionUsername = useHeaderSessionStore((state) => state.setUsername);
+  const setSessionAvatar = useHeaderSessionStore((state) => state.setAvatar);
   const sessionTier = useHeaderSessionStore((state) => state.tier);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -149,6 +152,17 @@ export function GeneralSettingsForm({
     }
 
     globalThis.setTimeout(runPrefetch, 0);
+  }
+
+  function syncHeaderAvatarCache(nextIconImage: string | null) {
+    const normalized = nextIconImage && nextIconImage.trim().length > 0 ? nextIconImage : null;
+    setSessionAvatar(normalized);
+    const userId = user?.id;
+    if (!userId || typeof window === "undefined") return;
+    try {
+      if (normalized) sessionStorage.setItem(`header-avatar:${userId}`, normalized);
+      else sessionStorage.removeItem(`header-avatar:${userId}`);
+    } catch {}
   }
 
   function openAvatarPopover() {
@@ -339,6 +353,7 @@ export function GeneralSettingsForm({
     const isFirstAvatar = !iconImage;
     const nextIconImage = data.iconImage ?? dataUrl;
     setIconImage(nextIconImage);
+    syncHeaderAvatarCache(nextIconImage);
     clearCached(getGeneralCacheKey(email));
     window.dispatchEvent(new CustomEvent("avatar-updated", { detail: { iconImage: nextIconImage } }));
 
@@ -377,6 +392,7 @@ export function GeneralSettingsForm({
     }
 
     setIconImage("");
+    syncHeaderAvatarCache(null);
     setPreviewImage(null);
     setIsEditingAvatar(false);
     clearCached(getGeneralCacheKey(email));
@@ -542,6 +558,7 @@ export function GeneralSettingsForm({
     const data = (await res.json()) as { iconImage?: string; message?: string };
     if (res.ok && data.iconImage) {
       setIconImage(data.iconImage);
+      syncHeaderAvatarCache(data.iconImage);
       setRandomPreviewUrl(null);
       clearCached(getGeneralCacheKey(email));
       window.dispatchEvent(new CustomEvent("avatar-updated", { detail: { iconImage: data.iconImage } }));
@@ -926,7 +943,7 @@ export function GeneralSettingsForm({
             {randomPreviewUrl
               ? (savingRandomAvatar ? "저장중..." : "캐릭터선택")
               : iconImage
-                ? (savingKey === "avatar-delete" ? "기본이미지로..." : "기본이미지")
+                ? (savingKey === "avatar-delete" ? "프로필초기화..." : "프로필초기화")
                 : "사진올리기"}
           </button>
         </div>

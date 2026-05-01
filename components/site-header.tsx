@@ -276,6 +276,11 @@ export function SiteHeader({
       window.location.href = "/sign-in";
       return;
     }
+    if (!avatar) {
+      closeDrawer();
+      window.location.href = "/account/general";
+      return;
+    }
 
     const fallbackAuthorId = (username && username.trim().length > 0)
       ? username.trim()
@@ -464,7 +469,8 @@ export function SiteHeader({
                 data-tier={tier ?? undefined}
                 role="button"
                 tabIndex={0}
-                aria-label="회원정보 모달 열기"
+                aria-label={avatar ? "회원정보 모달 열기" : "프로필 사진등록"}
+                title={avatar ? undefined : "프로필 사진등록"}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
