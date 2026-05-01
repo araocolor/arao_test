@@ -1963,6 +1963,10 @@
   word-break: break-word;
 }
 
+.user-content-profile-bio-empty {
+  color: rgba(17, 17, 17, 0.38);
+}
+
 .user-content-profile-bio-edit-wrap {
   width: 100%;
 }

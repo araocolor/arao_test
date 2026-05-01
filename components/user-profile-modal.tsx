@@ -23,8 +23,7 @@ type UserProfileModalProps = {
   onSaveBio?: (bio: string) => Promise<{ ok: boolean; message?: string; bio?: string }>;
 };
 
-const TEMP_PROFILE_BIO_LINE_1 = "안녕하세요 사진을 사랑하는 사람입니다.";
-const TEMP_PROFILE_BIO_LINE_2 = "만나서 반습니다. 좋은 곳을 알게 되서 기뻐요";
+const EMPTY_BIO_TEXT = "자기소개를 입력하세요";
 const PROFILE_BIO_MAX_LENGTH = 200;
 const PROFILE_LINK_PATTERN = /((?:https?:\/\/|www\.)?[^\s]*(?:youtube\.com|instagram\.com|naver\.com)[^\s]*)/gi;
 
@@ -50,7 +49,7 @@ function getDisplayEmail(target: UserProfileModalTarget): string {
 }
 
 function getInitialBioText() {
-  return `${TEMP_PROFILE_BIO_LINE_1}\n${TEMP_PROFILE_BIO_LINE_2}`;
+  return "";
 }
 
 function parseProfileLinkToken(rawToken: string) {
@@ -144,8 +143,6 @@ function renderProfileModalContent(
             const plainText = textChunks.join("").trimEnd();
             if (plainText.length > 0) {
               plainLines.push(plainText);
-            } else if (lineLinks.length === 0) {
-              plainLines.push(" ");
             }
             if (lineLinks.length > 0) {
               linkLines.push({
@@ -158,9 +155,13 @@ function renderProfileModalContent(
           return (
             <div className="user-content-profile-bio-sections">
               <div className="user-content-profile-bio-top">
-                {plainLines.map((plainLine, idx) => (
-                  <p key={`${idx}-${plainLine}`} className="user-content-profile-bio-line">{plainLine}</p>
-                ))}
+                {plainLines.length > 0 ? (
+                  plainLines.map((plainLine, idx) => (
+                    <p key={`${idx}-${plainLine}`} className="user-content-profile-bio-line">{plainLine}</p>
+                  ))
+                ) : linkLines.length > 0 ? null : (
+                  <p className="user-content-profile-bio-line user-content-profile-bio-empty">{EMPTY_BIO_TEXT}</p>
+                )}
               </div>
               {linkLines.length > 0 ? (
                 <div className="user-content-profile-bio-bottom">

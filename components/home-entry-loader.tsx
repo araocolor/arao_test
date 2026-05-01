@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
+import { getCached, setCached } from "@/hooks/use-prefetch-cache";
 
 type HomeEntryLoaderProps = {
   children: ReactNode;
@@ -12,6 +13,7 @@ const GUEST_ENTRY_LOADER_MS = 0;
 const MEMBER_READY_LOADER_MS = 1000;
 const NOTIFICATION_CACHE_PREFIX = "header-notifications-cache-v1";
 const LOGIN_LOADER_DONE_PREFIX = "arao-login-loader-done";
+const LOADER_GENERAL_CACHE_KEY = "loader-account-general";
 
 type NotificationCachePayload = {
   unreadCount: number;
@@ -33,6 +35,7 @@ type GeneralProfileResponse = {
   role?: string | null;
   tier?: string | null;
   username?: string | null;
+  bio?: string | null;
   notificationEnabled?: boolean;
   unreadCount?: number;
 };
@@ -148,11 +151,12 @@ export function HomeEntryLoader({ children }: HomeEntryLoaderProps) {
     async function warmupMemberCache() {
       const memberCached = hasMemberCache(userId);
       const notificationCached = hasNotificationEnabledCache(userId);
+      const generalCached = !!getCached("account-general");
       if (notificationCached) {
         const cachedUnreadCount = getCachedUnreadCount(userId);
         if (cachedUnreadCount !== null) setHeaderBadgeCount(cachedUnreadCount);
       }
-      if (memberCached && notificationCached) {
+      if (memberCached && notificationCached && generalCached) {
         try { sessionStorage.setItem("arao-member-ready", "1"); } catch {}
         return;
       }
@@ -161,6 +165,8 @@ export function HomeEntryLoader({ children }: HomeEntryLoaderProps) {
         const response = await fetch("/api/account/general", { cache: "no-store" });
         if (!response.ok || cancelled) return;
         const data = (await response.json()) as GeneralProfileResponse;
+        setCached(LOADER_GENERAL_CACHE_KEY, data);
+        setCached("account-general", data);
 
         if (data.iconImage !== undefined) setHeaderAvatar(data.iconImage ?? null);
         if (data.username !== undefined) setHeaderUsername(data.username ?? null);

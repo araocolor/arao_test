@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { useClerk } from "@clerk/nextjs";
 import { Sparkles, MousePointerClick, Tag, BookOpen, Settings2, Users, CreditCard, MessageCircle, HelpCircle, ShieldCheck, LogOut } from "lucide-react";
 import { TierBadge } from "@/components/tier-badge";
+import { UserProfileModal, type UserProfileModalTarget } from "@/components/user-profile-modal";
 import { useHeaderSessionStore } from "@/stores/header-session-store";
 import { REVIEW_LIST_CACHE_TTL } from "@/lib/cache-config";
 import { clearAllCachesOnLogout, getCached, setCached } from "@/hooks/use-prefetch-cache";
@@ -34,6 +35,7 @@ const REVIEW_PREFETCH_LOCK_KEY = "user-review-list-prefetch-lock";
 const REVIEW_PREFETCH_LOCK_MS = 10000;
 const SETTINGS_PATH = "/account/general";
 const SIGN_IN_WITH_SETTINGS_REDIRECT = "/sign-in?redirect_url=%2Faccount%2Fgeneral";
+const LOADER_GENERAL_CACHE_KEY = "loader-account-general";
 
 function canPrefetchReviewList(): boolean {
   if (typeof navigator === "undefined") return true;
@@ -96,6 +98,8 @@ export function SiteHeader({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [avatarToastVisible, setAvatarToastVisible] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
+  const [profileModalTarget, setProfileModalTarget] = useState<UserProfileModalTarget | null>(null);
+  const [profileModalBio, setProfileModalBio] = useState<string | null>(null);
   const [hideOnScroll, setHideOnScroll] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const lastScrollYRef = useRef(0);
@@ -266,6 +270,90 @@ export function SiteHeader({
     closeDrawer();
     window.location.href = isSignedIn ? "/account/general" : "/sign-in";
   };
+  const handleDrawerAvatarClick = () => {
+    if (!isSignedIn) {
+      closeDrawer();
+      window.location.href = "/sign-in";
+      return;
+    }
+
+    const fallbackAuthorId = (username && username.trim().length > 0)
+      ? username.trim()
+      : (email ? email.split("@")[0] : "회원");
+
+    setProfileModalTarget({
+      authorId: fallbackAuthorId,
+      authorEmail: email ?? null,
+      authorTier: tier ?? null,
+      iconImage: avatar ?? null,
+    });
+
+    const loaderCached = getCached<{
+      bio?: string | null;
+      username?: string | null;
+      email?: string | null;
+      tier?: string | null;
+      iconImage?: string | null;
+    }>(LOADER_GENERAL_CACHE_KEY);
+    const cached = loaderCached ?? getCached<{
+      bio?: string | null;
+      username?: string | null;
+      email?: string | null;
+      tier?: string | null;
+      iconImage?: string | null;
+    }>("account-general");
+
+    if (cached) {
+      setProfileModalBio(cached.bio ?? null);
+      setProfileModalTarget((prev) => prev ? {
+        authorId: cached.username?.trim() || prev.authorId,
+        authorEmail: cached.email ?? prev.authorEmail ?? null,
+        authorTier: cached.tier ?? prev.authorTier ?? null,
+        iconImage: cached.iconImage ?? prev.iconImage ?? null,
+      } : prev);
+    } else {
+      setProfileModalBio(null);
+    }
+
+    void fetch("/api/account/general")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: {
+        bio?: string | null;
+        username?: string | null;
+        email?: string | null;
+        tier?: string | null;
+        iconImage?: string | null;
+      } | null) => {
+        if (!data) return;
+        setCached("account-general", data);
+        setProfileModalBio(data.bio ?? null);
+        setProfileModalTarget((prev) => prev ? {
+          authorId: data.username?.trim() || prev.authorId,
+          authorEmail: data.email ?? prev.authorEmail ?? null,
+          authorTier: data.tier ?? prev.authorTier ?? null,
+          iconImage: data.iconImage ?? prev.iconImage ?? null,
+        } : prev);
+      })
+      .catch(() => {});
+  };
+  const saveProfileBioFromHeader = async (nextBio: string): Promise<{ ok: boolean; message?: string; bio?: string }> => {
+    const response = await fetch("/api/account/general", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "bio", bio: nextBio }),
+    });
+    const data = (await response.json()) as { message?: string; bio?: string | null };
+
+    if (!response.ok) {
+      return { ok: false, message: data.message ?? "자기소개 저장 중 오류가 발생했습니다." };
+    }
+
+    const saved = (data.bio ?? "").toString();
+    setProfileModalBio(saved);
+    const cached = getCached<Record<string, unknown>>("account-general") ?? {};
+    setCached("account-general", { ...cached, bio: saved });
+    return { ok: true, bio: saved };
+  };
   const shouldHideHeader = fullWidth && hideOnScroll;
   const hideClassName = hideOnScrollMode === "terms" ? "header-scroll-hidden-terms" : "header-scroll-hidden";
   const shouldShowAvatarRegisterCta = !!isSignedIn && hasUsername && !avatar;
@@ -371,7 +459,26 @@ export function SiteHeader({
               onClick={handleTopProfileClick}
               aria-label="사용자 메뉴"
             >
-              <span className="nav-drawer-avatar-icon" data-tier={tier ?? undefined}>{mobileProfile}</span>
+              <span
+                className="nav-drawer-avatar-icon"
+                data-tier={tier ?? undefined}
+                role="button"
+                tabIndex={0}
+                aria-label="회원정보 모달 열기"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDrawerAvatarClick();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" && e.key !== " ") return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDrawerAvatarClick();
+                }}
+              >
+                {mobileProfile}
+              </span>
               <span className="nav-drawer-avatar-meta">
                 <span className="nav-drawer-avatar-label">
                   {hasUsername ? (username as string) : <span className="nav-drawer-register-id">아이디등록</span>}
@@ -478,6 +585,22 @@ export function SiteHeader({
           </div>
         </div>
       </div>
+      <UserProfileModal
+        target={profileModalTarget}
+        isSignedIn={!!isSignedIn}
+        viewerRole={role}
+        initialBio={profileModalBio}
+        allowProfileEdit={true}
+        onSaveBio={saveProfileBioFromHeader}
+        onRequestSignIn={() => {
+          closeDrawer();
+          window.location.href = "/sign-in";
+        }}
+        onClose={() => {
+          setProfileModalTarget(null);
+          setProfileModalBio(null);
+        }}
+      />
     </>
   );
 }
