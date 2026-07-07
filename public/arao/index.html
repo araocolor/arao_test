@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARAO — Color Profiles for Nikon</title>
+  <meta name="description" content="ARAO — color profiles that put the light of Jeju into your Nikon. Shoot the color. No editing." />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="ARAO — Color Profiles for Nikon" />
+  <meta property="og:description" content="The light of Jeju, in your Nikon." />
+  <meta property="og:image" content="assets/hero-camera.jpeg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@1,700;1,800;1,900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ─── Header ─── -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="#top" class="brand" aria-label="ARAO home">ARAO</a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#story">About</a>
+        <a href="#compare">Compare</a>
+        <a href="#profiles">Profiles</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#install">Install</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <a href="#pricing" class="nav__cta">Get ARAO</a>
+      <button class="nav__toggle" aria-label="Toggle menu" aria-expanded="false" data-nav-toggle>
+        <span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ─── Hero ─── -->
+    <section class="hero" id="hero">
+      <img class="hero__img" src="assets/hero.jpg" alt="Horses grazing in a green Jeju pasture" />
+      <div class="hero__inner wrap">
+        <p class="hero__eyebrow">Color profiles for Nikon</p>
+        <h1 class="hero__title">The light of Jeju,<br />in your Nikon.</h1>
+        <p class="hero__lead">Shoot the color. No editing.</p>
+        <div class="hero__cta">
+          <a href="#pricing" class="btn btn--solid">Get ARAO</a>
+          <a href="#compare" class="btn btn--line">See the difference</a>
+        </div>
+      </div>
+      <div class="hero__meta wrap">
+        <span>Nikon Z series</span>
+        <span>24 profiles</span>
+        <span>No post-processing</span>
+      </div>
+    </section>
+
+    <!-- ─── Story ─── -->
+    <section class="story" id="story">
+      <div class="wrap story__grid">
+        <p class="index">01 — About</p>
+        <div class="story__body">
+          <h2 class="story__title">The color of a place is hard to keep.</h2>
+          <p class="story__p">
+            Same camera, same scene — yet the color of Jeju always slips away.
+            ARAO is a set of color recipes built from the island's own light:
+            the black of basalt, the yellow of rapeseed, the teal of the sea.
+          </p>
+          <p class="story__p muted">
+            Measured on location, season by season, and tuned to Nikon's
+            Picture Control. Press the shutter, and Jeju stays in the frame.
+          </p>
+          <a href="#profiles" class="link">View the profiles →</a>
+        </div>
+      </div>
+
+      <div class="wrap facts">
+        <div class="fact">
+          <p class="fact__k">Measured, not imagined</p>
+          <p class="fact__v">Real light, sampled on the island.</p>
+        </div>
+        <div class="fact">
+          <p class="fact__k">Tuned for Nikon</p>
+          <p class="fact__v">Built on Z-series color science.</p>
+        </div>
+        <div class="fact">
+          <p class="fact__k">No editing</p>
+          <p class="fact__v">Straight from the camera.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Compare ─── -->
+    <section class="compare" id="compare">
+      <div class="wrap compare__head">
+        <p class="index">02 — Compare</p>
+        <h2 class="section-title">Standard vs ARAO</h2>
+        <p class="section-sub">Drag to compare the same frame.</p>
+      </div>
+      <div class="wrap">
+        <div class="ba" data-ba>
+          <img class="ba__img ba__img--after" src="assets/ba-after.jpg" alt="Portrait with ARAO color profile applied" />
+          <div class="ba__before" data-ba-before>
+            <img class="ba__img ba__img--before" src="assets/ba-before.jpg" alt="Portrait in default color" />
+          </div>
+          <span class="ba__tag ba__tag--l">Standard</span>
+          <span class="ba__tag ba__tag--r">ARAO (BB)</span>
+          <div class="ba__handle" data-ba-handle role="slider" aria-label="Compare slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0">
+            <span class="ba__grip" aria-hidden="true"></span>
+          </div>
+        </div>
+        <p class="compare__hint">Jeju · Nikon · ARAO color profile</p>
+      </div>
+    </section>
+
+    <!-- ─── Profiles / Sample gallery ─── -->
+    <section class="profiles" id="profiles">
+      <div class="wrap profiles__head">
+        <p class="index">03 — Samples</p>
+        <h2 class="section-title">Shot in Jeju with ARAO.</h2>
+        <p class="section-sub">Straight-from-camera frames, taken across Jeju with ARAO color profiles. Tap any photo to view it full size.</p>
+      </div>
+      <div class="wrap">
+        <div class="shots" data-shots><!-- populated by app.js --></div>
+      </div>
+    </section>
+
+    <!-- ─── Lightbox modal ─── -->
+    <div class="lb" data-lb aria-hidden="true" role="dialog" aria-modal="true" aria-label="Sample photo viewer">
+      <button class="lb__close" data-lb-close aria-label="Close">✕</button>
+      <button class="lb__nav lb__nav--prev" data-lb-prev aria-label="Previous photo">‹</button>
+      <figure class="lb__stage">
+        <img class="lb__img" data-lb-img src="" alt="" />
+        <figcaption class="lb__cap">
+          <span data-lb-count>1 / 20</span>
+          <span class="lb__tag">Shot with ARAO · Jeju</span>
+        </figcaption>
+      </figure>
+      <button class="lb__nav lb__nav--next" data-lb-next aria-label="Next photo">›</button>
+    </div>
+
+    <!-- ─── Gallery ─── -->
+    <section class="gallery" id="gallery">
+      <div class="wrap gallery__head">
+        <p class="index">04 — Gallery</p>
+        <h2 class="section-title">A day in Jeju, with ARAO.</h2>
+        <p class="section-sub">Every frame straight from the camera.</p>
+      </div>
+      <div class="wrap gallery__grid" data-gallery><!-- populated by app.js --></div>
+    </section>
+
+    <!-- ─── Install ─── -->
+    <section class="install" id="install">
+      <div class="wrap install__grid">
+        <div class="install__intro">
+          <p class="index">05 — Install</p>
+          <h2 class="section-title">Three minutes, done.</h2>
+          <p class="section-sub">No cables, no apps. Copy to a card and load it.</p>
+          <a href="#pricing" class="btn btn--solid install__cta">Get started</a>
+        </div>
+        <ol class="steps">
+          <li class="step">
+            <span class="step__no">01</span>
+            <div><h3>Download</h3><p>Copy the <code>.set</code> file to your SD card root.</p></div>
+          </li>
+          <li class="step">
+            <span class="step__no">02</span>
+            <div><h3>Load</h3><p>Menu › Manage Picture Control › <b>Load from card</b>.</p></div>
+          </li>
+          <li class="step">
+            <span class="step__no">03</span>
+            <div><h3>Select</h3><p>Choose an ARAO profile in the shooting menu.</p></div>
+          </li>
+          <li class="step">
+            <span class="step__no">04</span>
+            <div><h3>Shoot</h3><p>Press the shutter. Jeju stays in the frame.</p></div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ─── Pricing ─── -->
+    <section class="pricing" id="pricing">
+      <div class="wrap pricing__head">
+        <p class="index">06 — Pricing</p>
+        <h2 class="section-title">One purchase. Yours for good.</h2>
+        <p class="section-sub">Free updates, forever.</p>
+      </div>
+      <div class="wrap plans">
+        <article class="plan">
+          <h3 class="plan__name">Starter</h3>
+          <p class="plan__desc">Your first taste of Jeju</p>
+          <p class="plan__price">₩190,000</p>
+          <ul class="plan__list">
+            <li>Basic profiles</li>
+            <li>All Z-series models</li>
+            <li>Install guide (PDF)</li>
+            <li>Lifetime license</li>
+          </ul>
+          <a href="#" class="btn btn--line btn--block">Get Starter</a>
+        </article>
+
+        <article class="plan plan--feat">
+          <span class="plan__badge">Popular</span>
+          <h3 class="plan__name">Full Pack</h3>
+          <p class="plan__desc">All four seasons of Jeju</p>
+          <p class="plan__price">₩390,000</p>
+          <ul class="plan__list">
+            <li>Series 4 profiles</li>
+            <li>Seasonal color packs</li>
+            <li>Film grain pack</li>
+            <li>Priority updates</li>
+          </ul>
+          <a href="#" class="btn btn--solid btn--block">Get Full Pack</a>
+        </article>
+
+        <article class="plan">
+          <h3 class="plan__name">Studio</h3>
+          <p class="plan__desc">Teams &amp; commercial</p>
+          <p class="plan__price">Contact</p>
+          <ul class="plan__list">
+            <li>Multi-seat license</li>
+            <li>Custom profiles</li>
+            <li>Brand tone matching</li>
+            <li>Dedicated support</li>
+          </ul>
+          <a href="#contact" class="btn btn--line btn--block">Contact us</a>
+        </article>
+      </div>
+    </section>
+
+    <!-- ─── Closing ─── -->
+    <section class="finale" id="contact">
+      <img class="finale__img" src="assets/couple-seaside.jpeg" alt="Couple walking the Jeju coast" />
+      <div class="finale__inner wrap">
+        <h2 class="finale__title">Put Jeju in your Nikon.</h2>
+        <a href="#pricing" class="btn btn--solid">Get ARAO</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ─── Footer ─── -->
+  <footer class="foot">
+    <div class="wrap foot__grid">
+      <div class="foot__brand">
+        <a href="#top" class="brand">ARAO</a>
+        <p class="foot__tag">The light of Jeju, in your Nikon.</p>
+      </div>
+      <nav class="foot__col" aria-label="Product">
+        <h4>Product</h4>
+        <a href="#profiles">Profiles</a>
+        <a href="#compare">Compare</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#install">Install</a>
+      </nav>
+      <nav class="foot__col" aria-label="Company">
+        <h4>ARAO</h4>
+        <a href="#story">About</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="foot__col">
+        <h4>Newsletter</h4>
+        <form class="foot__form" data-news>
+          <input type="email" placeholder="Email address" aria-label="Email" required />
+          <button type="submit">→</button>
+        </form>
+        <p class="foot__msg" data-news-msg aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="wrap foot__bottom">
+      <p>6 Johamhaean-ro, Jeju-si, Jeju · ARAO</p>
+      <p>© 2026 ARAO. All rights reserved.</p>
+      <div class="foot__social">
+        <a href="#">Instagram</a>
+        <a href="#">YouTube</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

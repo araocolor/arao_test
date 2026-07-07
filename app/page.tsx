@@ -1,6 +1,7 @@
 export const revalidate = 3600;
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LandingPageFooter } from "@/components/landing-page-footer";
 import { LandingPageHeader } from "@/components/landing-page-header";
 import { LandingVideoSection } from "@/components/landing-video-section";
@@ -8,7 +9,14 @@ import { getLandingContent } from "@/lib/landing-content";
 import { AccountPrefetchWrapper } from "@/components/account-prefetch-wrapper";
 import { HomeEntryLoader } from "@/components/home-entry-loader";
 
-export default async function HomePage() {
+// A: arao.kr 방문 시 목업(public/arao)으로 임시 노출.
+// 복귀하려면 이 함수를 지우고 아래 LegacyHomePage를 HomePage로 되돌리면 됨.
+export default function HomePage() {
+  redirect("/arao/index.html");
+}
+
+// B: 기존 홈 (보존)
+async function LegacyHomePage() {
   const landingContent = await getLandingContent();
 
   return (
